@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>World Cup 2026 Pool</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    /* Mid-century modern: oatmeal ground, cream surfaces, mustard/teal/rust accents */
+    --navy:#e8dfca; --navy2:#f0e9d8; --panel:#faf6ec; --panel2:#f2ebda;
+    --line:#dccfb2; --gold:#c89331; --gold-dim:#a8761f;
+    --text:#33302a; --muted:#8d8472; --good:#2f7d70; --bad:#bd5638; --draw:#bf9230;
+    --shadow:0 1px 2px rgba(70,58,30,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--navy);
+    color:var(--text); font-family:"Futura","Avenir Next","Century Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--gold)}
+  .hidden{display:none !important}
+  .wrap{max-width:920px;margin:0 auto;padding:0 14px 90px}
+
+  /* Password gate */
+  #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:var(--navy);z-index:50;padding:20px}
+  .gate-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:34px 28px;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow)}
+  .badge{font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:700}
+  .gate-card h1{font-size:26px;margin:8px 0 4px;line-height:1.15}
+  .gate-card p{color:var(--muted);font-size:14px;margin:0 0 22px}
+  input,select{font-size:16px;font-family:inherit}
+  .field{width:100%;background:var(--navy2);border:1px solid var(--line);color:var(--text);
+    border-radius:11px;padding:13px 14px;outline:none}
+  .field:focus{border-color:var(--gold-dim)}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:11px;font-size:15px;font-weight:600}
+  .btn-gold{background:var(--gold);color:#fff8ec;padding:13px 18px;width:100%;margin-top:12px;letter-spacing:.3px}
+  .btn-gold:active{transform:translateY(1px)}
+  .gate-err{color:var(--bad);font-size:13px;margin-top:12px;min-height:16px}
+
+  /* Header */
+  header.app{padding:22px 0 6px;text-align:center}
+  header.app .sub{font-size:12px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:700}
+  header.app h1{margin:6px 0 2px;font-size:24px}
+  .pot{color:var(--muted);font-size:13px}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--good)}
+  .commish-bar{margin-top:9px}
+  .commish-link{background:transparent;border:1px solid var(--line);color:var(--muted);padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.3px}
+  .commish-link:hover{color:var(--gold);border-color:var(--gold-dim)}
+  .owner-tag{min-width:90px;text-align:right;font-size:13px;font-weight:700;color:var(--gold)}
+  .owner-tag.none{color:var(--muted);font-weight:500}
+  .scorebox .sc{display:inline-block;min-width:18px;text-align:center;font-weight:800;font-size:16px}
+
+  /* Tabs */
+  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;padding:10px 0;
+    background:var(--navy);margin-bottom:6px;-webkit-overflow-scrolling:touch}
+  nav.tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);
+    padding:9px 14px;white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.2px}
+  nav.tabs button.active{background:var(--gold);color:#fff8ec;border-color:var(--gold)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .card h2{margin:0 0 4px;font-size:18px}
+  .card .hint{color:var(--muted);font-size:13px;margin:0 0 14px}
+  .section-title{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:700;margin:6px 2px 10px}
+
+  /* Leaderboard */
+  table{width:100%;border-collapse:collapse}
+  .lb th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);text-align:left;padding:8px 8px;border-bottom:1px solid var(--line)}
+  .lb td{padding:11px 8px;border-bottom:1px solid var(--line);font-size:15px;vertical-align:middle}
+  .lb tr:last-child td{border-bottom:none}
+  .rank{width:34px;font-weight:700;color:var(--gold)}
+  .rank.r1{color:var(--gold)}.rank.r2{color:var(--good)}
+  .pname{font-weight:600}
+  .pts{font-weight:800;font-size:18px;text-align:right}
+  .money{font-size:12px;color:var(--good);font-weight:700}
+  .expand{cursor:pointer}
+  .teamline{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:3px 0}
+  .teamline b{color:var(--text);font-weight:600}
+  .breakdown{background:var(--navy2);border-radius:10px;padding:8px 12px;margin-top:8px}
+
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--navy2);color:var(--muted);border:1px solid var(--line)}
+  .pill.owned{color:var(--gold);border-color:var(--gold-dim)}
+
+  /* Draft grid */
+  .draft-grid{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .draft-grid table{min-width:560px}
+  .draft-grid th,.draft-grid td{border:1px solid var(--line);padding:8px 6px;text-align:center;font-size:13px}
+  .draft-grid th{background:var(--navy2);color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+  .draft-grid td .pk{display:block;font-size:10px;color:var(--muted)}
+  .draft-grid td.me{background:rgba(231,194,92,.10)}
+  .arrow{color:var(--gold);font-size:11px}
+
+  /* Teams */
+  .grp-head{display:flex;align-items:center;gap:8px;margin:14px 2px 8px}
+  .grp-head .g{background:var(--gold);color:#fff8ec;font-weight:700;border-radius:7px;padding:2px 9px;font-size:13px}
+  .grp-head .stand{margin-left:auto;font-size:11px;color:var(--muted)}
+  .team-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line)}
+  .team-row:last-child{border-bottom:none}
+  .team-row .tn{flex:1;font-weight:600;font-size:15px}
+  .team-row .rec{font-size:12px;color:var(--muted);min-width:74px;text-align:right}
+  .team-row .tpts{min-width:30px;text-align:right;font-weight:800;color:var(--gold)}
+  .team-row select{max-width:140px;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:7px 8px}
+
+  /* Matches */
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .filters select{background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;flex:1;min-width:120px}
+  .match{display:grid;grid-template-columns:1fr 96px 1fr;align-items:center;gap:6px;padding:10px 4px;border-bottom:1px solid var(--line)}
+  .match:last-child{border-bottom:none}
+  .match .side{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .match .side.away{text-align:right;align-items:flex-end}
+  .match .tm{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .match .own{font-size:10px;color:var(--gold)}
+  .match .own.none{color:var(--muted)}
+  .scorebox{display:flex;align-items:center;justify-content:center;gap:5px}
+  .scorebox input{width:38px;text-align:center;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 4px;font-weight:700}
+  .scorebox span{color:var(--muted)}
+  .mlabel{grid-column:1 / -1;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .winner{color:var(--good)}
+
+  /* Settings */
+  .set-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .set-row:last-child{border-bottom:none}
+  .set-row label{flex:1;font-size:14px}
+  .set-row input{width:130px;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;text-align:right}
+  .set-row input.name{text-align:left;width:170px}
+  .btn-line{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btn-ghost{background:var(--navy2);color:var(--text);border:1px solid var(--line);padding:10px 14px}
+  .btn-danger{background:#f1ddd2;color:#a23c1e;border:1px solid #e0b6a4;padding:10px 14px}
+  .saved{font-size:12px;color:var(--good);opacity:0;transition:opacity .3s}
+  .saved.show{opacity:1}
+  .warn{color:var(--draw);font-size:12px;margin-top:8px}
+  .foot{text-align:center;color:var(--muted);font-size:11px;padding:10px 0 0}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);
+    border:1px solid var(--line);color:var(--text);padding:11px 16px;border-radius:12px;font-size:13px;
+    box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+</style>
+</head>
+<body>
+
+<!-- ===== Password gate ===== -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="badge">World Cup 2026</div>
+    <h1>The Pool</h1>
+    <p>Enter the pool password to continue.</p>
+    <input id="gatePw" class="field" type="password" placeholder="Password" autocomplete="off" />
+    <button class="btn-gold" id="gateBtn">Enter</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<!-- ===== App ===== -->
+<div id="app" class="hidden">
+  <div class="wrap">
+    <header class="app">
+      <div class="sub">FIFA World Cup 2026 · Commissioner: Michelle</div>
+      <h1>The Pool</h1>
+      <div class="pot">$20 buy-in · $160 pot · 1st $100 / 2nd $60</div>
+      <div class="live"><span class="dot"></span><span id="liveTxt">Live · synced</span></div>
+      <div class="commish-bar"><button id="commishBtn" class="commish-link">Commissioner login</button></div>
+    </header>
+
+    <nav class="tabs">
+      <button data-tab="leaderboard" class="active">Leaderboard</button>
+      <button data-tab="draft">Draft</button>
+      <button data-tab="teams">Teams</button>
+      <button data-tab="matches">Scores</button>
+      <button data-tab="settings" id="settingsTab" class="hidden">Settings</button>
+    </nav>
+
+    <section id="tab-leaderboard"></section>
+    <section id="tab-draft" class="hidden"></section>
+    <section id="tab-teams" class="hidden"></section>
+    <section id="tab-matches" class="hidden"></section>
+    <section id="tab-settings" class="hidden"></section>
+
+    <div class="foot">Group-stage scoring is live. Knockout bracket (Phase 2) coming after the group stage.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ====================== Config ====================== */
+const SUPABASE_URL = "https://viudclgcdsskzlfosflg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_tjApfg66Rm3XeBC8YOcyMA_W1AMVJRr";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const TEAMS_PER_PLAYER = 6;
+const DRAFT_ROUNDS = 6;
+
+/* ====================== State ====================== */
+let state = { players:[], teams:[], matches:[], settings:{} };
+let currentTab = "leaderboard";
+let matchFilterGroup = "all";
+let isAdmin = false;          // commissioner edit mode (this browser tab only)
+let adminPw = null;           // commissioner password held in memory for RPC calls
+
+/* ====================== Helpers ====================== */
+const $ = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1700);}
+
+function num(v){ return (v===""||v===null||v===undefined||isNaN(v)) ? null : parseInt(v,10); }
+function setVal(k,d){ const v=state.settings[k]; return v===undefined||v===null||v==="" ? d : v; }
+function winPts(){ return parseInt(setVal("win_points","3"),10); }
+function drawPts(){ return parseInt(setVal("draw_points","1"),10); }
+function lossPts(){ return parseInt(setVal("loss_points","0"),10); }
+
+function playerById(id){ return state.players.find(p=>p.id===id); }
+
+/* ====================== Commissioner mode ====================== */
+/* Every write goes through a SECURITY DEFINER RPC that checks the commissioner
+   password server-side. Anon (everyone else) has read-only DB access. */
+async function rpc(fn, args={}){
+  const {data,error} = await sb.rpc(fn, {p_pw:adminPw, ...args});
+  if(error){ console.error(error); toast("Action blocked — please log in again"); commishLogout(); return {error}; }
+  return {data};
+}
+async function commishLogin(){
+  const pw = prompt("Commissioner password:");
+  if(pw===null) return;
+  const {data,error} = await sb.rpc("verify_admin",{p_pw:pw});
+  if(error || !data){ toast("Incorrect commissioner password"); return; }
+  adminPw = pw; isAdmin = true;
+  try{ sessionStorage.setItem("wc_admin", pw); }catch(e){}
+  applyMode(); toast("Commissioner mode on");
+}
+function commishLogout(){
+  isAdmin=false; adminPw=null;
+  try{ sessionStorage.removeItem("wc_admin"); }catch(e){}
+  if(currentTab==="settings") switchTab("leaderboard");
+  applyMode();
+}
+function applyMode(){
+  const b=$("#commishBtn"); if(b) b.textContent = isAdmin ? "Commissioner mode · Log out" : "Commissioner login";
+  const st=$("#settingsTab"); if(st) st.classList.toggle("hidden", !isAdmin);
+  renderCurrent();
+}
+
+/* Compute per-team records & points from match results */
+function computeTeamStats(){
+  const rec = {};
+  state.teams.forEach(t=>{ rec[t.name]={grp:t.grp,pld:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
+  state.matches.forEach(m=>{
+    const hs=m.home_score, as_=m.away_score;
+    if(hs===null||as_===null||hs===undefined||as_===undefined) return;
+    const h=rec[m.home_team], a=rec[m.away_team];
+    if(!h||!a) return;
+    h.pld++;a.pld++; h.gf+=hs;h.ga+=as_; a.gf+=as_;a.ga+=hs;
+    if(hs>as_){h.w++;a.l++;}
+    else if(hs<as_){a.w++;h.l++;}
+    else{h.d++;a.d++;}
+  });
+  Object.values(rec).forEach(r=>{ r.gd=r.gf-r.ga; r.pts=r.w*winPts()+r.d*drawPts()+r.l*lossPts(); });
+  return rec;
+}
+
+/* Aggregate to player leaderboard */
+function computeLeaderboard(){
+  const rec = computeTeamStats();
+  const rows = state.players.map(p=>{
+    const owned = state.teams.filter(t=>t.owner_id===p.id);
+    let pts=0,w=0,d=0,l=0,gf=0;
+    owned.forEach(t=>{ const r=rec[t.name]; if(r){pts+=r.pts;w+=r.w;d+=r.d;l+=r.l;gf+=r.gf;} });
+    return {player:p, owned, pts, w, d, l, gf, count:owned.length};
+  });
+  rows.sort((a,b)=> b.pts-a.pts || b.w-a.w || b.gf-a.gf || a.player.sort_order-b.player.sort_order);
+  return {rows, rec};
+}
+
+/* ====================== Data load + realtime ====================== */
+async function loadAll(){
+  const [pl,tm,mt,st] = await Promise.all([
+    sb.from("players").select("*").order("sort_order"),
+    sb.from("teams").select("*").order("grp").order("pos"),
+    sb.from("matches").select("*").order("id"),
+    sb.from("settings").select("*"),
+  ]);
+  if(pl.error||tm.error||mt.error||st.error){ console.error(pl.error||tm.error||mt.error||st.error); toast("Sync error — check connection"); }
+  state.players = pl.data||[];
+  state.teams = tm.data||[];
+  state.matches = mt.data||[];
+  state.settings = {};
+  (st.data||[]).forEach(r=> state.settings[r.key]=r.value);
+}
+
+function subscribeRealtime(){
+  sb.channel("pool-changes")
+    .on("postgres_changes",{event:"*",schema:"public"}, async ()=>{
+      await loadAll(); renderCurrent();
+      const t=$("#liveTxt"); if(t){t.textContent="Live · just updated"; clearTimeout(t._x); t._x=setTimeout(()=>t.textContent="Live · synced",2500);}
+    })
+    .subscribe();
+}
+
+/* ====================== Rendering ====================== */
+function renderCurrent(){
+  ({leaderboard:renderLeaderboard, draft:renderDraft, teams:renderTeams, matches:renderMatches, settings:renderSettings}[currentTab])();
+}
+
+/* ---- Leaderboard ---- */
+function renderLeaderboard(){
+  const {rows, rec} = computeLeaderboard();
+  const played = state.matches.filter(m=>m.home_score!==null && m.away_score!==null).length;
+  let html = `<div class="card">
+    <h2>Leaderboard</h2>
+    <p class="hint">${played} of 72 group-stage matches scored. Tap a player to see their teams.</p>
+    <table class="lb"><thead><tr>
+      <th>#</th><th>Player</th><th>Teams</th><th>W-D-L</th><th style="text-align:right">Points</th>
+    </tr></thead><tbody>`;
+  rows.forEach((r,i)=>{
+    const rank=i+1;
+    html+=`<tr class="expand" data-pid="${r.player.id}">
+      <td class="rank ${rank<=2?'r'+rank:''}">${rank}</td>
+      <td class="pname">${esc(r.player.name)}</td>
+      <td>${r.count}</td>
+      <td style="color:var(--muted);font-size:13px">${r.w}-${r.d}-${r.l}</td>
+      <td class="pts">${r.pts}</td>
+    </tr>
+    <tr class="det hidden" data-det="${r.player.id}"><td colspan="5">
+      <div class="breakdown">${
+        r.owned.length? r.owned
+          .map(t=>({t,p:rec[t.name]?rec[t.name].pts:0}))
+          .sort((a,b)=>b.p-a.p)
+          .map(o=>`<div class="teamline"><span>${esc(o.t.name)} <span style="color:var(--muted)">(${o.t.grp})</span></span><b>${o.p} pt${o.p===1?'':'s'}</b></div>`).join("")
+        : '<div class="teamline" style="color:var(--muted)">No teams drafted yet</div>'
+      }</div>
+    </td></tr>`;
+  });
+  html+=`</tbody></table></div>`;
+
+  // tiebreaker note
+  html+=`<div class="card"><div class="section-title">Tie-breaker</div>
+    <p class="hint" style="margin:0">If players tie on total score, the winner is whoever's predicted pre-shootout goals in the Final is closest.</p></div>`;
+
+  $("#tab-leaderboard").innerHTML = html;
+  $$("#tab-leaderboard .expand").forEach(tr=>tr.addEventListener("click",()=>{
+    const d=$(`[data-det="${tr.dataset.pid}"]`); if(d) d.classList.toggle("hidden");
+  }));
+}
+
+/* ---- Draft ---- */
+function renderDraft(){
+  const drafted = state.players.every(p=>p.slot) && state.players.length===8;
+  const ordered = [...state.players].filter(p=>p.slot).sort((a,b)=>a.slot-b.slot);
+  let html = `<div class="card">
+    <h2>Snake Draft</h2>
+    <p class="hint">${drafted ? 'Draft order is set. The order flips each round; everyone ends with '+TEAMS_PER_PLAYER+' teams. Picks are assigned on the Teams tab.' : 'The draft order has not been set yet.'}</p>
+    ${isAdmin ? `<button class="btn-gold" id="randBtn" style="max-width:260px">${drafted?'Re-randomize draft order':'Randomize draft order'}</button>
+    ${drafted?'<p class="warn">Re-randomizing overwrites the current order (team assignments stay).</p>':''}` : ''}
+  </div>`;
+
+  if(drafted){
+    html += `<div class="card"><div class="section-title">Draft Order</div><div class="draft-grid"><table>
+      <thead><tr><th>Rd</th>${ordered.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>`;
+    let pick=0;
+    for(let r=1;r<=DRAFT_ROUNDS;r++){
+      const asc = r%2===1;
+      // map each player(slot) to its pick number this round
+      const cells = ordered.map(p=>{
+        const posInRound = asc ? p.slot : (9 - p.slot); // 1..8
+        const pickNo = (r-1)*8 + posInRound;
+        return {p, pickNo};
+      });
+      html+=`<tr><td><b>${r}</b> <span class="arrow">${asc?'→':'←'}</span></td>${
+        ordered.map(p=>{ const c=cells.find(c=>c.p.id===p.id); return `<td><span class="pk">#${c.pickNo}</span>${esc(p.name.split('/')[0])}</td>`; }).join("")
+      }</tr>`;
+      pick+=8;
+    }
+    html+=`</tbody></table></div><p class="hint" style="margin-top:10px">Round 1 picks left→right; even rounds snake back right→left. 48 picks total.</p></div>`;
+  }
+  $("#tab-draft").innerHTML = html;
+  const rb=$("#randBtn"); if(rb) rb.addEventListener("click",randomizeDraft);
+}
+
+async function randomizeDraft(){
+  if(state.players.some(p=>p.slot) && !confirm("Re-randomize the draft order? Current order will be overwritten.")) return;
+  const ids = state.players.map(p=>p.id);
+  for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
+  const {error} = await rpc("admin_randomize_draft", {p_ids:ids});
+  if(error) return;
+  await loadAll(); renderDraft(); toast("Draft order randomized");
+}
+
+/* ---- Teams ---- */
+function renderTeams(){
+  const rec = computeTeamStats();
+  const groups = [...new Set(state.teams.map(t=>t.grp))];
+  const assigned = state.teams.filter(t=>t.owner_id).length;
+  // counts per player for balance warning
+  const counts={}; state.players.forEach(p=>counts[p.id]=0);
+  state.teams.forEach(t=>{ if(t.owner_id) counts[t.owner_id]=(counts[t.owner_id]||0)+1; });
+  const over = state.players.filter(p=>counts[p.id]>TEAMS_PER_PLAYER);
+
+  let html=`<div class="card"><h2>Teams &amp; Assignments</h2>
+    <p class="hint">${assigned}/48 teams assigned. Each player should own ${TEAMS_PER_PLAYER}. Standings update from the Scores tab.</p>
+    ${over.length?`<div class="warn">Over ${TEAMS_PER_PLAYER} teams: ${over.map(p=>esc(p.name)+' ('+counts[p.id]+')').join(", ")}</div>`:''}
+    <div class="hint" style="margin-top:8px">${state.players.map(p=>`<span class="pill ${counts[p.id]===TEAMS_PER_PLAYER?'owned':''}">${esc(p.name)} ${counts[p.id]}/${TEAMS_PER_PLAYER}</span>`).join(" ")}</div>
+  </div>`;
+
+  groups.forEach(g=>{
+    const teams = state.teams.filter(t=>t.grp===g)
+      .sort((a,b)=> (rec[b.name].pts-rec[a.name].pts) || (rec[b.name].gd-rec[a.name].gd) || (rec[b.name].gf-rec[a.name].gf) || a.pos-b.pos);
+    html+=`<div class="card"><div class="grp-head"><span class="g">Group ${g}</span><span class="stand">Pld·W-D-L·Pts</span></div>`;
+    teams.forEach(t=>{
+      const r=rec[t.name];
+      const ownerP = t.owner_id ? playerById(t.owner_id) : null;
+      const control = isAdmin
+        ? `<select data-team="${t.id}"><option value="">— Unassigned —</option>${state.players.map(p=>`<option value="${p.id}" ${t.owner_id===p.id?'selected':''}>${esc(p.name)}</option>`).join("")}</select>`
+        : `<span class="owner-tag ${ownerP?'':'none'}">${ownerP?esc(ownerP.name):'—'}</span>`;
+      html+=`<div class="team-row">
+        <span class="tn">${esc(t.name)}</span>
+        <span class="rec">${r.pld}· ${r.w}-${r.d}-${r.l}</span>
+        <span class="tpts">${r.pts}</span>
+        ${control}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  $("#tab-teams").innerHTML=html;
+  $$('#tab-teams select[data-team]').forEach(sel=>sel.addEventListener("change",async()=>{
+    const id=parseInt(sel.dataset.team,10); const owner=sel.value?parseInt(sel.value,10):null;
+    const {error}=await rpc("admin_set_team_owner",{p_team:id,p_owner:owner});
+    if(error) return;
+    await loadAll(); renderTeams(); toast("Assignment saved");
+  }));
+}
+
+/* ---- Matches / Scores ---- */
+function renderMatches(){
+  const groups=[...new Set(state.teams.map(t=>t.grp))];
+  const ownerName = name=>{ const t=state.teams.find(x=>x.name===name); if(!t||!t.owner_id) return null; const p=playerById(t.owner_id); return p?p.name:null; };
+
+  let html=`<div class="card"><h2>Match Scores</h2>
+    <p class="hint">${isAdmin ? 'Enter final scores (pre-shootout). Standings update instantly for everyone.' : 'Live results — only the commissioner can enter scores.'}</p>
+    <div class="filters">
+      <select id="grpFilter"><option value="all">All groups</option>${groups.map(g=>`<option value="${g}" ${matchFilterGroup===g?'selected':''}>Group ${g}</option>`).join("")}</select>
+    </div></div>`;
+
+  const rounds=[1,2,3];
+  rounds.forEach(rd=>{
+    let ms=state.matches.filter(m=>m.round===rd);
+    if(matchFilterGroup!=="all") ms=ms.filter(m=>m.grp===matchFilterGroup);
+    if(!ms.length) return;
+    ms.sort((a,b)=>a.id-b.id);
+    html+=`<div class="card"><div class="section-title">Matchday ${rd}</div>`;
+    ms.forEach(m=>{
+      const ho=ownerName(m.home_team), ao=ownerName(m.away_team);
+      const hs=m.home_score, as_=m.away_score; const done=hs!==null&&as_!==null;
+      const hWin=done&&hs>as_, aWin=done&&as_>hs;
+      html+=`<div class="match">
+        <div class="mlabel">Group ${m.grp} · Match ${m.id}</div>
+        <div class="side home">
+          <span class="tm ${hWin?'winner':''}">${esc(m.home_team)}</span>
+          <span class="own ${ho?'':'none'}">${ho?esc(ho):'unassigned'}</span>
+        </div>
+        <div class="scorebox">${ isAdmin
+          ? `<input type="number" min="0" inputmode="numeric" data-mid="${m.id}" data-side="home" value="${hs===null?'':hs}"><span>–</span><input type="number" min="0" inputmode="numeric" data-mid="${m.id}" data-side="away" value="${as_===null?'':as_}">`
+          : `<span class="sc">${hs===null?'·':hs}</span><span>–</span><span class="sc">${as_===null?'·':as_}</span>` }
+        </div>
+        <div class="side away">
+          <span class="tm ${aWin?'winner':''}">${esc(m.away_team)}</span>
+          <span class="own ${ao?'':'none'}">${ao?esc(ao):'unassigned'}</span>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  $("#tab-matches").innerHTML=html;
+  $("#grpFilter").addEventListener("change",e=>{ matchFilterGroup=e.target.value; renderMatches(); });
+  $$('#tab-matches input[data-mid]').forEach(inp=>inp.addEventListener("change",onScoreChange));
+}
+
+async function onScoreChange(e){
+  const id=parseInt(e.target.dataset.mid,10);
+  const box=e.target.closest(".match");
+  const h=box.querySelector('input[data-side="home"]').value;
+  const a=box.querySelector('input[data-side="away"]').value;
+  const home=num(h), away=num(a);
+  const clear = (home===null||away===null);   // require both or neither
+  const {error}=await rpc("admin_set_match",{p_id:id,p_home:clear?null:home,p_away:clear?null:away});
+  if(error) return;
+  await loadAll(); renderMatches(); toast(clear?"Score cleared":"Score saved");
+}
+
+/* ---- Settings ---- */
+function renderSettings(){
+  let html=`<div class="card"><h2>Players &amp; Tie-breakers</h2>
+    <p class="hint">Edit names and each player's Final pre-shootout goal prediction.</p>
+    ${state.players.map(p=>`<div class="set-row">
+      <input class="name" data-pname="${p.id}" value="${esc(p.name)}">
+      <input type="number" min="0" inputmode="numeric" data-ptb="${p.id}" placeholder="goals" value="${p.tiebreaker??''}" style="width:90px">
+    </div>`).join("")}
+    <span class="saved" id="savedPlayers">Saved</span>
+  </div>
+
+  <div class="card"><h2>Scoring</h2>
+    <p class="hint">Group-stage points per result. Defaults: Win 3, Draw 1, Loss 0.</p>
+    <div class="set-row"><label>Win points</label><input type="number" data-set="win_points" value="${setVal('win_points','3')}"></div>
+    <div class="set-row"><label>Draw points</label><input type="number" data-set="draw_points" value="${setVal('draw_points','1')}"></div>
+    <div class="set-row"><label>Loss points</label><input type="number" data-set="loss_points" value="${setVal('loss_points','0')}"></div>
+    <span class="saved" id="savedScoring">Saved</span>
+  </div>
+
+  <div class="card"><h2>Access</h2>
+    <p class="hint">The <b>pool password</b> is what every player types to view the pool. The <b>commissioner password</b> unlocks editing — keep it to yourself.</p>
+    <div class="set-row"><label>Pool (view) password</label><input data-set="password" value="${esc(setVal('password',''))}" style="width:170px;text-align:left"></div>
+    <span class="saved" id="savedPw">Saved</span>
+    <div style="height:12px"></div>
+    <div class="set-row"><label>New commissioner password</label><input id="newAdminPw" type="text" placeholder="min 4 characters" style="width:170px;text-align:left"></div>
+    <div class="btn-line"><button class="btn-ghost" id="changeAdmin">Change commissioner password</button></div>
+  </div>
+
+  <div class="card"><h2>Reset</h2>
+    <p class="hint">Careful — these affect everyone instantly.</p>
+    <div class="btn-line">
+      <button class="btn-ghost" id="resetScores">Clear all scores</button>
+      <button class="btn-ghost" id="resetDraft">Reset draft &amp; teams</button>
+      <button class="btn-danger" id="resetAll">Reset everything</button>
+    </div>
+  </div>`;
+  $("#tab-settings").innerHTML=html;
+
+  // player names + tiebreakers
+  $$('#tab-settings input[data-pname]').forEach(inp=>inp.addEventListener("change",async()=>{
+    const {error}=await rpc("admin_set_player_name",{p_id:parseInt(inp.dataset.pname,10),p_name:inp.value});
+    if(error) return; await loadAll(); flash("savedPlayers"); toast("Name saved");
+  }));
+  $$('#tab-settings input[data-ptb]').forEach(inp=>inp.addEventListener("change",async()=>{
+    const {error}=await rpc("admin_set_player_tb",{p_id:parseInt(inp.dataset.ptb,10),p_tb:num(inp.value)});
+    if(error) return; await loadAll(); flash("savedPlayers"); toast("Prediction saved");
+  }));
+  // scoring + view password
+  $$('#tab-settings input[data-set]').forEach(inp=>inp.addEventListener("change",async()=>{
+    const key=inp.dataset.set;
+    const {error}=await rpc("admin_set_setting",{p_key:key,p_value:String(inp.value)});
+    if(error) return; await loadAll();
+    if(key==="password") flash("savedPw"); else flash("savedScoring");
+    toast("Saved");
+  }));
+  // change commissioner password
+  $("#changeAdmin").addEventListener("click",async()=>{
+    const np=$("#newAdminPw").value.trim();
+    if(np.length<4){ toast("Password must be at least 4 characters"); return; }
+    if(!confirm("Change the commissioner password? You'll use the new one from now on.")) return;
+    const {data,error}=await sb.rpc("admin_change_password",{p_pw_old:adminPw,p_pw_new:np});
+    if(error||!data){ toast("Couldn't change password"); return; }
+    adminPw=np; try{sessionStorage.setItem("wc_admin",np);}catch(e){}
+    $("#newAdminPw").value=""; toast("Commissioner password changed");
+  });
+  // resets
+  $("#resetScores").addEventListener("click",async()=>{ if(!confirm("Clear ALL match scores for everyone?"))return;
+    const {error}=await rpc("admin_reset",{p_mode:"scores"}); if(error)return; await loadAll(); toast("Scores cleared"); });
+  $("#resetDraft").addEventListener("click",async()=>{ if(!confirm("Reset draft order AND all team assignments?"))return;
+    const {error}=await rpc("admin_reset",{p_mode:"draft"}); if(error)return; await loadAll(); toast("Draft & teams reset"); });
+  $("#resetAll").addEventListener("click",async()=>{ if(!confirm("Reset EVERYTHING — scores, draft, and assignments? This cannot be undone."))return;
+    const {error}=await rpc("admin_reset",{p_mode:"all"}); if(error)return; await loadAll(); toast("Everything reset"); });
+}
+function flash(id){ const e=$("#"+id); if(!e)return; e.classList.add("show"); setTimeout(()=>e.classList.remove("show"),1400); }
+
+/* ====================== Tabs ====================== */
+function switchTab(tab){
+  currentTab=tab;
+  $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  ["leaderboard","draft","teams","matches","settings"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==tab));
+  renderCurrent();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ====================== Auth gate ====================== */
+async function tryUnlock(pw){
+  const want = setVal("password","");
+  if(pw===want){ unlock(); localStorage.setItem("wc_pw",pw); return true; }
+  return false;
+}
+function unlock(){ $("#gate").classList.add("hidden"); $("#app").classList.remove("hidden"); renderCurrent(); }
+
+async function init(){
+  await loadAll();
+  // restore commissioner session for this browser tab (re-verified against the server)
+  let savedAdmin=null; try{ savedAdmin=sessionStorage.getItem("wc_admin"); }catch(e){}
+  if(savedAdmin){
+    const {data}=await sb.rpc("verify_admin",{p_pw:savedAdmin});
+    if(data){ isAdmin=true; adminPw=savedAdmin; }
+  }
+  // auto-unlock view gate if saved pool password still valid
+  const saved = localStorage.getItem("wc_pw");
+  if(saved && saved===setVal("password","")) { unlock(); }
+  subscribeRealtime();
+
+  $("#gateBtn").addEventListener("click",async()=>{
+    const ok=await tryUnlock($("#gatePw").value);
+    if(!ok){ $("#gateErr").textContent="Incorrect password"; $("#gatePw").value=""; }
+  });
+  $("#gatePw").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#gateBtn").click(); });
+  $$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+  $("#commishBtn").addEventListener("click",()=> isAdmin ? commishLogout() : commishLogin());
+  applyMode();
+}
+init();
+</script>
+</body>
+</html>
