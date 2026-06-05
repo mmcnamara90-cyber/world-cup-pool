@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    /* Mid-century modern: oatmeal ground, cream surfaces, mustard/teal/rust accents */
     --navy:#e8dfca; --navy2:#f0e9d8; --panel:#faf6ec; --panel2:#f2ebda;
     --line:#dccfb2; --gold:#c89331; --gold-dim:#a8761f;
     --text:#33302a; --muted:#8d8472; --good:#2f7d70; --bad:#bd5638; --draw:#bf9230;
@@ -15,30 +14,24 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
-  body{
-    background:var(--navy);
-    color:var(--text); font-family:"Futura","Avenir Next","Century Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    min-height:100vh; -webkit-font-smoothing:antialiased;
-  }
+  body{background:var(--navy);color:var(--text);font-family:"Futura","Avenir Next","Century Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
   a{color:var(--gold)}
   .hidden{display:none !important}
   .wrap{max-width:920px;margin:0 auto;padding:0 14px 90px}
 
   /* Password gate */
-  #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:var(--navy);z-index:50;padding:20px}
-  .gate-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
-    padding:34px 28px;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow)}
+  #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--navy);z-index:50;padding:20px}
+  .gate-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:34px 28px;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow)}
   .badge{font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:700}
   .gate-card h1{font-size:26px;margin:8px 0 4px;line-height:1.15}
   .gate-card p{color:var(--muted);font-size:14px;margin:0 0 22px}
-  input,select{font-size:16px;font-family:inherit}
-  .field{width:100%;background:var(--navy2);border:1px solid var(--line);color:var(--text);
-    border-radius:11px;padding:13px 14px;outline:none}
+  input,select,textarea{font-size:16px;font-family:inherit}
+  .field{width:100%;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:11px;padding:13px 14px;outline:none}
   .field:focus{border-color:var(--gold-dim)}
   button{font-family:inherit;cursor:pointer;border:none;border-radius:11px;font-size:15px;font-weight:600}
   .btn-gold{background:var(--gold);color:#fff8ec;padding:13px 18px;width:100%;margin-top:12px;letter-spacing:.3px}
   .btn-gold:active{transform:translateY(1px)}
+  .btn-gold:disabled{opacity:.5;cursor:default}
   .gate-err{color:var(--bad);font-size:13px;margin-top:12px;min-height:16px}
 
   /* Header */
@@ -56,10 +49,8 @@
   .scorebox .sc{display:inline-block;min-width:18px;text-align:center;font-weight:800;font-size:16px}
 
   /* Tabs */
-  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;padding:10px 0;
-    background:var(--navy);margin-bottom:6px;-webkit-overflow-scrolling:touch}
-  nav.tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);
-    padding:9px 14px;white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.2px}
+  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;padding:10px 0;background:var(--navy);margin-bottom:6px;-webkit-overflow-scrolling:touch}
+  nav.tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:9px 14px;white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.2px}
   nav.tabs button.active{background:var(--gold);color:#fff8ec;border-color:var(--gold)}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
@@ -76,14 +67,16 @@
   .rank.r1{color:var(--gold)}.rank.r2{color:var(--good)}
   .pname{font-weight:600}
   .pts{font-weight:800;font-size:18px;text-align:right}
-  .money{font-size:12px;color:var(--good);font-weight:700}
   .expand{cursor:pointer}
   .teamline{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:3px 0}
   .teamline b{color:var(--text);font-weight:600}
   .breakdown{background:var(--navy2);border-radius:10px;padding:8px 12px;margin-top:8px}
-
   .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--navy2);color:var(--muted);border:1px solid var(--line)}
   .pill.owned{color:var(--gold);border-color:var(--gold-dim)}
+
+  /* Fun facts */
+  .fact-row{font-size:14px;padding:9px 2px;border-bottom:1px solid var(--line);line-height:1.5}
+  .fact-row:last-child{border-bottom:none}
 
   /* Draft grid */
   .draft-grid{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -121,6 +114,16 @@
   .mlabel{grid-column:1 / -1;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
   .winner{color:var(--good)}
 
+  /* Recaps */
+  .recap-form{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .recap-form textarea.field{min-height:80px;resize:vertical;display:block}
+  .recap-head{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+  .recap-title{font-weight:700;font-size:16px;flex:1}
+  .recap-date{font-size:12px;color:var(--muted);white-space:nowrap}
+  .recap-del{background:transparent;border:none;color:var(--bad);font-size:15px;padding:2px 6px;opacity:.45;border-radius:6px}
+  .recap-del:hover{opacity:1;background:var(--navy2)}
+  .recap-body{font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+
   /* Settings */
   .set-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
   .set-row:last-child{border-bottom:none}
@@ -129,14 +132,13 @@
   .set-row input.name{text-align:left;width:170px}
   .btn-line{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .btn-ghost{background:var(--navy2);color:var(--text);border:1px solid var(--line);padding:10px 14px}
+  .btn-ghost:disabled{opacity:.5;cursor:default}
   .btn-danger{background:#f1ddd2;color:#a23c1e;border:1px solid #e0b6a4;padding:10px 14px}
   .saved{font-size:12px;color:var(--good);opacity:0;transition:opacity .3s}
   .saved.show{opacity:1}
   .warn{color:var(--draw);font-size:12px;margin-top:8px}
   .foot{text-align:center;color:var(--muted);font-size:11px;padding:10px 0 0}
-  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);
-    border:1px solid var(--line);color:var(--text);padding:11px 16px;border-radius:12px;font-size:13px;
-    box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:60}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:60}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 </style>
 </head>
@@ -170,6 +172,7 @@
       <button data-tab="draft">Draft</button>
       <button data-tab="teams">Teams</button>
       <button data-tab="matches">Scores</button>
+      <button data-tab="recaps">Updates</button>
       <button data-tab="settings" id="settingsTab" class="hidden">Settings</button>
     </nav>
 
@@ -177,6 +180,7 @@
     <section id="tab-draft" class="hidden"></section>
     <section id="tab-teams" class="hidden"></section>
     <section id="tab-matches" class="hidden"></section>
+    <section id="tab-recaps" class="hidden"></section>
     <section id="tab-settings" class="hidden"></section>
 
     <div class="foot">Group-stage scoring is live. Knockout bracket (Phase 2) coming after the group stage.</div>
@@ -194,30 +198,94 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const TEAMS_PER_PLAYER = 6;
 const DRAFT_ROUNDS = 6;
 
+/* ====================== Team reference data (FIFA rankings April 2026, WC titles, confederation) ====================== */
+const TEAM_DATA = {
+  'France':             {rank:1,  wcTitles:2, conf:'UEFA',     debut:false},
+  'Spain':              {rank:2,  wcTitles:1, conf:'UEFA',     debut:false},
+  'Argentina':          {rank:3,  wcTitles:3, conf:'CONMEBOL', debut:false},
+  'England':            {rank:4,  wcTitles:1, conf:'UEFA',     debut:false},
+  'Portugal':           {rank:5,  wcTitles:0, conf:'UEFA',     debut:false},
+  'Brazil':             {rank:6,  wcTitles:5, conf:'CONMEBOL', debut:false},
+  'Netherlands':        {rank:7,  wcTitles:0, conf:'UEFA',     debut:false},
+  'Morocco':            {rank:8,  wcTitles:0, conf:'CAF',      debut:false},
+  'Belgium':            {rank:9,  wcTitles:0, conf:'UEFA',     debut:false},
+  'Germany':            {rank:10, wcTitles:4, conf:'UEFA',     debut:false},
+  'Croatia':            {rank:11, wcTitles:0, conf:'UEFA',     debut:false},
+  'Colombia':           {rank:13, wcTitles:0, conf:'CONMEBOL', debut:false},
+  'Senegal':            {rank:14, wcTitles:0, conf:'CAF',      debut:false},
+  'Mexico':             {rank:15, wcTitles:0, conf:'CONCACAF', debut:false},
+  'United States':      {rank:16, wcTitles:0, conf:'CONCACAF', debut:false},
+  'Uruguay':            {rank:17, wcTitles:2, conf:'CONMEBOL', debut:false},
+  'Japan':              {rank:18, wcTitles:0, conf:'AFC',      debut:false},
+  'Switzerland':        {rank:19, wcTitles:0, conf:'UEFA',     debut:false},
+  'Iran':               {rank:21, wcTitles:0, conf:'AFC',      debut:false},
+  'Austria':            {rank:23, wcTitles:0, conf:'UEFA',     debut:false},
+  'Ecuador':            {rank:24, wcTitles:0, conf:'CONMEBOL', debut:false},
+  'South Korea':        {rank:25, wcTitles:0, conf:'AFC',      debut:false},
+  'Australia':          {rank:26, wcTitles:0, conf:'AFC',      debut:false},
+  'Egypt':              {rank:29, wcTitles:0, conf:'CAF',      debut:false},
+  'Canada':             {rank:30, wcTitles:0, conf:'CONCACAF', debut:false},
+  'Ivory Coast':        {rank:33, wcTitles:0, conf:'CAF',      debut:false},
+  'Qatar':              {rank:35, wcTitles:0, conf:'AFC',      debut:false},
+  'Algeria':            {rank:36, wcTitles:0, conf:'CAF',      debut:false},
+  'Sweden':             {rank:39, wcTitles:0, conf:'UEFA',     debut:false},
+  'Tunisia':            {rank:40, wcTitles:0, conf:'CAF',      debut:false},
+  'Czechia':            {rank:41, wcTitles:0, conf:'UEFA',     debut:false},
+  'Türkiye':            {rank:42, wcTitles:0, conf:'UEFA',     debut:false},
+  'Norway':             {rank:44, wcTitles:0, conf:'UEFA',     debut:false},
+  'Scotland':           {rank:47, wcTitles:0, conf:'UEFA',     debut:false},
+  'DR Congo':           {rank:51, wcTitles:0, conf:'CAF',      debut:false},
+  'Bosnia-Herzegovina': {rank:52, wcTitles:0, conf:'UEFA',     debut:false},
+  'Panama':             {rank:53, wcTitles:0, conf:'CONCACAF', debut:false},
+  'Saudi Arabia':       {rank:57, wcTitles:0, conf:'AFC',      debut:false},
+  'South Africa':       {rank:60, wcTitles:0, conf:'CAF',      debut:false},
+  'Iraq':               {rank:61, wcTitles:0, conf:'AFC',      debut:false},
+  'Uzbekistan':         {rank:62, wcTitles:0, conf:'AFC',      debut:true},
+  'Paraguay':           {rank:64, wcTitles:0, conf:'CONMEBOL', debut:false},
+  'Ghana':              {rank:65, wcTitles:0, conf:'CAF',      debut:false},
+  'Jordan':             {rank:68, wcTitles:0, conf:'AFC',      debut:true},
+  'Cape Verde':         {rank:70, wcTitles:0, conf:'CAF',      debut:true},
+  'Curaçao':            {rank:81, wcTitles:0, conf:'CONCACAF', debut:true},
+  'Haiti':              {rank:83, wcTitles:0, conf:'CONCACAF', debut:false},
+  'New Zealand':        {rank:95, wcTitles:0, conf:'OFC',      debut:false},
+};
+
 /* ====================== State ====================== */
-let state = { players:[], teams:[], matches:[], settings:{} };
+let state = { players:[], teams:[], matches:[], settings:{}, recaps:[] };
 let currentTab = "leaderboard";
 let matchFilterGroup = "all";
-let isAdmin = false;          // commissioner edit mode (this browser tab only)
-let adminPw = null;           // commissioner password held in memory for RPC calls
+let isAdmin = false;
+let adminPw = null;
 
 /* ====================== Helpers ====================== */
 const $ = (s,el=document)=>el.querySelector(s);
 const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1700);}
-
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2000);}
 function num(v){ return (v===""||v===null||v===undefined||isNaN(v)) ? null : parseInt(v,10); }
 function setVal(k,d){ const v=state.settings[k]; return v===undefined||v===null||v==="" ? d : v; }
 function winPts(){ return parseInt(setVal("win_points","3"),10); }
 function drawPts(){ return parseInt(setVal("draw_points","1"),10); }
 function lossPts(){ return parseInt(setVal("loss_points","0"),10); }
-
 function playerById(id){ return state.players.find(p=>p.id===id); }
 
+function formatDate(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+}
+function formatLastSync(){
+  const ls = state.settings["last_sync"];
+  if(!ls) return "Never";
+  const d = new Date(ls);
+  const mins = Math.floor((Date.now()-d.getTime())/60000);
+  if(mins<1) return "Just now";
+  if(mins<60) return `${mins} min${mins!==1?'s':''} ago`;
+  const hrs = Math.floor(mins/60);
+  if(hrs<24) return `${hrs} hr${hrs!==1?'s':''} ago`;
+  return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+}
+
 /* ====================== Commissioner mode ====================== */
-/* Every write goes through a SECURITY DEFINER RPC that checks the commissioner
-   password server-side. Anon (everyone else) has read-only DB access. */
 async function rpc(fn, args={}){
   const {data,error} = await sb.rpc(fn, {p_pw:adminPw, ...args});
   if(error){ console.error(error); toast("Action blocked — please log in again"); commishLogout(); return {error}; }
@@ -244,7 +312,7 @@ function applyMode(){
   renderCurrent();
 }
 
-/* Compute per-team records & points from match results */
+/* ====================== Stats computation ====================== */
 function computeTeamStats(){
   const rec = {};
   state.teams.forEach(t=>{ rec[t.name]={grp:t.grp,pld:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
@@ -262,7 +330,6 @@ function computeTeamStats(){
   return rec;
 }
 
-/* Aggregate to player leaderboard */
 function computeLeaderboard(){
   const rec = computeTeamStats();
   const rows = state.players.map(p=>{
@@ -275,18 +342,107 @@ function computeLeaderboard(){
   return {rows, rec};
 }
 
+function computeFunFacts(){
+  const assigned = state.teams.filter(t=>t.owner_id);
+  if(assigned.length < 8) return [];
+
+  const playerStats = state.players.map(p=>{
+    const owned = state.teams.filter(t=>t.owner_id===p.id);
+    const data = owned.map(t=>({team:t, d:TEAM_DATA[t.name]})).filter(x=>x.d);
+    if(!data.length) return null;
+    const ranks = data.map(x=>x.d.rank);
+    const minRank = Math.min(...ranks);
+    const maxRank = Math.max(...ranks);
+    const avgRank = ranks.reduce((s,r)=>s+r,0)/ranks.length;
+    const totalTitles = data.reduce((s,x)=>s+x.d.wcTitles,0);
+    const confCount = new Set(data.map(x=>x.d.conf)).size;
+    const debutTeams = data.filter(x=>x.d.debut);
+    const bestTeam = data.find(x=>x.d.rank===minRank);
+    const worstTeam = data.find(x=>x.d.rank===maxRank);
+    return {player:p, owned, data, minRank, maxRank, avgRank, totalTitles, confCount, debutTeams, bestTeam, worstTeam};
+  }).filter(Boolean);
+
+  if(!playerStats.length) return [];
+  const facts = [];
+
+  // Defending champion (Argentina)
+  const argOwner = playerStats.find(s=>s.owned.some(t=>t.name==='Argentina'));
+  if(argOwner) facts.push(`🏆 <b>${esc(argOwner.player.name)}</b> holds the defending champions — Argentina is going for back-to-back.`);
+
+  // Highest-ranked team in the pool
+  const topRanked = playerStats.reduce((best,s)=>s.minRank<best.minRank?s:best);
+  if(topRanked.bestTeam) facts.push(`📈 <b>${esc(topRanked.player.name)}</b> drew the tournament's top seed — ${esc(topRanked.bestTeam.team.name)} enters as FIFA #${topRanked.minRank}.`);
+
+  // Lowest-ranked team in the pool
+  const bottomRanked = playerStats.reduce((worst,s)=>s.maxRank>worst.maxRank?s:worst);
+  if(bottomRanked.worstTeam) facts.push(`📉 <b>${esc(bottomRanked.player.name)}</b> is riding the longest long shot — ${esc(bottomRanked.worstTeam.team.name)} is ranked #${bottomRanked.maxRank} in the world.`);
+
+  // Most combined World Cup titles
+  const mostTitles = playerStats.reduce((best,s)=>s.totalTitles>best.totalTitles?s:best);
+  if(mostTitles.totalTitles>0){
+    const titleTeams = mostTitles.data.filter(x=>x.d.wcTitles>0).map(x=>`${esc(x.team.name)} ×${x.d.wcTitles}`).join(', ');
+    facts.push(`🥇 <b>${esc(mostTitles.player.name)}</b> has the most combined World Cup titles — ${mostTitles.totalTitles} total: ${titleTeams}.`);
+  }
+
+  // Best average FIFA ranking
+  const bestAvg = playerStats.reduce((best,s)=>s.avgRank<best.avgRank?s:best);
+  facts.push(`⭐ <b>${esc(bestAvg.player.name)}</b> has the strongest stable by average FIFA ranking — #${Math.round(bestAvg.avgRank)} avg across their ${bestAvg.owned.length} teams.`);
+
+  // Most confederation diversity
+  const mostDiverse = playerStats.reduce((best,s)=>s.confCount>best.confCount?s:best);
+  if(mostDiverse.confCount>=3){
+    const confNames = {UEFA:'Europe',CONMEBOL:'South America',CONCACAF:'North/Central America',CAF:'Africa',AFC:'Asia',OFC:'Oceania'};
+    const confs = [...new Set(mostDiverse.data.map(x=>x.d.conf))].map(c=>confNames[c]||c).join(', ');
+    facts.push(`🌍 <b>${esc(mostDiverse.player.name)}</b> has the widest global spread — teams from ${mostDiverse.confCount} confederations: ${confs}.`);
+  }
+
+  // Most debut nations
+  const mostDebuts = playerStats.reduce((best,s)=>s.debutTeams.length>best.debutTeams.length?s:best);
+  if(mostDebuts.debutTeams.length>0){
+    const names = mostDebuts.debutTeams.map(x=>esc(x.team.name)).join(' and ');
+    const plural = mostDebuts.debutTeams.length>1;
+    facts.push(`🆕 <b>${esc(mostDebuts.player.name)}</b> is betting on fresh blood — ${names} ${plural?'are':'is'} making their World Cup debut.`);
+  }
+
+  return facts;
+}
+
+/* ====================== Score sync ====================== */
+async function syncScores(){
+  const btn = $("#syncBtn");
+  if(btn){ btn.disabled=true; btn.textContent="Syncing…"; }
+  try{
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/sync-scores`, {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const data = await resp.json();
+    if(data.ok && !data.skipped){
+      toast(data.updated>0 ? `Synced — ${data.updated} score${data.updated!==1?'s':''} updated` : 'All scores already current');
+      await loadAll(); renderCurrent();
+    } else if(data.skipped){
+      toast("Just synced — please wait a moment");
+    } else {
+      toast(data.error?.slice(0,60) || "Sync failed — check API key setup");
+    }
+  } catch(e){
+    toast("Sync error — check connection");
+  } finally{
+    if(btn){ btn.disabled=false; btn.textContent="Sync scores now"; }
+  }
+}
+
 /* ====================== Data load + realtime ====================== */
 async function loadAll(){
-  const [pl,tm,mt,st] = await Promise.all([
+  const [pl,tm,mt,st,rc] = await Promise.all([
     sb.from("players").select("*").order("sort_order"),
     sb.from("teams").select("*").order("grp").order("pos"),
     sb.from("matches").select("*").order("id"),
     sb.from("settings").select("*"),
+    sb.from("recaps").select("*").order("created_at",{ascending:false}),
   ]);
   if(pl.error||tm.error||mt.error||st.error){ console.error(pl.error||tm.error||mt.error||st.error); toast("Sync error — check connection"); }
   state.players = pl.data||[];
-  state.teams = tm.data||[];
+  state.teams   = tm.data||[];
   state.matches = mt.data||[];
+  state.recaps  = rc.data||[];
   state.settings = {};
   (st.data||[]).forEach(r=> state.settings[r.key]=r.value);
 }
@@ -302,7 +458,7 @@ function subscribeRealtime(){
 
 /* ====================== Rendering ====================== */
 function renderCurrent(){
-  ({leaderboard:renderLeaderboard, draft:renderDraft, teams:renderTeams, matches:renderMatches, settings:renderSettings}[currentTab])();
+  ({leaderboard:renderLeaderboard, draft:renderDraft, teams:renderTeams, matches:renderMatches, recaps:renderRecaps, settings:renderSettings}[currentTab])();
 }
 
 /* ---- Leaderboard ---- */
@@ -336,9 +492,17 @@ function renderLeaderboard(){
   });
   html+=`</tbody></table></div>`;
 
-  // tiebreaker note
+  // Tiebreaker
   html+=`<div class="card"><div class="section-title">Tie-breaker</div>
     <p class="hint" style="margin:0">If players tie on total score, the winner is whoever's predicted pre-shootout goals in the Final is closest.</p></div>`;
+
+  // Fun facts (only show if teams are assigned)
+  const facts = computeFunFacts();
+  if(facts.length){
+    html+=`<div class="card"><div class="section-title">Fun Facts</div>
+      ${facts.map(f=>`<div class="fact-row">${f}</div>`).join("")}
+    </div>`;
+  }
 
   $("#tab-leaderboard").innerHTML = html;
   $$("#tab-leaderboard .expand").forEach(tr=>tr.addEventListener("click",()=>{
@@ -360,19 +524,16 @@ function renderDraft(){
   if(drafted){
     html += `<div class="card"><div class="section-title">Draft Order</div><div class="draft-grid"><table>
       <thead><tr><th>Rd</th>${ordered.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>`;
-    let pick=0;
     for(let r=1;r<=DRAFT_ROUNDS;r++){
       const asc = r%2===1;
-      // map each player(slot) to its pick number this round
       const cells = ordered.map(p=>{
-        const posInRound = asc ? p.slot : (9 - p.slot); // 1..8
+        const posInRound = asc ? p.slot : (9 - p.slot);
         const pickNo = (r-1)*8 + posInRound;
         return {p, pickNo};
       });
       html+=`<tr><td><b>${r}</b> <span class="arrow">${asc?'→':'←'}</span></td>${
         ordered.map(p=>{ const c=cells.find(c=>c.p.id===p.id); return `<td><span class="pk">#${c.pickNo}</span>${esc(p.name.split('/')[0])}</td>`; }).join("")
       }</tr>`;
-      pick+=8;
     }
     html+=`</tbody></table></div><p class="hint" style="margin-top:10px">Round 1 picks left→right; even rounds snake back right→left. 48 picks total.</p></div>`;
   }
@@ -394,7 +555,6 @@ function renderTeams(){
   const rec = computeTeamStats();
   const groups = [...new Set(state.teams.map(t=>t.grp))];
   const assigned = state.teams.filter(t=>t.owner_id).length;
-  // counts per player for balance warning
   const counts={}; state.players.forEach(p=>counts[p.id]=0);
   state.teams.forEach(t=>{ if(t.owner_id) counts[t.owner_id]=(counts[t.owner_id]||0)+1; });
   const over = state.players.filter(p=>counts[p.id]>TEAMS_PER_PLAYER);
@@ -403,6 +563,7 @@ function renderTeams(){
     <p class="hint">${assigned}/48 teams assigned. Each player should own ${TEAMS_PER_PLAYER}. Standings update from the Scores tab.</p>
     ${over.length?`<div class="warn">Over ${TEAMS_PER_PLAYER} teams: ${over.map(p=>esc(p.name)+' ('+counts[p.id]+')').join(", ")}</div>`:''}
     <div class="hint" style="margin-top:8px">${state.players.map(p=>`<span class="pill ${counts[p.id]===TEAMS_PER_PLAYER?'owned':''}">${esc(p.name)} ${counts[p.id]}/${TEAMS_PER_PLAYER}</span>`).join(" ")}</div>
+    <div class="btn-line"><button class="btn-ghost" id="copyTeamList">📋 Copy Team List</button></div>
   </div>`;
 
   groups.forEach(g=>{
@@ -425,6 +586,19 @@ function renderTeams(){
     html+=`</div>`;
   });
   $("#tab-teams").innerHTML=html;
+
+  $("#copyTeamList")?.addEventListener("click",()=>{
+    const sorted = [...state.players].sort((a,b)=>a.sort_order-b.sort_order);
+    const lines = ['🌍 World Cup 2026 Pool — Draft Picks', ''];
+    sorted.forEach(p=>{
+      const teams = state.teams.filter(t=>t.owner_id===p.id).map(t=>t.name);
+      lines.push(`${p.name}: ${teams.length ? teams.join(', ') : '(no teams yet)'}`);
+    });
+    navigator.clipboard.writeText(lines.join('\n'))
+      .then(()=>toast("Team list copied to clipboard!"))
+      .catch(()=>toast("Copy failed — try selecting and copying manually"));
+  });
+
   $$('#tab-teams select[data-team]').forEach(sel=>sel.addEventListener("change",async()=>{
     const id=parseInt(sel.dataset.team,10); const owner=sel.value?parseInt(sel.value,10):null;
     const {error}=await rpc("admin_set_team_owner",{p_team:id,p_owner:owner});
@@ -437,9 +611,11 @@ function renderTeams(){
 function renderMatches(){
   const groups=[...new Set(state.teams.map(t=>t.grp))];
   const ownerName = name=>{ const t=state.teams.find(x=>x.name===name); if(!t||!t.owner_id) return null; const p=playerById(t.owner_id); return p?p.name:null; };
+  const lastSync = state.settings["last_sync"];
+  const syncNote = lastSync ? ` · Auto-synced ${formatLastSync()}` : '';
 
   let html=`<div class="card"><h2>Match Scores</h2>
-    <p class="hint">${isAdmin ? 'Enter final scores (pre-shootout). Standings update instantly for everyone.' : 'Live results — only the commissioner can enter scores.'}</p>
+    <p class="hint">${isAdmin ? 'Enter final scores (pre-shootout). Standings update instantly for everyone.' : `Live results — only the commissioner can enter scores.${syncNote}`}</p>
     <div class="filters">
       <select id="grpFilter"><option value="all">All groups</option>${groups.map(g=>`<option value="${g}" ${matchFilterGroup===g?'selected':''}>Group ${g}</option>`).join("")}</select>
     </div></div>`;
@@ -484,10 +660,62 @@ async function onScoreChange(e){
   const h=box.querySelector('input[data-side="home"]').value;
   const a=box.querySelector('input[data-side="away"]').value;
   const home=num(h), away=num(a);
-  const clear = (home===null||away===null);   // require both or neither
+  const clear = (home===null||away===null);
   const {error}=await rpc("admin_set_match",{p_id:id,p_home:clear?null:home,p_away:clear?null:away});
   if(error) return;
   await loadAll(); renderMatches(); toast(clear?"Score cleared":"Score saved");
+}
+
+/* ---- Updates / Recaps ---- */
+function renderRecaps(){
+  let html=`<div class="card">
+    <h2>Updates &amp; Recaps</h2>
+    <p class="hint">Match recaps and pool news from Commissioner Michelle.</p>
+    ${isAdmin ? `<div class="recap-form">
+      <input id="rcTitle" class="field" type="text" placeholder="Title — e.g. Matchday 1 Recap" />
+      <textarea id="rcBody" class="field" placeholder="Write your recap here…"></textarea>
+      <button class="btn-gold" id="rcPost" style="width:auto;max-width:160px">Post Update</button>
+    </div>` : ''}
+  </div>`;
+
+  if(!state.recaps.length){
+    html+=`<div class="card" style="text-align:center"><p class="hint" style="margin:0">No updates yet — check back after the first matches play!</p></div>`;
+  } else {
+    state.recaps.forEach(r=>{
+      html+=`<div class="card">
+        <div class="recap-head">
+          <span class="recap-title">${esc(r.title)}</span>
+          <span class="recap-date">${formatDate(r.created_at)}</span>
+          ${isAdmin?`<button class="recap-del" data-rid="${r.id}" title="Delete">✕</button>`:''}
+        </div>
+        <div class="recap-body">${esc(r.body)}</div>
+      </div>`;
+    });
+  }
+
+  $("#tab-recaps").innerHTML=html;
+
+  if(isAdmin){
+    $("#rcPost")?.addEventListener("click", postRecap);
+    $$(".recap-del").forEach(btn=>btn.addEventListener("click",async()=>{
+      if(!confirm("Delete this update?")) return;
+      const {error}=await rpc("admin_delete_recap",{p_id:parseInt(btn.dataset.rid,10)});
+      if(error) return;
+      await loadAll(); renderRecaps(); toast("Update deleted");
+    }));
+  }
+}
+
+async function postRecap(){
+  const title = ($("#rcTitle")?.value||"").trim();
+  const body  = ($("#rcBody")?.value||"").trim();
+  if(!title||!body){ toast("Title and text are both required"); return; }
+  const btn = $("#rcPost");
+  if(btn){ btn.disabled=true; btn.textContent="Posting…"; }
+  const {error}=await rpc("admin_post_recap",{p_title:title,p_body:body});
+  if(btn){ btn.disabled=false; btn.textContent="Post Update"; }
+  if(error) return;
+  await loadAll(); renderRecaps(); toast("Update posted!");
 }
 
 /* ---- Settings ---- */
@@ -507,6 +735,12 @@ function renderSettings(){
     <div class="set-row"><label>Draw points</label><input type="number" data-set="draw_points" value="${setVal('draw_points','1')}"></div>
     <div class="set-row"><label>Loss points</label><input type="number" data-set="loss_points" value="${setVal('loss_points','0')}"></div>
     <span class="saved" id="savedScoring">Saved</span>
+  </div>
+
+  <div class="card"><h2>Score Sync</h2>
+    <p class="hint">Scores auto-sync from <a href="https://football-data.org" target="_blank" rel="noopener">football-data.org</a> once the API key is configured in Supabase. Use the button below to force a sync now.</p>
+    <div class="set-row"><label>Last synced</label><span style="font-size:13px;color:var(--muted)">${formatLastSync()}</span></div>
+    <div class="btn-line"><button class="btn-ghost" id="syncBtn">Sync scores now</button></div>
   </div>
 
   <div class="card"><h2>Access</h2>
@@ -545,6 +779,8 @@ function renderSettings(){
     if(key==="password") flash("savedPw"); else flash("savedScoring");
     toast("Saved");
   }));
+  // score sync button
+  $("#syncBtn")?.addEventListener("click", syncScores);
   // change commissioner password
   $("#changeAdmin").addEventListener("click",async()=>{
     const np=$("#newAdminPw").value.trim();
@@ -569,7 +805,7 @@ function flash(id){ const e=$("#"+id); if(!e)return; e.classList.add("show"); se
 function switchTab(tab){
   currentTab=tab;
   $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  ["leaderboard","draft","teams","matches","settings"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==tab));
+  ["leaderboard","draft","teams","matches","recaps","settings"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==tab));
   renderCurrent();
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -584,13 +820,11 @@ function unlock(){ $("#gate").classList.add("hidden"); $("#app").classList.remov
 
 async function init(){
   await loadAll();
-  // restore commissioner session for this browser tab (re-verified against the server)
   let savedAdmin=null; try{ savedAdmin=sessionStorage.getItem("wc_admin"); }catch(e){}
   if(savedAdmin){
     const {data}=await sb.rpc("verify_admin",{p_pw:savedAdmin});
     if(data){ isAdmin=true; adminPw=savedAdmin; }
   }
-  // auto-unlock view gate if saved pool password still valid
   const saved = localStorage.getItem("wc_pw");
   if(saved && saved===setVal("password","")) { unlock(); }
   subscribeRealtime();
