@@ -732,6 +732,30 @@ function computeGroupSoftness(team){
   return total/opponents.length; // higher avg rank = weaker opponents = softer group
 }
 
+function expectedPointsVsOpponent(myRank, oppRank){
+  // Probability model based on FIFA ranking gap
+  // diff > 0 means we are better ranked (lower number = better)
+  const diff = oppRank - myRank;
+  let pWin, pDraw;
+  if     (diff >= 40) { pWin=0.70; pDraw=0.15; }
+  else if(diff >= 20) { pWin=0.55; pDraw=0.20; }
+  else if(diff >=  5) { pWin=0.45; pDraw=0.25; }
+  else if(diff >= -5) { pWin=0.35; pDraw=0.30; }
+  else if(diff >=-20) { pWin=0.25; pDraw=0.30; }
+  else if(diff >=-40) { pWin=0.15; pDraw=0.20; }
+  else                { pWin=0.10; pDraw=0.15; }
+  return pWin * 3 + pDraw * 1;
+}
+
+function expectedGroupPoints(team){
+  const myRank = TEAM_DATA[team.name]?.rank || 99;
+  const opponents = state.teams.filter(t=>t.grp===team.grp&&t.name!==team.name);
+  return opponents.reduce((sum, opp)=>{
+    const oppRank = TEAM_DATA[opp.name]?.rank || 50;
+    return sum + expectedPointsVsOpponent(myRank, oppRank);
+  }, 0);
+}
+
 function renderAutoDraftAdvisor(){
   const container=document.getElementById("advisor-container");
   if(!container) return;
@@ -779,41 +803,51 @@ function runAdvisor(selectedPlayer){
     return;
   }
 
-  // Score every eligible team
+  // Score every eligible team — expected pts is primary, match-up interest is tiebreaker
   const scored=eligible.map(team=>{
     const d=TEAM_DATA[team.name]||{rank:99};
     const {score:matchupScore,reasons}=computeAdvisorScore(team,selectedPlayer,rules,lb);
-    const softness=computeGroupSoftness(team);
-    return {team, rank:d.rank, matchupScore, reasons, softness};
+    const expPts=expectedGroupPoints(team);
+    return {team, rank:d.rank, matchupScore, reasons, expPts};
   });
 
-  // Pick 1: Best Available — highest FIFA rank
-  const byRank=[...scored].sort((a,b)=>a.rank-b.rank);
-  const bestAvailable=byRank[0];
+  // Pick 1: Best Available — highest expected group-stage points
+  const byExpPts=[...scored].sort((a,b)=>b.expPts-a.expPts||b.matchupScore-a.matchupScore);
+  const bestAvailable=byExpPts[0];
 
-  // Pick 2: Match-Up Magnet — highest match-up interest score (different team)
-  const byMatchup=[...scored].filter(s=>s.team.name!==bestAvailable.team.name).sort((a,b)=>b.matchupScore-a.matchupScore);
-  const matchUpMagnet=byMatchup[0];
+  // Pick 2: Match-Up Magnet — highest match-up interest score, but only among teams
+  // at or above the median expected-pts threshold (prevents weak teams winning on rule triggers)
+  const sortedForMedian=[...scored].sort((a,b)=>a.expPts-b.expPts);
+  const medianExpPts=sortedForMedian.length?sortedForMedian[Math.floor(sortedForMedian.length/2)].expPts:0;
+  const magnetPool=[...scored]
+    .filter(s=>s.team.name!==bestAvailable.team.name&&s.expPts>=medianExpPts)
+    .sort((a,b)=>b.matchupScore-a.matchupScore||b.expPts-a.expPts);
+  const matchUpMagnet=magnetPool[0]
+    ||[...scored].filter(s=>s.team.name!==bestAvailable.team.name).sort((a,b)=>b.expPts-a.expPts)[0];
 
-  // Pick 3: Under the Radar — softest group path (different from above two)
-  const used=new Set([bestAvailable?.team.name, matchUpMagnet?.team.name]);
-  const bySoftness=[...scored].filter(s=>!used.has(s.team.name)).sort((a,b)=>b.softness-a.softness);
-  const underTheRadar=bySoftness[0];
+  // Pick 3: Under the Radar — best expected pts from a team ranked outside FIFA top 25
+  // (sleeper pick: not the obvious choice, but quietly solid)
+  const used=new Set([bestAvailable?.team.name,matchUpMagnet?.team.name]);
+  const radarPool=[...scored]
+    .filter(s=>!used.has(s.team.name)&&s.rank>25)
+    .sort((a,b)=>b.expPts-a.expPts||b.matchupScore-a.matchupScore);
+  const underTheRadar=radarPool[0]
+    ||[...scored].filter(s=>!used.has(s.team.name)).sort((a,b)=>b.expPts-a.expPts)[0];
 
   const defs=[
     bestAvailable && {
       s:bestAvailable, icon:"🏆", label:"Best Available",
-      desc:`FIFA #${bestAvailable.rank} — the highest-ranked team still on the board.`
+      desc:`~${bestAvailable.expPts.toFixed(1)} expected group-stage pts — the strongest overall pick on the board.`
     },
     matchUpMagnet && {
       s:matchUpMagnet, icon:"⚽", label:"Match-Up Magnet",
       desc:matchUpMagnet.matchupScore>0
-        ? `Creates the most interesting group-stage match-ups for you.`
-        : `Best match-up potential among remaining options (FIFA #${matchUpMagnet.rank}).`
+        ?`~${matchUpMagnet.expPts.toFixed(1)} expected pts, plus creates high-interest group-stage match-ups for you.`
+        :`~${matchUpMagnet.expPts.toFixed(1)} expected pts — solid pick with the best match-up potential of what's left.`
     },
     underTheRadar && {
       s:underTheRadar, icon:"🎲", label:"Under the Radar",
-      desc:`Group ${underTheRadar.team.grp} — softest remaining group (opponents avg. FIFA #${Math.round(underTheRadar.softness)}). More chances to rack up wins.`
+      desc:`~${underTheRadar.expPts.toFixed(1)} expected pts — FIFA #${underTheRadar.rank}, not the flashiest name but the best sleeper available.`
     },
   ].filter(Boolean);
 
