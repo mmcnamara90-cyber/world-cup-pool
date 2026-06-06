@@ -142,6 +142,21 @@
   .mtw-weight{width:52px;text-align:center;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 4px;font-size:14px;font-family:inherit}
   .mtw-toggle{width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;margin:0 9px}
 
+  /* Auto-Draft Advisor */
+  .btn-pop{background:#1aad9e;color:#fff;padding:13px 20px;letter-spacing:.4px;font-size:15px;font-weight:700;border-radius:11px;border:none;cursor:pointer;white-space:nowrap}
+  .btn-pop:active{transform:translateY(1px)}
+  .btn-pop:disabled{opacity:.5;cursor:default}
+  .advisor-cards{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .advisor-card{background:var(--navy2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .advisor-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .advisor-icon{font-size:22px;line-height:1;flex-shrink:0}
+  .advisor-meta{flex:1;min-width:0}
+  .advisor-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .advisor-team{font-size:17px;font-weight:800;color:var(--text)}
+  .advisor-rank{font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;text-align:right}
+  .advisor-desc{font-size:13px;color:var(--muted);line-height:1.5}
+  .advisor-group{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6;border-top:1px solid var(--line);padding-top:6px}
+
   /* Settings */
   .set-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
   .set-row:last-child{border-bottom:none}
@@ -197,6 +212,10 @@
     /* Countdown — tighter on small screens */
     .cd-unit{min-width:44px}
     .cd-unit span{font-size:28px}
+
+    /* Auto-Draft Advisor */
+    .btn-pop{font-size:14px;padding:12px 16px}
+    .advisor-team{font-size:15px}
 
     /* Match to Watch */
     .mtw-team{font-size:14px}
@@ -634,6 +653,197 @@ function renderLeaderboard(){
   }));
 }
 
+/* ---- Auto-Draft Advisor ---- */
+function computeAdvisorScore(team, selectedPlayer, rules, lb){
+  const ht = team.name;
+  const htData = TEAM_DATA[ht];
+  const played = state.matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
+  const reasons=[]; let score=0;
+
+  function add(key, labelOverride){
+    const r=rules[key]; if(!r?.enabled) return;
+    score+=r.weight;
+    reasons.push({emoji:r.emoji, label:labelOverride||r.label});
+  }
+
+  // Evaluate each group opponent that's already owned
+  const groupOpponents = state.teams.filter(t=>t.grp===team.grp&&t.name!==ht);
+  groupOpponents.forEach(opTeam=>{
+    const opOwner = opTeam.owner_id ? playerById(opTeam.owner_id) : null;
+    if(!opOwner) return;
+    const at=opTeam.name, atData=TEAM_DATA[at];
+    const match=state.matches.find(m=>(m.home_team===ht&&m.away_team===at)||(m.home_team===at&&m.away_team===ht));
+    const round=match?.round||1;
+    const hn=selectedPlayer.name, an=opOwner.name;
+
+    // Couple / sibling
+    if(COUPLES.some(([a,b])=>(nameFits(hn,a)&&nameFits(an,b))||(nameFits(hn,b)&&nameFits(an,a))))
+      add("couple",`vs ${an}'s ${at} — couple match-up`);
+    if(SIBLINGS.some(([a,b])=>(nameFits(hn,a)&&nameFits(an,b))||(nameFits(hn,b)&&nameFits(an,a))))
+      add("sibling",`vs ${an}'s ${at} — sibling showdown`);
+
+    // Standings swing (both in top 4)
+    if(played>0){
+      const pos={}; lb.rows.forEach((r,i)=>pos[r.player.id]=i+1);
+      const sp=pos[selectedPlayer.id]||9, op=pos[opOwner.id]||9;
+      if(sp<=4&&op<=4) add("swing",`vs #${op} ${an} — standings impact`);
+    }
+
+    // Rivalry
+    if(RIVALRIES.has(`${ht}|${at}`)||RIVALRIES.has(`${at}|${ht}`))
+      add("rivalry",`${ht} vs ${at} — storied rivalry`);
+
+    // Leader's team
+    if(lb.rows.length&&opOwner.id===lb.rows[0].player.id)
+      add("leader",`vs pool leader ${an}'s ${at}`);
+
+    // Ranking gap
+    if(htData&&atData&&Math.abs(htData.rank-atData.rank)>=30){
+      const fav=htData.rank<atData.rank?ht:at, dog=htData.rank<atData.rank?at:ht;
+      add("rankgap",`Could upset ${fav} — upset watch`);
+    }
+
+    // Final group matchday
+    if(round===3) add("groupfinal","Meets in final group matchday");
+
+    // Club teammates
+    if(CLUB_CONNECTIONS.has(`${ht}|${at}`)||CLUB_CONNECTIONS.has(`${at}|${ht}`))
+      add("clubmates",`${ht} vs ${at} — club teammates`);
+  });
+
+  // Team-level rules (apply regardless of opponents)
+  if(HOST_NATIONS.has(ht)) add("host",`${ht} — playing on home turf`);
+  if(ht==="Argentina") add("defending","Argentina — defending world champions");
+  if(htData){
+    const sameConf=groupOpponents.some(t=>{ const d=TEAM_DATA[t.name]; return d&&d.conf===htData.conf; });
+    if(sameConf){
+      const cn={UEFA:"European",CONMEBOL:"South American",CONCACAF:"CONCACAF",CAF:"African",AFC:"Asian",OFC:"Oceanian"};
+      add("continent",`${cn[htData.conf]||htData.conf} derby in group`);
+    }
+  }
+
+  return {score, reasons};
+}
+
+function computeGroupSoftness(team){
+  const opponents=state.teams.filter(t=>t.grp===team.grp&&t.name!==team.name);
+  if(!opponents.length) return 0;
+  const total=opponents.reduce((s,t)=>s+(TEAM_DATA[t.name]?.rank||50),0);
+  return total/opponents.length; // higher avg rank = weaker opponents = softer group
+}
+
+function renderAutoDraftAdvisor(){
+  const container=document.getElementById("advisor-container");
+  if(!container) return;
+
+  let html=`<div class="card">
+    <div class="section-title">🤖 Auto-Draft Advisor</div>
+    <p class="hint" style="margin:0 0 14px">Select your name to get 3 personalized picks. Skips groups where you already have a team.</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="advisorPlayer" class="field" style="flex:1;min-width:160px;max-width:260px">
+        <option value="">— Select your name —</option>
+        ${state.players.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}
+      </select>
+      <button class="btn-pop" id="advisorBtn">Draft for me! 🎲</button>
+    </div>
+    <div id="advisor-results"></div>
+  </div>`;
+
+  container.innerHTML=html;
+  document.getElementById("advisorBtn")?.addEventListener("click",()=>{
+    const pid=parseInt(document.getElementById("advisorPlayer")?.value);
+    if(!pid){ toast("Pick your name first!"); return; }
+    const player=state.players.find(p=>p.id===pid);
+    if(player) runAdvisor(player);
+  });
+}
+
+function runAdvisor(selectedPlayer){
+  const resultsEl=document.getElementById("advisor-results");
+  if(!resultsEl) return;
+  const rules=getMatchupRules();
+  const lb=computeLeaderboard();
+
+  const myTeams=state.teams.filter(t=>t.owner_id===selectedPlayer.id);
+  if(myTeams.length>=TEAMS_PER_PLAYER){
+    resultsEl.innerHTML=`<p class="hint" style="margin-top:12px">${esc(selectedPlayer.name)} already has ${TEAMS_PER_PLAYER} teams — fully drafted!</p>`;
+    return;
+  }
+
+  const myGroups=new Set(myTeams.map(t=>t.grp));
+  const eligible=state.teams.filter(t=>!t.owner_id&&!myGroups.has(t.grp));
+
+  if(!eligible.length){
+    const grpList=[...myGroups].join(", ");
+    resultsEl.innerHTML=`<p class="hint" style="margin-top:12px">No eligible teams remaining outside groups ${esc(grpList)}.</p>`;
+    return;
+  }
+
+  // Score every eligible team
+  const scored=eligible.map(team=>{
+    const d=TEAM_DATA[team.name]||{rank:99};
+    const {score:matchupScore,reasons}=computeAdvisorScore(team,selectedPlayer,rules,lb);
+    const softness=computeGroupSoftness(team);
+    return {team, rank:d.rank, matchupScore, reasons, softness};
+  });
+
+  // Pick 1: Best Available — highest FIFA rank
+  const byRank=[...scored].sort((a,b)=>a.rank-b.rank);
+  const bestAvailable=byRank[0];
+
+  // Pick 2: Match-Up Magnet — highest match-up interest score (different team)
+  const byMatchup=[...scored].filter(s=>s.team.name!==bestAvailable.team.name).sort((a,b)=>b.matchupScore-a.matchupScore);
+  const matchUpMagnet=byMatchup[0];
+
+  // Pick 3: Under the Radar — softest group path (different from above two)
+  const used=new Set([bestAvailable?.team.name, matchUpMagnet?.team.name]);
+  const bySoftness=[...scored].filter(s=>!used.has(s.team.name)).sort((a,b)=>b.softness-a.softness);
+  const underTheRadar=bySoftness[0];
+
+  const defs=[
+    bestAvailable && {
+      s:bestAvailable, icon:"🏆", label:"Best Available",
+      desc:`FIFA #${bestAvailable.rank} — the highest-ranked team still on the board.`
+    },
+    matchUpMagnet && {
+      s:matchUpMagnet, icon:"⚽", label:"Match-Up Magnet",
+      desc:matchUpMagnet.matchupScore>0
+        ? `Creates the most interesting group-stage match-ups for you.`
+        : `Best match-up potential among remaining options (FIFA #${matchUpMagnet.rank}).`
+    },
+    underTheRadar && {
+      s:underTheRadar, icon:"🎲", label:"Under the Radar",
+      desc:`Group ${underTheRadar.team.grp} — softest remaining group (opponents avg. FIFA #${Math.round(underTheRadar.softness)}). More chances to rack up wins.`
+    },
+  ].filter(Boolean);
+
+  let html=`<div class="advisor-cards">`;
+  defs.forEach(({s,icon,label,desc})=>{
+    // Build group context line
+    const groupTeams=state.teams.filter(t=>t.grp===s.team.grp&&t.name!==s.team.name);
+    const groupStr=groupTeams.map(t=>{
+      const o=t.owner_id?playerById(t.owner_id):null;
+      return esc(t.name)+(o?` <span style="color:var(--gold)">(${esc(o.name)})</span>`:'');
+    }).join(' · ');
+
+    html+=`<div class="advisor-card">
+      <div class="advisor-header">
+        <span class="advisor-icon">${icon}</span>
+        <div class="advisor-meta">
+          <div class="advisor-label">${label}</div>
+          <div class="advisor-team">${esc(s.team.name)}</div>
+        </div>
+        <div class="advisor-rank">FIFA #${s.rank}<br><span style="font-size:11px;color:var(--muted);font-weight:500">Group ${s.team.grp}</span></div>
+      </div>
+      <div class="advisor-desc">${desc}</div>
+      ${s.reasons.length?`<div class="mtw-reasons" style="margin-top:6px">${s.reasons.map(r=>`<span class="mtw-badge">${r.emoji} ${esc(r.label)}</span>`).join("")}</div>`:''}
+      <div class="advisor-group">Also in Group ${s.team.grp}: ${groupStr||'<span style="color:var(--muted)">—</span>'}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  resultsEl.innerHTML=html;
+}
+
 /* ---- Draft ---- */
 function renderDraft(){
   const drafted = state.players.every(p=>p.slot) && state.players.length===8;
@@ -661,8 +871,9 @@ function renderDraft(){
     }
     html+=`</tbody></table></div><p class="hint" style="margin-top:10px">Round 1 picks left→right; even rounds snake back right→left. 48 picks total.</p></div>`;
   }
-  $("#tab-draft").innerHTML = html;
+  $("#tab-draft").innerHTML = html + `<div id="advisor-container"></div>`;
   const rb=$("#randBtn"); if(rb) rb.addEventListener("click",randomizeDraft);
+  renderAutoDraftAdvisor();
 }
 
 async function randomizeDraft(){
