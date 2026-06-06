@@ -124,6 +124,24 @@
   .recap-del:hover{opacity:1;background:var(--navy2)}
   .recap-body{font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap}
 
+  /* Match to Watch */
+  .mtw-match{display:flex;align-items:center;gap:12px;padding:12px 0 8px}
+  .mtw-side{flex:1}
+  .mtw-side.mtw-away{text-align:right}
+  .mtw-team{font-weight:700;font-size:16px}
+  .mtw-owner{font-size:12px;color:var(--gold);margin-top:2px}
+  .mtw-vs{font-size:14px;color:var(--muted);font-weight:600;min-width:24px;text-align:center}
+  .mtw-meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .mtw-reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .mtw-badge{background:var(--navy2);border:1px solid var(--line);border-radius:20px;font-size:12px;padding:4px 10px;color:var(--text);line-height:1.4}
+  .mtw-editor{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+  .mtw-editor-head{display:flex;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:0 0 6px;gap:8px}
+  .mtw-rule-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .mtw-rule-row:last-of-type{border-bottom:none}
+  .mtw-rule-label{flex:1;font-size:13px}
+  .mtw-weight{width:52px;text-align:center;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 4px;font-size:14px;font-family:inherit}
+  .mtw-toggle{width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;margin:0 9px}
+
   /* Settings */
   .set-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
   .set-row:last-child{border-bottom:none}
@@ -179,6 +197,12 @@
     /* Countdown — tighter on small screens */
     .cd-unit{min-width:44px}
     .cd-unit span{font-size:28px}
+
+    /* Match to Watch */
+    .mtw-team{font-size:14px}
+    .mtw-badge{font-size:11px;padding:3px 8px}
+    .mtw-weight{width:44px}
+    .mtw-toggle{margin:0 4px}
   }
 </style>
 </head>
@@ -304,12 +328,58 @@ const TEAM_DATA = {
   'New Zealand':        {rank:95, wcTitles:0, conf:'OFC',      debut:false},
 };
 
+/* ====================== Match to Watch — rule definitions ====================== */
+const DEFAULT_RULES = {
+  couple:    {label:"Couple match-up",        emoji:"💑", weight:9,  enabled:true},
+  sibling:   {label:"Sibling match-up",       emoji:"👫", weight:9,  enabled:true},
+  swing:     {label:"Pool standings swing",   emoji:"📊", weight:8,  enabled:true},
+  highstakes:{label:"Top seeds clash",        emoji:"⭐", weight:7,  enabled:true},
+  rivalry:   {label:"Historic rivalry",       emoji:"⚔️",  weight:7,  enabled:true},
+  host:      {label:"Host nation on field",   emoji:"🏟️",  weight:6,  enabled:true},
+  leader:    {label:"Leader's team playing",  emoji:"🥇", weight:6,  enabled:true},
+  defending: {label:"Defending champion",     emoji:"🏆", weight:6,  enabled:true},
+  rankgap:   {label:"Upset watch",            emoji:"🎯", weight:5,  enabled:true},
+  groupfinal:{label:"Final group matchday",   emoji:"🔥", weight:5,  enabled:true},
+  continent: {label:"Continent derby",        emoji:"🌍", weight:3,  enabled:true},
+  clubmates: {label:"Club teammates",         emoji:"👕", weight:3,  enabled:true},
+};
+
+// Pool relationships (name fragment matching)
+const COUPLES  = [["Jeremy","Michelle"],["Emily","Josh"],["Greer","Travis"]];
+const SIBLINGS = [["Griffin","Greer"]]; // Griffin/Parco player vs Greer player
+
+// Classic national rivalries (both directions)
+const RIVALRIES = new Set([
+  "England|Scotland","Scotland|England",
+  "Germany|Netherlands","Netherlands|Germany",
+  "Brazil|Argentina","Argentina|Brazil",
+  "Portugal|Spain","Spain|Portugal",
+  "France|Germany","Germany|France",
+  "France|England","England|France",
+  "Argentina|Uruguay","Uruguay|Argentina",
+  "Mexico|United States","United States|Mexico",
+  "South Korea|Japan","Japan|South Korea",
+  "Morocco|Algeria","Algeria|Morocco",
+  "Netherlands|Belgium","Belgium|Netherlands",
+]);
+
+const HOST_NATIONS = new Set(["United States","Mexico","Canada"]);
+
+// High-confidence club teammate connections (2025/26 season)
+const CLUB_CONNECTIONS = new Set([
+  "France|England","England|France",    // Mbappé + Bellingham at Real Madrid
+  "France|Croatia","Croatia|France",    // Mbappé + Modrić at Real Madrid
+  "Brazil|England","England|Brazil",    // Vinícius/Rodrygo + Bellingham at Real Madrid
+  "Uruguay|England","England|Uruguay",  // Valverde + Bellingham at Real Madrid
+]);
+
 /* ====================== State ====================== */
 let state = { players:[], teams:[], matches:[], settings:{}, recaps:[] };
 let currentTab = "leaderboard";
 let matchFilterGroup = "all";
 let isAdmin = false;
 let adminPw = null;
+let mtwEditorOpen = false;
 
 /* ====================== Helpers ====================== */
 const $ = (s,el=document)=>el.querySelector(s);
@@ -355,7 +425,7 @@ async function commishLogin(){
   applyMode(); toast("Commissioner mode on");
 }
 function commishLogout(){
-  isAdmin=false; adminPw=null;
+  isAdmin=false; adminPw=null; mtwEditorOpen=false;
   try{ sessionStorage.removeItem("wc_admin"); }catch(e){}
   if(currentTab==="settings") switchTab("leaderboard");
   applyMode();
@@ -661,6 +731,210 @@ function renderTeams(){
   }));
 }
 
+/* ---- Match to Watch ---- */
+function getMatchupRules(){
+  const saved = state.settings["matchup_rules"];
+  if(!saved) return JSON.parse(JSON.stringify(DEFAULT_RULES));
+  try{
+    const parsed = JSON.parse(saved);
+    const merged = {};
+    Object.keys(DEFAULT_RULES).forEach(k=>{
+      merged[k] = parsed[k] ? {...DEFAULT_RULES[k], ...parsed[k]} : {...DEFAULT_RULES[k]};
+    });
+    return merged;
+  } catch(e){ return JSON.parse(JSON.stringify(DEFAULT_RULES)); }
+}
+
+function ownerOf(teamName){
+  const t = state.teams.find(x=>x.name===teamName);
+  if(!t||!t.owner_id) return null;
+  return playerById(t.owner_id);
+}
+
+function nameFits(playerName, frag){
+  return playerName.toLowerCase().includes(frag.toLowerCase());
+}
+
+function scoreMatch(match, rules, lb){
+  const {home_team:ht, away_team:at, round} = match;
+  const homeOwner = ownerOf(ht);
+  const awayOwner = ownerOf(at);
+  const homeData  = TEAM_DATA[ht];
+  const awayData  = TEAM_DATA[at];
+  const played = state.matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
+  const reasons=[]; let score=0;
+
+  function add(key, labelOverride){
+    const r=rules[key]; if(!r?.enabled) return;
+    score+=r.weight;
+    reasons.push({emoji:r.emoji, label:labelOverride||r.label});
+  }
+
+  // Couple / sibling (both teams must have owners)
+  if(homeOwner&&awayOwner){
+    const hn=homeOwner.name, an=awayOwner.name;
+    if(COUPLES.some(([a,b])=>(nameFits(hn,a)&&nameFits(an,b))||(nameFits(hn,b)&&nameFits(an,a))))
+      add("couple",`${hn} vs ${an} — couple showdown`);
+    if(SIBLINGS.some(([a,b])=>(nameFits(hn,a)&&nameFits(an,b))||(nameFits(hn,b)&&nameFits(an,a))))
+      add("sibling",`${hn} vs ${an} — sibling rivalry`);
+  }
+
+  // Pool standings swing — both owners currently in top 4, after ≥1 match played
+  if(homeOwner&&awayOwner&&homeOwner.id!==awayOwner.id&&played>0){
+    const pos={};
+    lb.rows.forEach((r,i)=>pos[r.player.id]=i+1);
+    const hp=pos[homeOwner.id]||9, ap=pos[awayOwner.id]||9;
+    if(hp<=4&&ap<=4) add("swing",`#${hp} ${homeOwner.name} vs #${ap} ${awayOwner.name} — standings on the line`);
+  }
+
+  // High-stakes — the top-2 FIFA-ranked owned teams face each other
+  if(homeData&&awayData){
+    const ownedRanks=state.teams.filter(t=>t.owner_id).map(t=>TEAM_DATA[t.name]?.rank).filter(Boolean).sort((a,b)=>a-b);
+    if(ownedRanks.length>=2){
+      const [r1,r2]=ownedRanks;
+      const ranks=[homeData.rank,awayData.rank];
+      if(ranks.includes(r1)&&ranks.includes(r2))
+        add("highstakes",`FIFA #${homeData.rank} vs #${awayData.rank} — pool's top two seeds`);
+    }
+  }
+
+  // Historic rivalry
+  if(RIVALRIES.has(`${ht}|${at}`)) add("rivalry",`${ht} vs ${at} — storied rivalry`);
+
+  // Host nation
+  const hostTeam=HOST_NATIONS.has(ht)?ht:HOST_NATIONS.has(at)?at:null;
+  if(hostTeam) add("host",`${hostTeam} — playing on home turf`);
+
+  // Leader's team
+  if(lb.rows.length&&(homeOwner||awayOwner)){
+    const leaderId=lb.rows[0].player.id;
+    if(homeOwner?.id===leaderId||awayOwner?.id===leaderId){
+      const ln=(homeOwner?.id===leaderId?homeOwner:awayOwner).name;
+      add("leader",`${ln}'s team — current pool leader`);
+    }
+  }
+
+  // Defending champion
+  if(ht==="Argentina"||at==="Argentina") add("defending","Argentina — defending world champions");
+
+  // Ranking gap / upset watch (30+ spots apart)
+  if(homeData&&awayData){
+    const gap=Math.abs(homeData.rank-awayData.rank);
+    if(gap>=30){
+      const fav=homeData.rank<awayData.rank?ht:at;
+      const dog=homeData.rank<awayData.rank?at:ht;
+      const favRk=Math.min(homeData.rank,awayData.rank);
+      const dogRk=Math.max(homeData.rank,awayData.rank);
+      add("rankgap",`${dog} (#${dogRk}) could upset ${fav} (#${favRk})`);
+    }
+  }
+
+  // Final group matchday
+  if(round===3) add("groupfinal","Final group matchday — advancement at stake");
+
+  // Continent derby — same confederation
+  if(homeData&&awayData&&homeData.conf===awayData.conf){
+    const cn={UEFA:"European",CONMEBOL:"South American",CONCACAF:"CONCACAF",CAF:"African",AFC:"Asian",OFC:"Oceanian"};
+    add("continent",`${cn[homeData.conf]||homeData.conf} derby`);
+  }
+
+  // Club teammates
+  if(CLUB_CONNECTIONS.has(`${ht}|${at}`)) add("clubmates","Club teammates on opposite sides");
+
+  return {score, reasons};
+}
+
+function findMatchToWatch(rules){
+  const upcoming=state.matches.filter(m=>m.home_score===null&&m.away_score===null).sort((a,b)=>a.id-b.id).slice(0,4);
+  if(!upcoming.length) return null;
+  const lb=computeLeaderboard();
+  let best=null, bestScore=-1;
+  upcoming.forEach(m=>{
+    const {score,reasons}=scoreMatch(m,rules,lb);
+    if(score>bestScore){ bestScore=score; best={match:m,score,reasons}; }
+  });
+  return best;
+}
+
+function renderMatchToWatch(){
+  const container=document.getElementById("mtw-container");
+  if(!container) return;
+  const rules=getMatchupRules();
+  const best=findMatchToWatch(rules);
+
+  let html=`<div class="card"><div class="section-title">⚽ Match to Watch</div>`;
+
+  if(!best){
+    html+=`<p class="hint" style="margin:0">No upcoming matches — check back soon!</p>`;
+  } else {
+    const m=best.match;
+    const ho=ownerOf(m.home_team), ao=ownerOf(m.away_team);
+    html+=`<div class="mtw-match">
+      <div class="mtw-side">
+        <div class="mtw-team">${esc(m.home_team)}</div>
+        <div class="mtw-owner">${ho?esc(ho.name):'—'}</div>
+      </div>
+      <div class="mtw-vs">vs</div>
+      <div class="mtw-side mtw-away">
+        <div class="mtw-team">${esc(m.away_team)}</div>
+        <div class="mtw-owner">${ao?esc(ao.name):'—'}</div>
+      </div>
+    </div>
+    <div class="mtw-meta">Group ${m.grp} · Matchday ${m.round}</div>`;
+    if(best.reasons.length){
+      html+=`<div class="mtw-reasons">${best.reasons.map(r=>`<span class="mtw-badge">${r.emoji} ${esc(r.label)}</span>`).join("")}</div>`;
+    } else {
+      html+=`<p class="hint" style="margin:4px 0 0;font-size:12px">Next up in the schedule</p>`;
+    }
+  }
+
+  if(isAdmin){
+    html+=`<div style="margin-top:12px">
+      <button class="btn-ghost" id="mtwEditBtn" style="font-size:12px;padding:7px 12px">${mtwEditorOpen?"▲ Hide Rules":"▼ Edit Rules"}</button>`;
+    if(mtwEditorOpen){
+      html+=`<div class="mtw-editor">
+        <div class="mtw-editor-head">
+          <span style="flex:1">Rule</span>
+          <span style="width:58px;text-align:center">Weight</span>
+          <span style="width:40px;text-align:center">On</span>
+        </div>`;
+      Object.entries(rules).forEach(([k,r])=>{
+        html+=`<div class="mtw-rule-row">
+          <span class="mtw-rule-label">${r.emoji} ${esc(r.label)}</span>
+          <input type="number" min="1" max="20" class="mtw-weight" data-rule="${k}" value="${r.weight}">
+          <input type="checkbox" class="mtw-toggle" data-rule="${k}" ${r.enabled?'checked':''}>
+        </div>`;
+      });
+      html+=`<button class="btn-gold mtw-save" style="margin-top:10px;max-width:140px;padding:9px 14px;font-size:13px">Save Rules</button>
+      </div>`;
+    }
+    html+=`</div>`;
+  }
+
+  html+=`</div>`;
+  container.innerHTML=html;
+
+  document.getElementById("mtwEditBtn")?.addEventListener("click",()=>{
+    mtwEditorOpen=!mtwEditorOpen; renderMatchToWatch();
+  });
+
+  if(mtwEditorOpen&&isAdmin){
+    container.querySelector(".mtw-save")?.addEventListener("click",async()=>{
+      const updated={};
+      Object.keys(rules).forEach(k=>updated[k]={...rules[k]});
+      container.querySelectorAll(".mtw-weight[data-rule]").forEach(inp=>{
+        const k=inp.dataset.rule; if(updated[k]) updated[k].weight=Math.max(1,Math.min(20,parseInt(inp.value)||1));
+      });
+      container.querySelectorAll(".mtw-toggle[data-rule]").forEach(inp=>{
+        const k=inp.dataset.rule; if(updated[k]) updated[k].enabled=inp.checked;
+      });
+      const {error}=await rpc("admin_set_setting",{p_key:"matchup_rules",p_value:JSON.stringify(updated)});
+      if(error) return;
+      await loadAll(); renderMatchToWatch(); toast("Rules saved");
+    });
+  }
+}
+
 /* ---- Matches / Scores ---- */
 function renderMatches(){
   const groups=[...new Set(state.teams.map(t=>t.grp))];
@@ -703,7 +977,8 @@ function renderMatches(){
     });
     html+=`</div>`;
   });
-  $("#tab-matches").innerHTML=html;
+  $("#tab-matches").innerHTML=`<div id="mtw-container"></div>`+html;
+  renderMatchToWatch();
   $("#grpFilter").addEventListener("change",e=>{ matchFilterGroup=e.target.value; renderMatches(); });
   $$('#tab-matches input[data-mid]').forEach(inp=>inp.addEventListener("change",onScoreChange));
 }
