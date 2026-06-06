@@ -64,7 +64,7 @@
   .lb td{padding:11px 8px;border-bottom:1px solid var(--line);font-size:15px;vertical-align:middle}
   .lb tr:last-child td{border-bottom:none}
   .rank{width:34px;font-weight:700;color:var(--gold)}
-  .rank.r1{color:var(--gold)}.rank.r2{color:var(--good)}
+  .rank.r1{color:var(--gold)}.rank.r2{color:var(--draw)}
   .pname{font-weight:600}
   .pts{font-weight:800;font-size:18px;text-align:right}
   .expand{cursor:pointer}
@@ -137,9 +137,49 @@
   .saved{font-size:12px;color:var(--good);opacity:0;transition:opacity .3s}
   .saved.show{opacity:1}
   .warn{color:var(--draw);font-size:12px;margin-top:8px}
+  /* Countdown banner */
+  .countdown-banner{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 12px 14px;margin-bottom:10px;text-align:center;box-shadow:var(--shadow)}
+  .cd-label{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px}
+  .cd-time{display:flex;justify-content:center;align-items:flex-start;gap:2px;margin-bottom:6px}
+  .cd-unit{display:flex;flex-direction:column;align-items:center;min-width:52px}
+  .cd-unit span{font-size:34px;font-weight:800;color:var(--text);line-height:1;font-variant-numeric:tabular-nums}
+  .cd-unit small{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .cd-sep{font-size:28px;font-weight:700;color:var(--line);padding:0 2px;margin-top:2px}
+  .cd-sub{font-size:12px;color:var(--muted)}
+
   .foot{text-align:center;color:var(--muted);font-size:11px;padding:10px 0 0}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:60}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+  /* ---- Mobile ---- */
+  @media (max-width:600px){
+    .wrap{padding:0 10px 80px}
+    nav.tabs button{padding:8px 11px;font-size:13px}
+
+    /* Score inputs — bigger tap targets */
+    .match{grid-template-columns:1fr 84px 1fr;gap:3px;padding:10px 2px}
+    .match .tm{font-size:12px}
+    .scorebox input{width:34px;padding:10px 2px;font-size:15px}
+
+    /* Teams — hide W-D-L rec column, widen select */
+    .team-row .rec{display:none}
+    .team-row select{max-width:130px;min-height:40px;padding:8px 6px}
+
+    /* Settings — full-width inputs, good tap heights */
+    .set-row{flex-wrap:wrap;gap:6px}
+    .set-row input{width:100% !important;text-align:left !important;min-height:44px}
+    .set-row label{font-weight:600}
+
+    /* Buttons */
+    .btn-line{flex-direction:column}
+    .btn-line button{width:100%;min-height:44px}
+    .btn-gold{min-height:48px}
+    .recap-form .btn-gold{max-width:100% !important}
+
+    /* Countdown — tighter on small screens */
+    .cd-unit{min-width:44px}
+    .cd-unit span{font-size:28px}
+  }
 </style>
 </head>
 <body>
@@ -166,6 +206,20 @@
       <div class="live"><span class="dot"></span><span id="liveTxt">Live · synced</span></div>
       <div class="commish-bar"><button id="commishBtn" class="commish-link">Commissioner login</button></div>
     </header>
+
+    <div id="countdown-banner" class="countdown-banner hidden">
+      <div class="cd-label">⚽ First Kickoff</div>
+      <div class="cd-time">
+        <div class="cd-unit"><span id="cd-days">0</span><small>days</small></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-unit"><span id="cd-hours">00</span><small>hrs</small></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-unit"><span id="cd-mins">00</span><small>min</small></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-unit"><span id="cd-secs">00</span><small>sec</small></div>
+      </div>
+      <div class="cd-sub">June 11, 2026 · FIFA World Cup 2026</div>
+    </div>
 
     <nav class="tabs">
       <button data-tab="leaderboard" class="active">Leaderboard</button>
@@ -810,6 +864,23 @@ function switchTab(tab){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
+/* ====================== Countdown ====================== */
+const KICKOFF_TIME = new Date('2026-06-12T00:30:00Z'); // June 11, 2026 8:30 PM ET
+function updateCountdown(){
+  const banner = $("#countdown-banner"); if(!banner) return;
+  const diff = KICKOFF_TIME - Date.now();
+  if(diff <= 0){ banner.classList.add("hidden"); return; }
+  banner.classList.remove("hidden");
+  const d = Math.floor(diff/86400000);
+  const h = Math.floor((diff%86400000)/3600000);
+  const m = Math.floor((diff%3600000)/60000);
+  const s = Math.floor((diff%60000)/1000);
+  $("#cd-days").textContent = d;
+  $("#cd-hours").textContent = String(h).padStart(2,"0");
+  $("#cd-mins").textContent = String(m).padStart(2,"0");
+  $("#cd-secs").textContent = String(s).padStart(2,"0");
+}
+
 /* ====================== Auth gate ====================== */
 async function tryUnlock(pw){
   const want = setVal("password","");
@@ -828,6 +899,7 @@ async function init(){
   const saved = localStorage.getItem("wc_pw");
   if(saved && saved===setVal("password","")) { unlock(); }
   subscribeRealtime();
+  updateCountdown(); setInterval(updateCountdown, 1000);
 
   $("#gateBtn").addEventListener("click",async()=>{
     const ok=await tryUnlock($("#gatePw").value);
