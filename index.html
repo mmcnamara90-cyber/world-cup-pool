@@ -142,6 +142,42 @@
   .mtw-weight{width:52px;text-align:center;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 4px;font-size:14px;font-family:inherit}
   .mtw-toggle{width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;margin:0 9px}
 
+  /* Smack Talk */
+  .st-match-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .st-match-btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;cursor:pointer;font-size:13px;color:var(--text);text-align:left;transition:border-color .15s;width:100%}
+  .st-match-btn.active{border-color:var(--gold);background:var(--navy2)}
+  .st-match-btn .st-teams{font-weight:700;font-size:13px;margin-bottom:2px;color:var(--text)}
+  .st-match-btn .st-meta{color:var(--muted);font-size:11px}
+  .st-helper{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px}
+  .st-helper-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .st-context-row{margin-bottom:5px;line-height:1.4}
+  .st-stat-row{color:var(--muted);margin-top:8px;line-height:1.5}
+  .st-opener-chips{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .st-opener-chip{background:var(--navy2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;color:var(--text);text-align:left;transition:border-color .15s;line-height:1.4}
+  .st-opener-chip:hover{border-color:var(--gold)}
+  .st-post-form{margin-bottom:18px}
+  .st-form-row{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
+  .st-player-sel{flex:1;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:10px 10px;font-size:14px;font-family:inherit}
+  .st-textarea{width:100%;box-sizing:border-box;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;resize:vertical;min-height:66px;outline:none}
+  .st-textarea:focus{border-color:var(--gold)}
+  .st-char-row{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
+  .st-char-count{font-size:12px;color:var(--muted)}
+  .st-char-count.warn{color:var(--bad)}
+  .st-feed{display:flex;flex-direction:column;gap:10px}
+  .st-post{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+  .st-post-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+  .st-author{font-weight:700;font-size:14px}
+  .st-time{font-size:11px;color:var(--muted)}
+  .st-msg{font-size:14px;line-height:1.5;margin-bottom:10px;word-break:break-word}
+  .st-reactions{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .st-react-btn{background:var(--navy2);border:1px solid var(--line);border-radius:18px;padding:4px 9px;font-size:12px;cursor:pointer;color:var(--text);transition:border-color .15s,background .15s;display:inline-flex;align-items:center;gap:3px;line-height:1}
+  .st-react-btn.mine{border-color:var(--gold);background:rgba(212,175,55,.12)}
+  .st-react-cnt{font-size:11px;color:var(--muted)}
+  .st-del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:5px;margin-left:4px;transition:color .15s}
+  .st-del-btn:hover{color:var(--bad)}
+  .st-empty{color:var(--muted);font-size:14px;text-align:center;padding:28px 0}
+  .st-divider{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+
   /* Pool Tips */
   .tips-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px;position:relative;min-height:72px}
   .tips-card .section-title{margin-bottom:10px}
@@ -212,6 +248,10 @@
     .btn-pop{font-size:14px;padding:12px 16px}
     .advisor-team{font-size:15px}
 
+    /* Smack Talk */
+    .st-match-grid{grid-template-columns:1fr}
+    .st-form-row{flex-direction:column}
+
     /* Match to Watch */
     .mtw-team{font-size:14px}
     .mtw-badge{font-size:11px;padding:3px 8px}
@@ -247,17 +287,17 @@
 
     <nav class="tabs">
       <button data-tab="leaderboard" class="active">Leaderboard</button>
-      <button data-tab="draft">Draft</button>
       <button data-tab="teams">Teams</button>
       <button data-tab="matches">Scores</button>
+      <button data-tab="smacktalk">💬 Smack Talk</button>
       <button data-tab="recaps">Updates</button>
       <button data-tab="settings" id="settingsTab" class="hidden">Settings</button>
     </nav>
 
     <section id="tab-leaderboard"></section>
-    <section id="tab-draft" class="hidden"></section>
     <section id="tab-teams" class="hidden"></section>
     <section id="tab-matches" class="hidden"></section>
+    <section id="tab-smacktalk" class="hidden"></section>
     <section id="tab-recaps" class="hidden"></section>
     <section id="tab-settings" class="hidden"></section>
 
@@ -374,7 +414,7 @@ const CLUB_CONNECTIONS = new Set([
 ]);
 
 /* ====================== State ====================== */
-let state = { players:[], teams:[], matches:[], settings:{}, recaps:[] };
+let state = { players:[], teams:[], matches:[], settings:{}, recaps:[], smacktalk:[], smacktalk_reactions:[] };
 let currentTab = "leaderboard";
 let matchFilterGroup = "all";
 let isAdmin = false;
@@ -382,6 +422,8 @@ let adminPw = null;
 let mtwEditorOpen = false;
 let tipIndex = 0;
 let tipTimerId = null;
+let selectedSmackMatchId = null;
+let smackPlayerId = null;
 
 const POOL_TIPS = [
   "📊 <b>Scoring:</b> Win = 3 pts, Draw = 1 pt, Loss = 0 pts. Group stage only — knockout bracket scoring is coming!",
@@ -626,18 +668,22 @@ async function syncScores(){
 
 /* ====================== Data load + realtime ====================== */
 async function loadAll(){
-  const [pl,tm,mt,st,rc] = await Promise.all([
+  const [pl,tm,mt,st,rc,sk,sr] = await Promise.all([
     sb.from("players").select("*").order("sort_order"),
     sb.from("teams").select("*").order("grp").order("pos"),
     sb.from("matches").select("*").order("id"),
     sb.from("settings").select("*"),
     sb.from("recaps").select("*").order("created_at",{ascending:false}),
+    sb.from("smacktalk").select("*").order("created_at",{ascending:false}),
+    sb.from("smacktalk_reactions").select("*"),
   ]);
   if(pl.error||tm.error||mt.error||st.error){ console.error(pl.error||tm.error||mt.error||st.error); toast("Sync error — check connection"); }
-  state.players = pl.data||[];
-  state.teams   = tm.data||[];
-  state.matches = mt.data||[];
-  state.recaps  = rc.data||[];
+  state.players             = pl.data||[];
+  state.teams               = tm.data||[];
+  state.matches             = mt.data||[];
+  state.recaps              = rc.data||[];
+  state.smacktalk           = sk.data||[];
+  state.smacktalk_reactions = sr.data||[];
   state.settings = {};
   (st.data||[]).forEach(r=> state.settings[r.key]=r.value);
 }
@@ -653,7 +699,7 @@ function subscribeRealtime(){
 
 /* ====================== Rendering ====================== */
 function renderCurrent(){
-  ({leaderboard:renderLeaderboard, draft:renderDraft, teams:renderTeams, matches:renderMatches, recaps:renderRecaps, settings:renderSettings}[currentTab])();
+  ({leaderboard:renderLeaderboard, draft:renderDraft, teams:renderTeams, matches:renderMatches, recaps:renderRecaps, settings:renderSettings, smacktalk:renderSmackTalk}[currentTab])();
 }
 
 /* ---- Tip rotation ---- */
@@ -1464,9 +1510,244 @@ function flash(id){ const e=$("#"+id); if(!e)return; e.classList.add("show"); se
 function switchTab(tab){
   currentTab=tab;
   $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  ["leaderboard","draft","teams","matches","recaps","settings"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==tab));
+  ["leaderboard","teams","matches","recaps","settings","smacktalk"].forEach(t=>{ const el=$("#tab-"+t); if(el) el.classList.toggle("hidden",t!==tab); });
   renderCurrent();
   window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ====================== Smack Talk ====================== */
+const SMACK_EMOJIS = ['🔥','⚽','🤯','😂','👍'];
+
+function stOwnerName(teamName){
+  const t = state.teams.find(t=>t.name===teamName);
+  if(!t||!t.owner_id) return null;
+  return state.players.find(p=>p.id===t.owner_id)?.name||null;
+}
+
+function getSmackOpeners(match){
+  const hOwner = stOwnerName(match.home_team);
+  const aOwner = stOwnerName(match.away_team);
+  const hRank  = TEAM_DATA[match.home_team]?.rank||50;
+  const aRank  = TEAM_DATA[match.away_team]?.rank||50;
+  const gap    = Math.abs(hRank-aRank);
+  const fav    = hRank<aRank?match.home_team:match.away_team;
+  const dog    = hRank>aRank?match.home_team:match.away_team;
+  const dogOwner = hRank>aRank?hOwner:aOwner;
+  const isRivalry = RIVALRIES.has(`${match.home_team}|${match.away_team}`)||RIVALRIES.has(`${match.away_team}|${match.home_team}`);
+  const isCouple  = COUPLES.some(([a,b])=>(hOwner===a&&aOwner===b)||(hOwner===b&&aOwner===a));
+  const isSibling = SIBLINGS.some(([a,b])=>(hOwner===a&&aOwner===b)||(hOwner===b&&aOwner===a));
+
+  const openers=[];
+  if(isCouple&&hOwner&&aOwner)
+    openers.push(`Couple showdown — ${hOwner} vs ${aOwner} 🏠 who's winning bragging rights tonight?`);
+  if(isSibling&&hOwner&&aOwner)
+    openers.push(`Sibling rivalry on the pitch! ${hOwner} vs ${aOwner} — family dinner is about to get interesting 😂`);
+  if(isRivalry)
+    openers.push(`One of the great rivalries in football — this one always delivers drama ⚔️`);
+  if(gap>=30&&dogOwner)
+    openers.push(`${dog} is ranked #${Math.max(hRank,aRank)} in the world — ${dogOwner}, how are you feeling right now? 😬`);
+  else if(gap>=15)
+    openers.push(`${fav} should handle this on paper — but upsets happen at every World Cup 👀`);
+  if(openers.length<2&&hOwner&&aOwner&&hOwner!==aOwner)
+    openers.push(`${hOwner} vs ${aOwner} — one of you is not going to enjoy the next 90 minutes 😏`);
+  if(openers.length<2)
+    openers.push(`Every group-stage point matters — no easy games left 💪`);
+  if(openers.length<3)
+    openers.push(`Who's feeling confident about this one? Sound off below 👇`);
+  return openers.slice(0,3);
+}
+
+function renderSmackTalk(){
+  const upcoming = state.matches
+    .filter(m=>m.home_score===null&&m.away_score===null)
+    .slice(0,4);
+
+  if(!upcoming.length){
+    $("#tab-smacktalk").innerHTML=`<div class="card"><div class="section-title">💬 Smack Talk</div>
+      <p class="hint">No upcoming matches right now — check back after the next round!</p></div>`;
+    return;
+  }
+
+  if(!selectedSmackMatchId||!upcoming.find(m=>m.id===selectedSmackMatchId))
+    selectedSmackMatchId=upcoming[0].id;
+
+  const sel=upcoming.find(m=>m.id===selectedSmackMatchId)||upcoming[0];
+
+  // Match selector
+  const matchBtns=upcoming.map(m=>{
+    const ho=stOwnerName(m.home_team), ao=stOwnerName(m.away_team);
+    const ownerLine=ho&&ao?`${esc(ho)} vs ${esc(ao)}`:(ho||ao||'Unowned');
+    return `<button class="st-match-btn${m.id===selectedSmackMatchId?' active':''}" data-mid="${m.id}">
+      <div class="st-teams">${esc(m.home_team)} vs ${esc(m.away_team)}</div>
+      <div class="st-meta">Group ${m.grp} · ${ownerLine}</div>
+    </button>`;
+  }).join('');
+
+  // Helper panel
+  const hRank=TEAM_DATA[sel.home_team]?.rank||50;
+  const aRank=TEAM_DATA[sel.away_team]?.rank||50;
+  const gap=Math.abs(hRank-aRank);
+  const hOwner=stOwnerName(sel.home_team), aOwner=stOwnerName(sel.away_team);
+  const isRivalry=RIVALRIES.has(`${sel.home_team}|${sel.away_team}`)||RIVALRIES.has(`${sel.away_team}|${sel.home_team}`);
+  const {rows}=computeLeaderboard();
+  const hRow=hOwner?rows.find(r=>r.player.name===hOwner):null;
+  const aRow=aOwner?rows.find(r=>r.player.name===aOwner):null;
+  const hPos=hRow?rows.indexOf(hRow)+1:'—';
+  const aPos=aRow?rows.indexOf(aRow)+1:'—';
+  const hPts=hRow?hRow.pts:0, aPts=aRow?aRow.pts:0;
+
+  const contextRows=hOwner&&aOwner?`
+    <div class="st-context-row">⚽ <b>${esc(sel.home_team)}</b> → <b>${esc(hOwner)}</b> — #${hPos} in pool, ${hPts} pts</div>
+    <div class="st-context-row">⚽ <b>${esc(sel.away_team)}</b> → <b>${esc(aOwner)}</b> — #${aPos} in pool, ${aPts} pts</div>`
+    :`<div class="st-context-row" style="color:var(--muted)">No pool owners for these teams</div>`;
+
+  const statParts=[`FIFA: ${esc(sel.home_team)} #${hRank} vs ${esc(sel.away_team)} #${aRank}`];
+  if(gap>=20) statParts.push(`🎯 Upset watch — ${gap}-rank gap`);
+  if(isRivalry) statParts.push(`⚔️ Historic rivalry`);
+
+  const openers=getSmackOpeners(sel);
+  const openerChips=openers.map(o=>`<button class="st-opener-chip" data-text="${o.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}">${esc(o)}</button>`).join('');
+
+  const helperHtml=`<div class="st-helper">
+    <div class="st-helper-label">Pool Context</div>
+    ${contextRows}
+    <div class="st-stat-row">${statParts.join(' · ')}</div>
+    <div class="st-helper-label" style="margin-top:12px">Suggested openers — tap to use</div>
+    <div class="st-opener-chips">${openerChips}</div>
+  </div>`;
+
+  // Post form
+  const playerOpts=state.players.map(p=>`<option value="${p.id}"${p.id===smackPlayerId?' selected':''}>${esc(p.name)}</option>`).join('');
+  const postForm=`<div class="st-post-form">
+    <div class="st-form-row">
+      <select id="st-player" class="st-player-sel">
+        <option value="">— Who are you? —</option>${playerOpts}
+      </select>
+      <button class="btn-gold" id="st-post-btn" style="white-space:nowrap;min-height:44px">Post 🔥</button>
+    </div>
+    <textarea id="st-textarea" class="st-textarea" maxlength="150" placeholder="Say your piece…"></textarea>
+    <div class="st-char-row">
+      <span id="st-char-count" class="st-char-count">0 / 150</span>
+    </div>
+  </div>`;
+
+  // Feed
+  const posts=state.smacktalk.filter(p=>p.match_id===sel.id);
+  let feedHtml='';
+  if(!posts.length){
+    feedHtml=`<div class="st-empty">No smack yet — be the first 👀</div>`;
+  } else {
+    feedHtml=posts.map(post=>{
+      const author=state.players.find(p=>p.id===post.player_id)?.name||'Unknown';
+      const d=new Date(post.created_at);
+      const time=d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      const rxBtns=SMACK_EMOJIS.map(e=>{
+        const rxrs=state.smacktalk_reactions.filter(r=>r.post_id===post.id&&r.emoji===e);
+        const cnt=rxrs.length;
+        const mine=smackPlayerId&&rxrs.find(r=>r.player_id===smackPlayerId);
+        return `<button class="st-react-btn${mine?' mine':''}" data-pid="${post.id}" data-emoji="${e}">
+          ${e}${cnt>0?`<span class="st-react-cnt">${cnt}</span>`:''}
+        </button>`;
+      }).join('');
+      const delBtn=isAdmin?`<button class="st-del-btn" data-id="${post.id}" title="Delete">✕</button>`:'';
+      return `<div class="st-post">
+        <div class="st-post-header">
+          <span class="st-author">${esc(author)}</span>
+          <span style="display:flex;align-items:center;gap:2px">
+            <span class="st-time">${time}</span>${delBtn}
+          </span>
+        </div>
+        <div class="st-msg">${esc(post.message)}</div>
+        <div class="st-reactions">${rxBtns}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const html=`<div class="card">
+    <div class="section-title">💬 Smack Talk</div>
+    <p class="hint" style="margin-bottom:14px">Pick a match, steal a line, or say your piece.</p>
+    <div class="st-match-grid">${matchBtns}</div>
+    ${helperHtml}
+    ${postForm}
+    <div class="st-divider">The Board</div>
+    <div class="st-feed">${feedHtml}</div>
+  </div>`;
+
+  $("#tab-smacktalk").innerHTML=html;
+
+  // Wire match buttons
+  $$("#tab-smacktalk .st-match-btn").forEach(btn=>btn.addEventListener("click",()=>{
+    selectedSmackMatchId=parseInt(btn.dataset.mid); renderSmackTalk();
+  }));
+
+  // Wire opener chips
+  $$("#tab-smacktalk .st-opener-chip").forEach(chip=>chip.addEventListener("click",()=>{
+    const ta=$("#st-textarea"); if(!ta) return;
+    ta.value=chip.dataset.text; updateStCharCount(); ta.focus();
+  }));
+
+  // Wire textarea
+  const ta=$("#st-textarea");
+  if(ta) ta.addEventListener("input",updateStCharCount);
+
+  // Wire player select (remember choice)
+  const ps=$("#st-player");
+  if(ps) ps.addEventListener("change",()=>{ smackPlayerId=parseInt(ps.value)||null; });
+
+  // Wire post button
+  const pb=$("#st-post-btn");
+  if(pb) pb.addEventListener("click",submitSmackTalk);
+
+  // Wire reactions
+  $$("#tab-smacktalk .st-react-btn").forEach(btn=>btn.addEventListener("click",()=>
+    stToggleReaction(btn.dataset.pid, btn.dataset.emoji)
+  ));
+
+  // Wire delete
+  if(isAdmin) $$("#tab-smacktalk .st-del-btn").forEach(btn=>btn.addEventListener("click",()=>
+    stDeletePost(btn.dataset.id)
+  ));
+}
+
+function updateStCharCount(){
+  const ta=$("#st-textarea"), cnt=$("#st-char-count");
+  if(!ta||!cnt) return;
+  const n=ta.value.length;
+  cnt.textContent=`${n} / 150`;
+  cnt.classList.toggle("warn",n>130);
+}
+
+async function submitSmackTalk(){
+  const ps=$("#st-player"), ta=$("#st-textarea"), btn=$("#st-post-btn");
+  if(!ps||!ta) return;
+  const pid=parseInt(ps.value);
+  const msg=ta.value.trim();
+  if(!pid){ toast("Select your name first"); return; }
+  if(!msg){ toast("Write something first 😅"); return; }
+  smackPlayerId=pid;
+  btn.disabled=true; btn.textContent="Posting…";
+  const {error}=await sb.rpc("post_smacktalk",{p_player_id:pid,p_match_id:selectedSmackMatchId,p_message:msg});
+  btn.disabled=false; btn.textContent="Post 🔥";
+  if(error){ toast("Post failed — "+error.message.slice(0,50)); return; }
+  ta.value=''; updateStCharCount();
+  await loadAll(); renderSmackTalk();
+}
+
+async function stToggleReaction(postId, emoji){
+  if(!smackPlayerId){
+    const sel=$("#st-player");
+    if(sel&&sel.value){ smackPlayerId=parseInt(sel.value); }
+    else{ toast("Select your name first to react"); return; }
+  }
+  await sb.rpc("toggle_smacktalk_reaction",{p_player_id:smackPlayerId,p_post_id:postId,p_emoji:emoji});
+  await loadAll(); renderSmackTalk();
+}
+
+async function stDeletePost(postId){
+  if(!isAdmin) return;
+  const {error}=await sb.rpc("delete_smacktalk",{p_pw:adminPw,p_id:postId});
+  if(error){ toast("Delete failed"); return; }
+  await loadAll(); renderSmackTalk();
 }
 
 /* ====================== Auth gate ====================== */
