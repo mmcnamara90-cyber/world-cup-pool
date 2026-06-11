@@ -1356,7 +1356,12 @@ function renderMatches(){
   $("#tab-matches").innerHTML=`<div id="mtw-container"></div>`+html;
   renderMatchToWatch();
   $("#grpFilter").addEventListener("change",e=>{ matchFilterGroup=e.target.value; renderMatches(); });
-  $$('#tab-matches input[data-mid]').forEach(inp=>inp.addEventListener("change",onScoreChange));
+  $$('#tab-matches input[data-mid]').forEach(inp=>{
+    inp.addEventListener("change", onScoreChange);
+    inp.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){ e.preventDefault(); inp.blur(); }
+    });
+  });
 }
 
 async function onScoreChange(e){
@@ -1365,7 +1370,9 @@ async function onScoreChange(e){
   const h=box.querySelector('input[data-side="home"]').value;
   const a=box.querySelector('input[data-side="away"]').value;
   const home=num(h), away=num(a);
-  const clear = (home===null||away===null);
+  // If only one score is entered, wait — don't save or clear yet
+  if((home!==null)!==(away!==null)) return;
+  const clear=(home===null&&away===null);
   const {error}=await rpc("admin_set_match",{p_id:id,p_home:clear?null:home,p_away:clear?null:away});
   if(error) return;
   await loadAll(); renderMatches(); toast(clear?"Score cleared":"Score saved");
