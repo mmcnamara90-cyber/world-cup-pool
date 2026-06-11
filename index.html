@@ -1329,7 +1329,7 @@ function renderMatches(){
     let ms=state.matches.filter(m=>m.round===rd);
     if(matchFilterGroup!=="all") ms=ms.filter(m=>m.grp===matchFilterGroup);
     if(!ms.length) return;
-    ms.sort((a,b)=>a.id-b.id);
+    ms.sort((a,b)=>(a.match_date||'').localeCompare(b.match_date||'')||a.id-b.id);
     html+=`<div class="card"><div class="section-title">Matchday ${rd}</div>`;
     ms.forEach(m=>{
       const ho=ownerName(m.home_team), ao=ownerName(m.away_team);
