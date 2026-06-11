@@ -671,7 +671,7 @@ async function loadAll(){
   const [pl,tm,mt,st,rc,sk,sr] = await Promise.all([
     sb.from("players").select("*").order("sort_order"),
     sb.from("teams").select("*").order("grp").order("pos"),
-    sb.from("matches").select("*").order("id"),
+    sb.from("matches").select("*").order("match_date",{nullsFirst:false}).order("id"),
     sb.from("settings").select("*"),
     sb.from("recaps").select("*").order("created_at",{ascending:false}),
     sb.from("smacktalk").select("*").order("created_at",{ascending:false}),
