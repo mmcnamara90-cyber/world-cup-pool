@@ -1,1436 +1,2536 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>World Cup 2026 Pool</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-  :root{
-    --navy:#e8dfca; --navy2:#f0e9d8; --panel:#faf6ec; --panel2:#f2ebda;
-    --line:#dccfb2; --gold:#c89331; --gold-dim:#a8761f;
-    --text:#33302a; --muted:#8d8472; --good:#2f7d70; --bad:#bd5638; --draw:#bf9230;
-    --shadow:0 1px 2px rgba(70,58,30,.06);
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
-  body{background:var(--navy);color:var(--text);font-family:"Futura","Avenir Next","Century Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
-  a{color:var(--gold)}
-  .hidden{display:none !important}
-  .wrap{max-width:920px;margin:0 auto;padding:0 14px 90px}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Allure of the Seas · June 2026</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #FFF5E4;
+      --terra: #D04A28;
+      --terra-light: #FDEAE5;
+      --mustard: #D99218;
+      --mustard-light: #FFF5D0;
+      --teal: #1A8C7A;
+      --teal-light: #E0F4F1;
+      --navy: #1B3350;
+      --navy-mid: #2C4E72;
+      --purple: #7C3AED;
+      --purple-light: #F3EEFF;
+      --sand: #F5E2C0;
+      --white: #FFFFFF;
+      --text: #2A2A2A;
+      --text-light: #666666;
+      --border: #E0CEB8;
+      --success: #2A7A48;
+      --danger: #B83020;
+      --shadow: 0 4px 20px rgba(0,0,0,0.10);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
 
-  /* Password gate */
-  #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--navy);z-index:50;padding:20px}
-  .gate-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:34px 28px;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow)}
-  .badge{font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:700}
-  .gate-card h1{font-size:26px;margin:8px 0 4px;line-height:1.15}
-  .gate-card p{color:var(--muted);font-size:14px;margin:0 0 22px}
-  input,select,textarea{font-size:16px;font-family:inherit}
-  .field{width:100%;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:11px;padding:13px 14px;outline:none}
-  .field:focus{border-color:var(--gold-dim)}
-  button{font-family:inherit;cursor:pointer;border:none;border-radius:11px;font-size:15px;font-weight:600}
-  .btn-gold{background:var(--gold);color:#fff8ec;padding:13px 18px;width:100%;margin-top:12px;letter-spacing:.3px}
-  .btn-gold:active{transform:translateY(1px)}
-  .btn-gold:disabled{opacity:.5;cursor:default}
-  .gate-err{color:var(--bad);font-size:13px;margin-top:12px;min-height:16px}
+    /* ── HEADER ── */
+    .site-header {
+      background: var(--navy);
+      color: white;
+      padding: 22px 24px 18px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-top { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .header-top h1 { font-size: 26px; font-weight: 700; letter-spacing: 0.04em; color: #F5C842; text-transform: uppercase; }
+    .header-sub { font-size: 15px; color: rgba(255,255,255,0.75); margin-top: 4px; }
+    .countdown-chip {
+      display: inline-block;
+      background: var(--terra);
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 3px 14px;
+      border-radius: 100px;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
 
-  /* Header */
-  header.app{padding:22px 0 6px;text-align:center}
-  header.app .sub{font-size:12px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:700}
-  header.app h1{margin:6px 0 2px;font-size:24px}
-  .pot{color:var(--muted);font-size:13px}
-  .live{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:6px}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--good)}
-  .commish-bar{margin-top:9px}
-  .commish-link{background:transparent;border:1px solid var(--line);color:var(--muted);padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.3px}
-  .commish-link:hover{color:var(--gold);border-color:var(--gold-dim)}
-  .owner-tag{min-width:90px;text-align:right;font-size:13px;font-weight:700;color:var(--gold)}
-  .owner-tag.none{color:var(--muted);font-weight:500}
-  .scorebox .sc{display:inline-block;min-width:18px;text-align:center;font-weight:800;font-size:16px}
+    /* ── TAB NAV ── */
+    .tab-nav {
+      display: flex;
+      background: var(--navy-mid);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 1;
+      min-width: 60px;
+      padding: 12px 6px 10px;
+      background: none;
+      border: none;
+      border-bottom: 4px solid transparent;
+      color: rgba(255,255,255,0.55);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      text-align: center;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .tab-btn .ti { font-size: 22px; }
+    .tab-btn:hover { color: rgba(255,255,255,0.85); }
+    .tab-btn.active { color: white; }
+    .tab-btn[data-tab="travel"].active   { border-bottom-color: #F07050; }
+    .tab-btn[data-tab="packing"].active  { border-bottom-color: #F5C842; }
+    .tab-btn[data-tab="weather"].active  { border-bottom-color: #5BC8B8; }
+    .tab-btn[data-tab="dreams"].active   { border-bottom-color: #C084FC; }
+    .tab-btn[data-tab="todos"].active    { border-bottom-color: #6EE7A0; }
 
-  /* Tabs */
-  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;padding:10px 0;background:var(--navy);margin-bottom:6px;-webkit-overflow-scrolling:touch}
-  nav.tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:9px 14px;white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.2px}
-  nav.tabs button.active{background:var(--gold);color:#fff8ec;border-color:var(--gold)}
+    /* ── TAB PANELS ── */
+    .tab-panel { display: none; padding: 24px 16px 80px; max-width: 900px; margin: 0 auto; }
+    .tab-panel.active { display: block; }
 
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
-  .card h2{margin:0 0 4px;font-size:18px}
-  .card .hint{color:var(--muted);font-size:13px;margin:0 0 14px}
-  .section-title{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:700;margin:6px 2px 10px}
+    /* ── TYPOGRAPHY ── */
+    .section-title { font-size: 26px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .section-sub { color: var(--text-light); font-size: 16px; margin-bottom: 24px; }
 
-  /* Leaderboard */
-  table{width:100%;border-collapse:collapse}
-  .lb th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);text-align:left;padding:8px 8px;border-bottom:1px solid var(--line)}
-  .lb td{padding:11px 8px;border-bottom:1px solid var(--line);font-size:15px;vertical-align:middle}
-  .lb tr:last-child td{border-bottom:none}
-  .rank{width:34px;font-weight:700;color:var(--gold)}
-  .rank.r1{color:var(--gold)}.rank.r2{color:var(--draw)}
-  .pname{font-weight:600}
-  .pts{font-weight:800;font-size:18px;text-align:right}
-  .expand{cursor:pointer}
-  .teamline{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:3px 0}
-  .teamline b{color:var(--text);font-weight:600}
-  .breakdown{background:var(--navy2);border-radius:10px;padding:8px 12px;margin-top:8px}
-  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--navy2);color:var(--muted);border:1px solid var(--line)}
-  .pill.owned{color:var(--gold);border-color:var(--gold-dim)}
+    /* ── CARDS ── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
 
-  /* Fun facts */
-  .fact-row{font-size:14px;padding:9px 2px;border-bottom:1px solid var(--line);line-height:1.5}
-  .fact-row:last-child{border-bottom:none}
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 22px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: filter 0.15s, transform 0.1s;
+      min-height: 50px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:hover { filter: brightness(0.92); }
+    .btn-primary  { background: var(--terra);   color: white; }
+    .btn-mustard  { background: var(--mustard); color: var(--navy); }
+    .btn-teal     { background: var(--teal);    color: white; }
+    .btn-purple   { background: var(--purple);  color: white; }
+    .btn-ghost    { background: transparent; color: var(--text-light); border: 2px solid var(--border); }
+    .btn-danger   { background: var(--danger);  color: white; }
+    .btn-sm       { padding: 8px 16px; font-size: 14px; min-height: 38px; }
+    .btn-full     { width: 100%; }
 
-  /* Draft grid */
-  .draft-grid{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .draft-grid table{min-width:560px}
-  .draft-grid th,.draft-grid td{border:1px solid var(--line);padding:8px 6px;text-align:center;font-size:13px}
-  .draft-grid th{background:var(--navy2);color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:1px}
-  .draft-grid td .pk{display:block;font-size:10px;color:var(--muted)}
-  .draft-grid td.me{background:rgba(231,194,92,.10)}
-  .arrow{color:var(--gold);font-size:11px}
+    /* ── FORMS ── */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-weight: 700; font-size: 16px; margin-bottom: 6px; color: var(--navy); }
+    input, select, textarea {
+      width: 100%;
+      padding: 13px 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 18px;
+      color: var(--text);
+      background: var(--white);
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(26,140,122,0.15); }
+    textarea { resize: vertical; min-height: 80px; }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .form-row .form-group { flex: 1; min-width: 140px; }
 
-  /* Teams */
-  .grp-head{display:flex;align-items:center;gap:8px;margin:14px 2px 8px}
-  .grp-head .g{background:var(--gold);color:#fff8ec;font-weight:700;border-radius:7px;padding:2px 9px;font-size:13px}
-  .grp-head .stand{margin-left:auto;font-size:11px;color:var(--muted)}
-  .team-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line)}
-  .team-row:last-child{border-bottom:none}
-  .team-row .tn{flex:1;font-weight:600;font-size:15px}
-  .team-row .rec{font-size:12px;color:var(--muted);min-width:74px;text-align:right}
-  .team-row .tpts{min-width:30px;text-align:right;font-weight:800;color:var(--gold)}
-  .team-row select{max-width:140px;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:7px 8px}
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 12px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .badge-high   { background: var(--terra-light);  color: var(--terra); }
+    .badge-medium { background: var(--mustard-light); color: #8A5E00; }
+    .badge-low    { background: #E0F5E8; color: var(--success); }
+    .badge-done   { background: #E0F5E8; color: var(--success); }
 
-  /* Matches */
-  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-  .filters select{background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;flex:1;min-width:120px}
-  .match{display:grid;grid-template-columns:1fr 96px 1fr;align-items:center;gap:6px;padding:10px 4px;border-bottom:1px solid var(--line)}
-  .match:last-child{border-bottom:none}
-  .match .side{display:flex;flex-direction:column;gap:2px;min-width:0}
-  .match .side.away{text-align:right;align-items:flex-end}
-  .match .tm{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  .match .own{font-size:10px;color:var(--gold)}
-  .match .own.none{color:var(--muted)}
-  .scorebox{display:flex;align-items:center;justify-content:center;gap:5px}
-  .scorebox input{width:38px;text-align:center;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 4px;font-weight:700}
-  .scorebox span{color:var(--muted)}
-  .mlabel{grid-column:1 / -1;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
-  .winner{color:var(--good)}
+    /* ── FAMILY SELECTOR ── */
+    .family-tabs { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+    .family-tab {
+      padding: 12px 22px;
+      border-radius: 100px;
+      border: 2px solid var(--border);
+      background: white;
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      min-height: 50px;
+    }
+    .family-tab:hover { background: var(--sand); }
+    .family-tab.fs  { background: var(--terra);   color: white; border-color: var(--terra); }
+    .family-tab.fm  { background: var(--teal);    color: white; border-color: var(--teal); }
+    .family-tab.fpj { background: var(--purple);  color: white; border-color: var(--purple); }
 
-  /* Recaps */
-  .recap-form{margin-top:14px;display:flex;flex-direction:column;gap:8px}
-  .recap-form textarea.field{min-height:80px;resize:vertical;display:block}
-  .recap-head{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
-  .recap-title{font-weight:700;font-size:16px;flex:1}
-  .recap-date{font-size:12px;color:var(--muted);white-space:nowrap}
-  .recap-del{background:transparent;border:none;color:var(--bad);font-size:15px;padding:2px 6px;opacity:.45;border-radius:6px}
-  .recap-del:hover{opacity:1;background:var(--navy2)}
-  .recap-body{font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+    /* ── PACKING ── */
+    .packing-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .packing-item:last-child { border-bottom: none; }
+    .packing-item.packed .pack-text { text-decoration: line-through; color: var(--text-light); }
+    .pack-main { flex: 1; }
+    .pack-text { font-size: 17px; }
+    .pack-qty { font-size: 13px; font-weight: 700; color: var(--text-light); margin-left: 4px; }
+    .pack-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .pack-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 100px; font-size: 12px; font-weight: 700; }
+    .pack-tag-shared { background: #E0F5E8; color: var(--success); }
+    .pack-tag-theme  { background: var(--purple-light); color: var(--purple); }
+    .pack-tag-port   { background: #FFF0D0; color: #A06000; }
+    .pack-tag-buy    { background: #FFF5D0; color: #8A6000; }
+    /* 3-state status button */
+    .status-btn {
+      flex-shrink: 0;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 2.5px solid var(--border);
+      background: white;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s;
+    }
+    .status-btn.s-unpacked { border-color: var(--border); background: white; }
+    .status-btn.s-need_to_buy { border-color: var(--mustard); background: var(--mustard-light); }
+    .status-btn.s-packed    { border-color: var(--teal);   background: var(--teal-light); }
+    /* Filter bar */
+    .pack-filters {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin: 12px 0 4px;
+    }
+    .pack-filter-btn {
+      padding: 5px 14px; border-radius: 100px; font-size: 13px; font-weight: 700;
+      border: 2px solid var(--border); background: white; cursor: pointer;
+      transition: all 0.15s; color: var(--text-light);
+    }
+    .pack-filter-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+    /* Shared overview panel */
+    .shared-overview {
+      background: #E8F7F0; border: 2px solid var(--teal);
+      border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px;
+    }
+    .shared-overview-title { font-weight: 700; color: var(--teal); font-size: 15px; margin-bottom: 10px; }
+    .shared-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(26,140,122,0.15); font-size: 15px; }
+    .shared-row:last-child { border-bottom: none; }
+    .shared-owner { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 100px; background: var(--teal); color: white; }
+    /* Template picker */
+    .tmpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+    .tmpl-card {
+      border: 2px solid var(--border); border-radius: var(--radius-sm);
+      padding: 12px 14px; cursor: pointer; background: white;
+      transition: all 0.15s; text-align: left;
+    }
+    .tmpl-card:hover { border-color: var(--mustard); background: var(--mustard-light); }
+    .tmpl-card.selected { border-color: var(--teal); background: var(--teal-light); }
+    .tmpl-card-title { font-weight: 700; font-size: 15px; }
+    .tmpl-card-count { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+    .cat-head { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); margin: 14px 0 4px; }
+    .progress-wrap { background: var(--border); border-radius: 100px; height: 14px; overflow: hidden; margin: 8px 0 4px; }
+    .progress-fill { height: 100%; border-radius: 100px; transition: width 0.4s ease; }
 
-  /* Match to Watch */
-  .mtw-match{display:flex;align-items:center;gap:12px;padding:12px 0 8px}
-  .mtw-side{flex:1}
-  .mtw-side.mtw-away{text-align:right}
-  .mtw-team{font-weight:700;font-size:16px}
-  .mtw-owner{font-size:12px;color:var(--gold);margin-top:2px}
-  .mtw-vs{font-size:14px;color:var(--muted);font-weight:600;min-width:24px;text-align:center}
-  .mtw-meta{font-size:12px;color:var(--muted);margin-bottom:6px}
-  .mtw-reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-  .mtw-badge{background:var(--navy2);border:1px solid var(--line);border-radius:20px;font-size:12px;padding:4px 10px;color:var(--text);line-height:1.4}
-  .mtw-editor{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
-  .mtw-editor-head{display:flex;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:0 0 6px;gap:8px}
-  .mtw-rule-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
-  .mtw-rule-row:last-of-type{border-bottom:none}
-  .mtw-rule-label{flex:1;font-size:13px}
-  .mtw-weight{width:52px;text-align:center;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 4px;font-size:14px;font-family:inherit}
-  .mtw-toggle{width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;margin:0 9px}
+    /* ── ROTATING BANNER ── */
+    .banner-carousel {
+      background: linear-gradient(135deg, #E6F6F4, #F0FBF9);
+      border: 2px solid var(--teal);
+      border-left: 6px solid var(--teal);
+      border-radius: var(--radius);
+      padding: 18px 20px 14px;
+      margin-bottom: 20px;
+    }
+    .banner-content { font-size: 16px; line-height: 1.6; min-height: 52px; }
+    .banner-content strong { color: var(--teal); font-size: 17px; }
+    @keyframes bannerFade { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+    .banner-fade { animation: bannerFade 0.45s ease; }
+    .banner-dots { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(26,140,122,0.25); border: none; cursor: pointer; padding: 0; transition: background 0.2s; }
+    .banner-dot.active { background: var(--teal); transform: scale(1.3); }
 
-  /* Auto-Draft Advisor */
-  .btn-pop{background:#1aad9e;color:#fff;padding:13px 20px;letter-spacing:.4px;font-size:15px;font-weight:700;border-radius:11px;border:none;cursor:pointer;white-space:nowrap}
-  .btn-pop:active{transform:translateY(1px)}
-  .btn-pop:disabled{opacity:.5;cursor:default}
-  .advisor-cards{display:flex;flex-direction:column;gap:10px;margin-top:14px}
-  .advisor-card{background:var(--navy2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-  .advisor-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-  .advisor-icon{font-size:22px;line-height:1;flex-shrink:0}
-  .advisor-meta{flex:1;min-width:0}
-  .advisor-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700}
-  .advisor-team{font-size:17px;font-weight:800;color:var(--text)}
-  .advisor-rank{font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;text-align:right}
-  .advisor-desc{font-size:13px;color:var(--muted);line-height:1.5}
-  .advisor-group{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6;border-top:1px solid var(--line);padding-top:6px}
+    /* ── WEATHER ── */
+    .weather-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+    .w-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .w-card.sea-day { background: linear-gradient(135deg, #D8EEFF, #B8D8F8); }
+    .w-date  { font-size: 12px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.06em; }
+    .w-port  { font-size: 17px; font-weight: 700; color: var(--navy); margin: 4px 0 2px; line-height: 1.3; }
+    .w-emoji { font-size: 42px; display: block; margin: 10px 0 6px; }
+    .w-temp  { font-size: 26px; font-weight: 700; color: var(--terra); }
+    .w-desc  { font-size: 13px; color: var(--text-light); margin-top: 4px; }
 
-  /* Settings */
-  .set-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
-  .set-row:last-child{border-bottom:none}
-  .set-row label{flex:1;font-size:14px}
-  .set-row input{width:130px;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;text-align:right}
-  .set-row input.name{text-align:left;width:170px}
-  .btn-line{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-  .btn-ghost{background:var(--navy2);color:var(--text);border:1px solid var(--line);padding:10px 14px}
-  .btn-ghost:disabled{opacity:.5;cursor:default}
-  .btn-danger{background:#f1ddd2;color:#a23c1e;border:1px solid #e0b6a4;padding:10px 14px}
-  .saved{font-size:12px;color:var(--good);opacity:0;transition:opacity .3s}
-  .saved.show{opacity:1}
-  .warn{color:var(--draw);font-size:12px;margin-top:8px}
-  /* Countdown banner */
-  .countdown-banner{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 12px 14px;margin-bottom:10px;text-align:center;box-shadow:var(--shadow)}
-  .cd-label{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px}
-  .cd-time{display:flex;justify-content:center;align-items:flex-start;gap:2px;margin-bottom:6px}
-  .cd-unit{display:flex;flex-direction:column;align-items:center;min-width:52px}
-  .cd-unit span{font-size:34px;font-weight:800;color:var(--text);line-height:1;font-variant-numeric:tabular-nums}
-  .cd-unit small{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:3px}
-  .cd-sep{font-size:28px;font-weight:700;color:var(--line);padding:0 2px;margin-top:2px}
-  .cd-sub{font-size:12px;color:var(--muted)}
+    /* ── DREAMS ── */
+    .person-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
+    .person-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .pc-head {
+      padding: 14px 18px;
+      font-weight: 700;
+      font-size: 18px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pc-head .fam-sub { font-size: 13px; font-weight: 500; opacity: 0.8; }
+    .pc-body { padding: 14px 18px; }
+    .dream-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .dream-row:last-of-type { border-bottom: none; }
+    .dream-star { font-size: 18px; flex-shrink: 0; }
+    .dream-body { flex: 1; min-width: 0; }
+    .dream-txt  { font-size: 16px; line-height: 1.4; }
+    .dream-txt.done { text-decoration: line-through; color: var(--text-light); }
+    .dream-day  { font-size: 13px; font-weight: 700; color: var(--teal); margin-top: 3px; }
+    .dream-note { font-size: 13px; color: var(--text-light); margin-top: 3px; background: var(--sand); border-radius: 6px; padding: 5px 9px; line-height: 1.5; }
+    .dream-memory { font-size: 13px; color: var(--success); margin-top: 3px; background: #E8F7F0; border-radius: 6px; padding: 5px 9px; line-height: 1.5; }
+    .dream-cat { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 100px; background: var(--sand); color: var(--navy); margin-top: 3px; }
+    .dream-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .dream-linked { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--purple); background: var(--purple-light); padding: 2px 8px; border-radius: 100px; cursor: pointer; border: none; font-family: inherit; }
+    .dream-link-btn { background: none; border: 1.5px dashed var(--border); border-radius: 100px; font-size: 12px; font-weight: 700; color: var(--text-light); padding: 2px 8px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .dream-link-btn:hover { border-color: var(--purple); color: var(--purple); }
+    .dream-done-btn { background: none; border: 1.5px solid var(--border); border-radius: 100px; font-size: 12px; font-weight: 700; color: var(--text-light); padding: 2px 8px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .dream-done-btn.is-done { background: #E8F7F0; border-color: var(--success); color: var(--success); }
+    .dream-done-btn:hover { border-color: var(--teal); color: var(--teal); }
+    .dream-edit-btn { background: none; border: 1.5px solid var(--border); border-radius: 100px; font-size: 12px; font-weight: 700; color: var(--text-light); padding: 2px 8px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .dream-edit-btn:hover { border-color: var(--mustard); color: var(--mustard); }
+    .dream-join-btn { background: none; border: 1.5px solid var(--border); border-radius: 100px; font-size: 12px; font-weight: 700; color: var(--text-light); padding: 2px 8px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .dream-join-btn:hover { border-color: var(--teal); color: var(--teal); }
+    .dream-join-btn.joined { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
+    .dream-joiners { font-size: 12px; color: var(--teal); margin-top: 4px; font-weight: 600; }
+    .joining-section { margin-top: 14px; padding-top: 12px; border-top: 2px dashed var(--border); }
+    .joining-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); margin-bottom: 6px; }
+    .joining-row { font-size: 14px; padding: 5px 0; color: var(--text); border-bottom: 1px solid var(--border); }
+    .joining-row:last-child { border-bottom: none; }
+    /* Visual link picker */
+    .link-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 340px; overflow-y: auto; margin: 12px 0; }
+    .link-card { border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; cursor: pointer; background: white; transition: all 0.15s; text-align: left; }
+    .link-card:hover { border-color: var(--purple); background: var(--purple-light); }
+    .link-card.selected { border-color: var(--purple); background: var(--purple-light); }
+    .link-card-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+    .link-card-dream { font-size: 13px; line-height: 1.4; color: var(--text); }
+    .add-dream {
+      width: 100%;
+      padding: 11px;
+      background: var(--sand);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--text-light);
+      cursor: pointer;
+      margin-top: 12px;
+      font-weight: 700;
+      transition: all 0.15s;
+    }
+    .add-dream:hover { background: var(--mustard-light); border-color: var(--mustard); color: var(--navy); }
 
-  .foot{text-align:center;color:var(--muted);font-size:11px;padding:10px 0 0}
-  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:60}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+    /* ── DREAM CALENDAR ── */
+    .dream-calendar { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 12px; margin-top: 16px; }
+    .dcal-card { background: white; border-radius: var(--radius-sm); box-shadow: var(--shadow); padding: 14px 16px; }
+    .dcal-card.sea { background: linear-gradient(135deg, #D8EEFF, #C0D8F0); }
+    .dcal-date { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); }
+    .dcal-port { font-size: 15px; font-weight: 700; color: var(--navy); margin: 3px 0 8px; line-height: 1.3; }
+    .dcal-dream { font-size: 13px; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.07); }
+    .dcal-dream:last-child { border-bottom: none; }
+    .dcal-who { font-size: 11px; font-weight: 700; display: block; }
+    .dcal-empty { font-size: 13px; color: var(--text-light); font-style: italic; }
 
-  /* ---- Mobile ---- */
-  @media (max-width:600px){
-    .wrap{padding:0 10px 80px}
-    nav.tabs button{padding:8px 11px;font-size:13px}
+    /* ── TO-DOs ── */
+    .todo-item {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .t-bar { width: 5px; border-radius: 100px; flex-shrink: 0; align-self: stretch; min-height: 40px; }
+    .t-body { flex: 1; min-width: 0; }
+    .t-title { font-size: 18px; font-weight: 600; color: var(--navy); }
+    .t-done .t-title { text-decoration: line-through; opacity: 0.55; }
+    .t-meta { font-size: 14px; color: var(--text-light); margin-top: 4px; flex-wrap: wrap; display: flex; gap: 6px; align-items: center; }
+    .t-desc { font-size: 14px; color: var(--text-light); margin-top: 4px; }
+    .t-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .del-btn { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-light); padding: 4px; min-width: 36px; min-height: 36px; text-align: center; border-radius: 6px; }
+    .del-btn:hover { background: var(--terra-light); color: var(--terra); }
+    .bucket-mover { font-family: inherit; font-size: 12px; padding: 5px 8px; border: 1.5px solid var(--border); border-radius: 6px; background: white; color: var(--text); cursor: pointer; }
 
-    /* Score inputs — bigger tap targets */
-    .match{grid-template-columns:1fr 84px 1fr;gap:3px;padding:10px 2px}
-    .match .tm{font-size:12px}
-    .scorebox input{width:34px;padding:10px 2px;font-size:15px}
+    /* ── BUCKET HEADERS ── */
+    .bucket-section { margin-bottom: 28px; }
+    .bucket-hd {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 18px; border-radius: var(--radius);
+      margin-bottom: 12px; font-size: 17px; font-weight: 700;
+    }
+    .bucket-do    { background: linear-gradient(135deg,#FDEAE5,#FFE0D8); border-left: 5px solid var(--terra); color: var(--terra); }
+    .bucket-wait  { background: linear-gradient(135deg,#FFF5D0,#FFEEAA); border-left: 5px solid var(--mustard); color: #7A5000; }
+    .bucket-itin  { background: linear-gradient(135deg,#E0F4F1,#C4EBE6); border-left: 5px solid var(--teal); color: var(--teal); }
+    .bucket-done  { background: #F0F9F4; border-left: 5px solid var(--success); color: var(--success); }
+    .bucket-count { margin-left: auto; font-size: 13px; font-weight: 700; padding: 3px 12px; border-radius: 100px; background: rgba(0,0,0,0.08); color: inherit; }
 
-    /* Teams — hide W-D-L rec column, widen select */
-    .team-row .rec{display:none}
-    .team-row select{max-width:130px;min-height:40px;padding:8px 6px}
+    /* ── FLIGHTS ── */
+    .flight-block {
+      border-left: 5px solid;
+      border-radius: var(--radius);
+      background: white;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .flight-block-head {
+      padding: 14px 18px 12px;
+      font-weight: 700;
+      font-size: 17px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .flight-card {
+      padding: 16px 18px;
+      border-top: 1px solid var(--border);
+    }
+    .f-dir { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); margin-bottom: 6px; }
+    .f-route { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 700; color: var(--navy); }
+    .f-arrow { color: var(--terra); }
+    .f-detail { font-size: 15px; color: var(--text-light); margin-top: 6px; }
 
-    /* Settings — full-width inputs, good tap heights */
-    .set-row{flex-wrap:wrap;gap:6px}
-    .set-row input{width:100% !important;text-align:left !important;min-height:44px}
-    .set-row label{font-weight:600}
+    /* ── CRUISE BANNER ── */
+    .cruise-banner {
+      background: linear-gradient(135deg, var(--terra) 0%, #A83820 100%);
+      color: white;
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .cb-icon { font-size: 52px; }
+    .cb-title { font-size: 22px; font-weight: 700; line-height: 1.2; }
+    .cb-sub { opacity: 0.85; font-size: 15px; margin-top: 4px; }
+    .cb-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .cb-pill { background: rgba(255,255,255,0.2); padding: 4px 14px; border-radius: 100px; font-size: 13px; font-weight: 700; }
 
-    /* Buttons */
-    .btn-line{flex-direction:column}
-    .btn-line button{width:100%;min-height:44px}
-    .btn-gold{min-height:48px}
-    .recap-form .btn-gold{max-width:100% !important}
+    /* ── TRANSIT ── */
+    .transit-dir-head { font-size: 18px; font-weight: 700; color: var(--navy); margin: 8px 0 12px; display: flex; align-items: center; gap: 8px; }
+    .transit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 12px; margin-bottom: 24px; }
+    .transit-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .transit-head { padding: 12px 16px; font-weight: 700; font-size: 16px; color: white; }
+    .transit-body { padding: 14px 16px; }
+    .transit-method { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .transit-note { font-size: 14px; color: var(--text-light); line-height: 1.5; margin-top: 4px; }
+    .transit-confirmed { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--success); background: #E0F5E8; padding: 3px 10px; border-radius: 100px; margin-top: 6px; }
 
-    /* Countdown — tighter on small screens */
-    .cd-unit{min-width:44px}
-    .cd-unit span{font-size:28px}
+    /* ── MODAL ── */
+    .modal-bg {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-bg.hidden { display: none; }
+    .modal {
+      background: white;
+      border-radius: var(--radius);
+      padding: 28px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+    }
+    .modal h3 { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 20px; }
+    .modal-foot { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; flex-wrap: wrap; }
 
-    /* Auto-Draft Advisor */
-    .btn-pop{font-size:14px;padding:12px 16px}
-    .advisor-team{font-size:15px}
+    /* ── TOAST ── */
+    .toast-wrap { position: fixed; bottom: 24px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast {
+      background: var(--navy);
+      color: white;
+      padding: 13px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      animation: slideIn 0.3s ease;
+      pointer-events: auto;
+    }
+    .toast.ok  { background: var(--success); }
+    .toast.err { background: var(--danger); }
+    @keyframes slideIn {
+      from { transform: translateX(110%); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
 
-    /* Match to Watch */
-    .mtw-team{font-size:14px}
-    .mtw-badge{font-size:11px;padding:3px 8px}
-    .mtw-weight{width:44px}
-    .mtw-toggle{margin:0 4px}
-  }
-</style>
+    /* ── POLICY CARDS ── */
+    .policy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+    .policy-card {
+      background: white;
+      border-radius: var(--radius-sm);
+      border-left: 4px solid var(--border);
+      padding: 14px 16px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .policy-card .pc-icon { font-size: 22px; margin-bottom: 6px; display: block; }
+    .policy-card strong { color: var(--navy); font-size: 15px; display: block; margin-bottom: 4px; }
+
+    /* ── FLIGHT STATUS ── */
+    .status-result {
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      line-height: 1.6;
+      border: 2px solid var(--border);
+      background: var(--cream);
+    }
+    .status-ontime   { border-color: #2A7A48; background: #E0F5E8; }
+    .status-delayed  { border-color: #E8A020; background: #FFF5D0; }
+    .status-landed   { border-color: var(--teal); background: var(--teal-light); }
+    .status-cancelled{ border-color: var(--terra); background: var(--terra-light); }
+    .status-label { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+
+    /* ── UTILS ── */
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
+    .empty-icon  { font-size: 52px; margin-bottom: 12px; }
+    .loading     { text-align: center; padding: 48px; color: var(--text-light); font-size: 18px; }
+    hr.divider   { border: none; border-top: 2px solid var(--border); margin: 20px 0; }
+    .page-top    { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; }
+
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+
+    @media (max-width: 560px) {
+      .site-header .header-top h1 { font-size: 20px; }
+      .tab-btn { font-size: 10px; }
+      .cruise-banner { flex-direction: column; gap: 12px; }
+      .weather-grid { grid-template-columns: repeat(2, 1fr); }
+      .dream-calendar { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
 </head>
 <body>
 
-<!-- ===== Password gate ===== -->
-<div id="gate">
-  <div class="gate-card">
-    <div class="badge">World Cup 2026</div>
-    <h1>The Pool</h1>
-    <p>Enter the pool password to continue.</p>
-    <input id="gatePw" class="field" type="password" placeholder="Password" autocomplete="off" />
-    <button class="btn-gold" id="gateBtn">Enter</button>
-    <div class="gate-err" id="gateErr"></div>
+<!-- ═══ HEADER ═══ -->
+<header class="site-header">
+  <div class="header-top">
+    <span style="font-size:28px">🚢</span>
+    <h1>Allure of the Seas</h1>
   </div>
-</div>
+  <div class="header-sub">
+    June 21–28, 2026 · Swansons · McNamaras · PJ
+    <span class="countdown-chip" id="countdown">Loading…</span>
+  </div>
+</header>
 
-<!-- ===== App ===== -->
-<div id="app" class="hidden">
-  <div class="wrap">
-    <header class="app">
-      <div class="sub">FIFA World Cup 2026 · Commissioner: Michelle</div>
-      <h1>The Pool</h1>
-      <div class="pot">$20 buy-in · $160 pot · 1st $100 / 2nd $60</div>
-      <div class="live"><span class="dot"></span><span id="liveTxt">Live · synced</span></div>
-      <div class="commish-bar"><button id="commishBtn" class="commish-link">Commissioner login</button></div>
-    </header>
+<!-- ═══ TAB NAV ═══ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="travel">
+    <span class="ti">✈️</span>Travel
+  </button>
+  <button class="tab-btn" data-tab="packing">
+    <span class="ti">🧳</span>Packing
+  </button>
+  <button class="tab-btn" data-tab="weather">
+    <span class="ti">🌤️</span>Weather
+  </button>
+  <button class="tab-btn" data-tab="dreams">
+    <span class="ti">✨</span>Dreams
+  </button>
+  <button class="tab-btn" data-tab="todos">
+    <span class="ti">✅</span>To-Do
+  </button>
+</nav>
 
-    <div id="countdown-banner" class="countdown-banner hidden">
-      <div class="cd-label">⚽ First Kickoff</div>
-      <div class="cd-time">
-        <div class="cd-unit"><span id="cd-days">0</span><small>days</small></div>
-        <div class="cd-sep">:</div>
-        <div class="cd-unit"><span id="cd-hours">00</span><small>hrs</small></div>
-        <div class="cd-sep">:</div>
-        <div class="cd-unit"><span id="cd-mins">00</span><small>min</small></div>
-        <div class="cd-sep">:</div>
-        <div class="cd-unit"><span id="cd-secs">00</span><small>sec</small></div>
+<!-- ═══ MAIN ═══ -->
+<main>
+
+  <!-- ── TRAVEL TAB ── -->
+  <div class="tab-panel active" id="panel-travel">
+    <div class="cruise-banner">
+      <span class="cb-icon">🚢</span>
+      <div>
+        <div class="cb-title">Royal Caribbean · Allure of the Seas</div>
+        <div class="cb-sub">Departs Fort Lauderdale · June 21, 2026 · Sky Class ✨</div>
+        <div class="cb-pills">
+          <span class="cb-pill">🇺🇸 Fort Lauderdale</span>
+          <span class="cb-pill">🇯🇲 Falmouth, Jamaica</span>
+          <span class="cb-pill">🇧🇸 CocoCay</span>
+          <span class="cb-pill">🇧🇸 Nassau, Bahamas</span>
+        </div>
       </div>
-      <div class="cd-sub">June 11, 2026 · FIFA World Cup 2026</div>
     </div>
 
-    <nav class="tabs">
-      <button data-tab="leaderboard" class="active">Leaderboard</button>
-      <button data-tab="draft">Draft</button>
-      <button data-tab="teams">Teams</button>
-      <button data-tab="matches">Scores</button>
-      <button data-tab="recaps">Updates</button>
-      <button data-tab="settings" id="settingsTab" class="hidden">Settings</button>
-    </nav>
+    <div class="page-top">
+      <div>
+        <div class="section-title">✈️ Flights</div>
+        <div class="section-sub">Inbound to Fort Lauderdale and flights home.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openFlightModal()">+ Add Flight</button>
+    </div>
 
-    <section id="tab-leaderboard"></section>
-    <section id="tab-draft" class="hidden"></section>
-    <section id="tab-teams" class="hidden"></section>
-    <section id="tab-matches" class="hidden"></section>
-    <section id="tab-recaps" class="hidden"></section>
-    <section id="tab-settings" class="hidden"></section>
+    <div id="flights-list"><div class="loading">⏳ Loading…</div></div>
 
-    <div class="foot">Group-stage scoring is live. Knockout bracket (Phase 2) coming after the group stage.</div>
+    <!-- Cruise Reminders -->
+    <div style="margin-top:32px">
+      <div class="section-title" style="font-size:20px;margin-bottom:4px">📋 Cruise Reminders & Sky Class Tips</div>
+      <div class="section-sub">Policies and tips for the Allure sailing — tailored for Sky Class guests.</div>
+      <div class="policy-grid">
+
+        <div class="policy-card" style="border-left-color:var(--terra)">
+          <span class="pc-icon">🥂</span>
+          <strong>Alcohol Policy</strong>
+          Each adult may bring <em>one 750ml bottle of wine or champagne</em> on boarding day via carry-on. No boxed wine. All other purchased bottles stored until final day.
+        </div>
+
+        <div class="policy-card" style="border-left-color:var(--teal)">
+          <span class="pc-icon">🧴</span>
+          <strong>Reef-Safe Sunscreen Required</strong>
+          Jamaica &amp; Bahamas ban oxybenzone, octinoxate, octocrylene &amp; titanium dioxide. Buy reef-safe before you go — hard to find at ports.
+        </div>
+
+        <div class="policy-card" style="border-left-color:var(--purple)">
+          <span class="pc-icon">📱</span>
+          <strong>Online Check-In</strong>
+          Complete at RoyalCaribbean.com by <strong>June 18</strong> (3 days before sailing). Print SetSail passes and bring them to the pier.
+        </div>
+
+        <div class="policy-card" style="border-left-color:var(--success)">
+          <span class="pc-icon">💊</span>
+          <strong>Medications in Carry-On</strong>
+          Keep all medications in carry-on, in original labeled containers. Pack 3 extra days in case of itinerary changes.
+        </div>
+
+        <div class="policy-card" style="border-left-color:var(--mustard)">
+          <span class="pc-icon">🎭</span>
+          <strong>Shows: Use Your Concierge</strong>
+          Broadway productions and AquaTheater shows have reserved Sky Class seating sections. Share your show preferences in the <em>suite welcome email</em> — no need to book independently beforehand.
+        </div>
+
+        <div class="policy-card" style="border-left-color:var(--terra)">
+          <span class="pc-icon">👑</span>
+          <strong>Sky Class Boarding</strong>
+          As Sky Class guests, you board through a <strong>dedicated priority lane</strong> before general boarding. No need to race to the pier — you won't wait in the main queue.
+        </div>
+
+        <div class="policy-card" style="border-left-color:var(--teal)">
+          <span class="pc-icon">🍳</span>
+          <strong>Skip the Buffet for Breakfast</strong>
+          Room service breakfast is included in your suite. Or head to <strong>Coastal Kitchen</strong> — the suite-exclusive restaurant with sit-down service. Both beat the Windjammer every time.
+        </div>
+
+        <div class="policy-card" style="border-left-color:var(--navy)">
+          <span class="pc-icon">💵</span>
+          <strong>$1 Bills for the Ports</strong>
+          Jamaica and Nassau have a strong tip culture. Bring a stack of $1 bills for vendors, local guides, and photo opportunities ashore.
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Transit Section -->
+    <div style="margin-top:36px" id="transit-section">
+      <div class="section-title" style="font-size:20px;margin-bottom:4px">🚌 Getting To &amp; From the Ship</div>
+      <div class="section-sub">How each family is traveling to and from Port Everglades.</div>
+      <div id="transit-content"><div class="loading">⏳ Loading…</div></div>
+    </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <!-- ── PACKING TAB ── -->
+  <div class="tab-panel" id="panel-packing">
+    <div class="section-title">🧳 Packing Lists</div>
+    <div class="section-sub">Tap the circle to cycle status: ○ unpacked → 🛒 need to buy → ✅ packed. Tag items as shared, port-specific, or theme night!</div>
 
-<script>
-/* ====================== Config ====================== */
-const SUPABASE_URL = "https://viudclgcdsskzlfosflg.supabase.co";
-const SUPABASE_KEY = "sb_publishable_tjApfg66Rm3XeBC8YOcyMA_W1AMVJRr";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <!-- Rotating tip banner -->
+    <div class="banner-carousel">
+      <div class="banner-content" id="banner-content">Loading tips…</div>
+      <div class="banner-dots" id="banner-dots"></div>
+    </div>
 
-const TEAMS_PER_PLAYER = 6;
-const DRAFT_ROUNDS = 6;
+    <!-- Shared overview (all families) -->
+    <div id="shared-overview"></div>
 
-/* ====================== Team reference data (FIFA rankings April 2026, WC titles, confederation) ====================== */
-const TEAM_DATA = {
-  'France':             {rank:1,  wcTitles:2, conf:'UEFA',     debut:false},
-  'Spain':              {rank:2,  wcTitles:1, conf:'UEFA',     debut:false},
-  'Argentina':          {rank:3,  wcTitles:3, conf:'CONMEBOL', debut:false},
-  'England':            {rank:4,  wcTitles:1, conf:'UEFA',     debut:false},
-  'Portugal':           {rank:5,  wcTitles:0, conf:'UEFA',     debut:false},
-  'Brazil':             {rank:6,  wcTitles:5, conf:'CONMEBOL', debut:false},
-  'Netherlands':        {rank:7,  wcTitles:0, conf:'UEFA',     debut:false},
-  'Morocco':            {rank:8,  wcTitles:0, conf:'CAF',      debut:false},
-  'Belgium':            {rank:9,  wcTitles:0, conf:'UEFA',     debut:false},
-  'Germany':            {rank:10, wcTitles:4, conf:'UEFA',     debut:false},
-  'Croatia':            {rank:11, wcTitles:0, conf:'UEFA',     debut:false},
-  'Colombia':           {rank:13, wcTitles:0, conf:'CONMEBOL', debut:false},
-  'Senegal':            {rank:14, wcTitles:0, conf:'CAF',      debut:false},
-  'Mexico':             {rank:15, wcTitles:0, conf:'CONCACAF', debut:false},
-  'United States':      {rank:16, wcTitles:0, conf:'CONCACAF', debut:false},
-  'Uruguay':            {rank:17, wcTitles:2, conf:'CONMEBOL', debut:false},
-  'Japan':              {rank:18, wcTitles:0, conf:'AFC',      debut:false},
-  'Switzerland':        {rank:19, wcTitles:0, conf:'UEFA',     debut:false},
-  'Iran':               {rank:21, wcTitles:0, conf:'AFC',      debut:false},
-  'Austria':            {rank:23, wcTitles:0, conf:'UEFA',     debut:false},
-  'Ecuador':            {rank:24, wcTitles:0, conf:'CONMEBOL', debut:false},
-  'South Korea':        {rank:25, wcTitles:0, conf:'AFC',      debut:false},
-  'Australia':          {rank:26, wcTitles:0, conf:'AFC',      debut:false},
-  'Egypt':              {rank:29, wcTitles:0, conf:'CAF',      debut:false},
-  'Canada':             {rank:30, wcTitles:0, conf:'CONCACAF', debut:false},
-  'Ivory Coast':        {rank:33, wcTitles:0, conf:'CAF',      debut:false},
-  'Qatar':              {rank:35, wcTitles:0, conf:'AFC',      debut:false},
-  'Algeria':            {rank:36, wcTitles:0, conf:'CAF',      debut:false},
-  'Sweden':             {rank:39, wcTitles:0, conf:'UEFA',     debut:false},
-  'Tunisia':            {rank:40, wcTitles:0, conf:'CAF',      debut:false},
-  'Czechia':            {rank:41, wcTitles:0, conf:'UEFA',     debut:false},
-  'Türkiye':            {rank:42, wcTitles:0, conf:'UEFA',     debut:false},
-  'Norway':             {rank:44, wcTitles:0, conf:'UEFA',     debut:false},
-  'Scotland':           {rank:47, wcTitles:0, conf:'UEFA',     debut:false},
-  'DR Congo':           {rank:51, wcTitles:0, conf:'CAF',      debut:false},
-  'Bosnia-Herzegovina': {rank:52, wcTitles:0, conf:'UEFA',     debut:false},
-  'Panama':             {rank:53, wcTitles:0, conf:'CONCACAF', debut:false},
-  'Saudi Arabia':       {rank:57, wcTitles:0, conf:'AFC',      debut:false},
-  'South Africa':       {rank:60, wcTitles:0, conf:'CAF',      debut:false},
-  'Iraq':               {rank:61, wcTitles:0, conf:'AFC',      debut:false},
-  'Uzbekistan':         {rank:62, wcTitles:0, conf:'AFC',      debut:true},
-  'Paraguay':           {rank:64, wcTitles:0, conf:'CONMEBOL', debut:false},
-  'Ghana':              {rank:65, wcTitles:0, conf:'CAF',      debut:false},
-  'Jordan':             {rank:68, wcTitles:0, conf:'AFC',      debut:true},
-  'Cape Verde':         {rank:70, wcTitles:0, conf:'CAF',      debut:true},
-  'Curaçao':            {rank:81, wcTitles:0, conf:'CONCACAF', debut:true},
-  'Haiti':              {rank:83, wcTitles:0, conf:'CONCACAF', debut:false},
-  'New Zealand':        {rank:95, wcTitles:0, conf:'OFC',      debut:false},
-};
+    <div class="family-tabs">
+      <button class="family-tab fs" data-family="Swanson"  onclick="selectFamily('Swanson')">🏄 Swansons</button>
+      <button class="family-tab"    data-family="McNamara" onclick="selectFamily('McNamara')">🌺 McNamaras</button>
+      <button class="family-tab"    data-family="PJ"       onclick="selectFamily('PJ')">🎉 PJ</button>
+    </div>
 
-/* ====================== Match to Watch — rule definitions ====================== */
-const DEFAULT_RULES = {
-  couple:    {label:"Couple match-up",        emoji:"💑", weight:9,  enabled:true},
-  sibling:   {label:"Sibling match-up",       emoji:"👫", weight:9,  enabled:true},
-  swing:     {label:"Pool standings swing",   emoji:"📊", weight:8,  enabled:true},
-  highstakes:{label:"Top seeds clash",        emoji:"⭐", weight:7,  enabled:true},
-  rivalry:   {label:"Historic rivalry",       emoji:"⚔️",  weight:7,  enabled:true},
-  host:      {label:"Host nation on field",   emoji:"🏟️",  weight:6,  enabled:true},
-  leader:    {label:"Leader's team playing",  emoji:"🥇", weight:6,  enabled:true},
-  defending: {label:"Defending champion",     emoji:"🏆", weight:6,  enabled:true},
-  rankgap:   {label:"Upset watch",            emoji:"🎯", weight:5,  enabled:true},
-  groupfinal:{label:"Final group matchday",   emoji:"🔥", weight:5,  enabled:true},
-  continent: {label:"Continent derby",        emoji:"🌍", weight:3,  enabled:true},
-  clubmates: {label:"Club teammates",         emoji:"👕", weight:3,  enabled:true},
-};
+    <!-- Filter bar -->
+    <div class="pack-filters" id="pack-filters">
+      <button class="pack-filter-btn active" data-filter="all" onclick="setPackFilter('all',this)">All</button>
+      <button class="pack-filter-btn" data-filter="unpacked"    onclick="setPackFilter('unpacked',this)">○ Unpacked</button>
+      <button class="pack-filter-btn" data-filter="need_to_buy" onclick="setPackFilter('need_to_buy',this)">🛒 Need to Buy</button>
+      <button class="pack-filter-btn" data-filter="packed"      onclick="setPackFilter('packed',this)">✅ Packed</button>
+      <button class="pack-filter-btn" data-filter="shared"      onclick="setPackFilter('shared',this)">🤝 Shared</button>
+      <button class="pack-filter-btn" data-filter="theme"       onclick="setPackFilter('theme',this)">🎉 Theme Night</button>
+      <button class="pack-filter-btn" data-filter="port"        onclick="setPackFilter('port',this)">🗺️ Port Tagged</button>
+    </div>
 
-// Pool relationships (name fragment matching)
-const COUPLES  = [["Jeremy","Michelle"],["Emily","Josh"],["Greer","Travis"]];
-const SIBLINGS = [["Griffin","Greer"]]; // Griffin/Parco player vs Greer player
+    <div id="packing-content"><div class="loading">⏳ Loading…</div></div>
+  </div>
 
-// Classic national rivalries (both directions)
-const RIVALRIES = new Set([
-  "England|Scotland","Scotland|England",
-  "Germany|Netherlands","Netherlands|Germany",
-  "Brazil|Argentina","Argentina|Brazil",
-  "Portugal|Spain","Spain|Portugal",
-  "France|Germany","Germany|France",
-  "France|England","England|France",
-  "Argentina|Uruguay","Uruguay|Argentina",
-  "Mexico|United States","United States|Mexico",
-  "South Korea|Japan","Japan|South Korea",
-  "Morocco|Algeria","Algeria|Morocco",
-  "Netherlands|Belgium","Belgium|Netherlands",
-]);
+  <!-- ── WEATHER TAB ── -->
+  <div class="tab-panel" id="panel-weather">
+    <div class="section-title">🌤️ Port-by-Port Weather</div>
+    <div class="section-sub">Forecast for each stop. Check back closer to departure for the most accurate forecast!</div>
+    <div class="weather-grid" id="weather-grid"><div class="loading" style="grid-column:1/-1">⏳ Loading forecasts…</div></div>
+    <p id="weather-note" style="text-align:center;font-size:14px;color:var(--text-light);margin-top:16px;display:none">
+      ℹ️ Forecasts from Open-Meteo. Accuracy improves within 7 days of the trip.
+    </p>
+  </div>
 
-const HOST_NATIONS = new Set(["United States","Mexico","Canada"]);
+  <!-- ── DREAMS TAB ── -->
+  <div class="tab-panel" id="panel-dreams">
+    <div class="section-title">✨ Dream List</div>
+    <div class="section-sub">Up to 3 dreams per person. Link matching dreams or join someone else's activity — joining doesn't count toward your cap.</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;background:var(--navy);border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow)">
+      <span style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.75);white-space:nowrap">👤 I am:</span>
+      <select id="dream-viewer" onchange="renderDreams()" style="font-size:16px;font-weight:700;border:none;background:transparent;color:#F5C842;flex:1;cursor:pointer"></select>
+    </div>
+    <div class="person-grid" id="dreams-grid"><div class="loading">⏳ Loading…</div></div>
 
-// High-confidence club teammate connections (2025/26 season)
-const CLUB_CONNECTIONS = new Set([
-  "France|England","England|France",    // Mbappé + Bellingham at Real Madrid
-  "France|Croatia","Croatia|France",    // Mbappé + Modrić at Real Madrid
-  "Brazil|England","England|Brazil",    // Vinícius/Rodrygo + Bellingham at Real Madrid
-  "Uruguay|England","England|Uruguay",  // Valverde + Bellingham at Real Madrid
-]);
+    <div id="dream-calendar-section" style="margin-top:36px;display:none">
+      <div class="section-title" style="font-size:20px;margin-bottom:4px">📅 Cruise Calendar</div>
+      <div class="section-sub">Dreams assigned to each day of the trip.</div>
+      <div class="dream-calendar" id="dream-calendar"></div>
+    </div>
+  </div>
 
-/* ====================== State ====================== */
-let state = { players:[], teams:[], matches:[], settings:{}, recaps:[] };
-let currentTab = "leaderboard";
-let matchFilterGroup = "all";
-let isAdmin = false;
-let adminPw = null;
-let mtwEditorOpen = false;
+  <!-- ── TO-DO TAB ── -->
+  <div class="tab-panel" id="panel-todos">
+    <div class="page-top">
+      <div>
+        <div class="section-title">✅ To-Do List</div>
+        <div class="section-sub">Organized by when you can take action.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openTodoModal()">+ Add Task</button>
+    </div>
+    <div id="todos-list"><div class="loading">⏳ Loading…</div></div>
+  </div>
 
-/* ====================== Helpers ====================== */
-const $ = (s,el=document)=>el.querySelector(s);
-const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
-const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2000);}
-function num(v){ return (v===""||v===null||v===undefined||isNaN(v)) ? null : parseInt(v,10); }
-function setVal(k,d){ const v=state.settings[k]; return v===undefined||v===null||v==="" ? d : v; }
-function winPts(){ return parseInt(setVal("win_points","3"),10); }
-function drawPts(){ return parseInt(setVal("draw_points","1"),10); }
-function lossPts(){ return parseInt(setVal("loss_points","0"),10); }
-function playerById(id){ return state.players.find(p=>p.id===id); }
+</main>
 
-function formatDate(ts){
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
-}
-function formatLastSync(){
-  const ls = state.settings["last_sync"];
-  if(!ls) return "Never";
-  const d = new Date(ls);
-  const mins = Math.floor((Date.now()-d.getTime())/60000);
-  if(mins<1) return "Just now";
-  if(mins<60) return `${mins} min${mins!==1?'s':''} ago`;
-  const hrs = Math.floor(mins/60);
-  if(hrs<24) return `${hrs} hr${hrs!==1?'s':''} ago`;
-  return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
-}
+<!-- ═══ MODALS ═══ -->
 
-/* ====================== Commissioner mode ====================== */
-async function rpc(fn, args={}){
-  const {data,error} = await sb.rpc(fn, {p_pw:adminPw, ...args});
-  if(error){ console.error(error); toast("Action blocked — please log in again"); commishLogout(); return {error}; }
-  return {data};
-}
-async function commishLogin(){
-  const pw = prompt("Commissioner password:");
-  if(pw===null) return;
-  const {data,error} = await sb.rpc("verify_admin",{p_pw:pw});
-  if(error || !data){ toast("Incorrect commissioner password"); return; }
-  adminPw = pw; isAdmin = true;
-  try{ sessionStorage.setItem("wc_admin", pw); }catch(e){}
-  applyMode(); toast("Commissioner mode on");
-}
-function commishLogout(){
-  isAdmin=false; adminPw=null; mtwEditorOpen=false;
-  try{ sessionStorage.removeItem("wc_admin"); }catch(e){}
-  if(currentTab==="settings") switchTab("leaderboard");
-  applyMode();
-}
-function applyMode(){
-  const b=$("#commishBtn"); if(b) b.textContent = isAdmin ? "Commissioner mode · Log out" : "Commissioner login";
-  const st=$("#settingsTab"); if(st) st.classList.toggle("hidden", !isAdmin);
-  renderCurrent();
-}
-
-/* ====================== Stats computation ====================== */
-function computeTeamStats(){
-  const rec = {};
-  state.teams.forEach(t=>{ rec[t.name]={grp:t.grp,pld:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
-  state.matches.forEach(m=>{
-    const hs=m.home_score, as_=m.away_score;
-    if(hs===null||as_===null||hs===undefined||as_===undefined) return;
-    const h=rec[m.home_team], a=rec[m.away_team];
-    if(!h||!a) return;
-    h.pld++;a.pld++; h.gf+=hs;h.ga+=as_; a.gf+=as_;a.ga+=hs;
-    if(hs>as_){h.w++;a.l++;}
-    else if(hs<as_){a.w++;h.l++;}
-    else{h.d++;a.d++;}
-  });
-  Object.values(rec).forEach(r=>{ r.gd=r.gf-r.ga; r.pts=r.w*winPts()+r.d*drawPts()+r.l*lossPts(); });
-  return rec;
-}
-
-function computeLeaderboard(){
-  const rec = computeTeamStats();
-  const rows = state.players.map(p=>{
-    const owned = state.teams.filter(t=>t.owner_id===p.id);
-    let pts=0,w=0,d=0,l=0,gf=0;
-    owned.forEach(t=>{ const r=rec[t.name]; if(r){pts+=r.pts;w+=r.w;d+=r.d;l+=r.l;gf+=r.gf;} });
-    return {player:p, owned, pts, w, d, l, gf, count:owned.length};
-  });
-  rows.sort((a,b)=> b.pts-a.pts || b.w-a.w || b.gf-a.gf || a.player.sort_order-b.player.sort_order);
-  return {rows, rec};
-}
-
-function computeFunFacts(){
-  const assigned = state.teams.filter(t=>t.owner_id);
-  if(assigned.length < 8) return [];
-
-  const playerStats = state.players.map(p=>{
-    const owned = state.teams.filter(t=>t.owner_id===p.id);
-    const data = owned.map(t=>({team:t, d:TEAM_DATA[t.name]})).filter(x=>x.d);
-    if(!data.length) return null;
-    const ranks = data.map(x=>x.d.rank);
-    const minRank = Math.min(...ranks);
-    const maxRank = Math.max(...ranks);
-    const avgRank = ranks.reduce((s,r)=>s+r,0)/ranks.length;
-    const totalTitles = data.reduce((s,x)=>s+x.d.wcTitles,0);
-    const confCount = new Set(data.map(x=>x.d.conf)).size;
-    const debutTeams = data.filter(x=>x.d.debut);
-    const bestTeam = data.find(x=>x.d.rank===minRank);
-    const worstTeam = data.find(x=>x.d.rank===maxRank);
-    return {player:p, owned, data, minRank, maxRank, avgRank, totalTitles, confCount, debutTeams, bestTeam, worstTeam};
-  }).filter(Boolean);
-
-  if(!playerStats.length) return [];
-  const facts = [];
-
-  // Defending champion (Argentina)
-  const argOwner = playerStats.find(s=>s.owned.some(t=>t.name==='Argentina'));
-  if(argOwner) facts.push(`🏆 <b>${esc(argOwner.player.name)}</b> holds the defending champions — Argentina is going for back-to-back.`);
-
-  // Highest-ranked team in the pool
-  const topRanked = playerStats.reduce((best,s)=>s.minRank<best.minRank?s:best);
-  if(topRanked.bestTeam) facts.push(`📈 <b>${esc(topRanked.player.name)}</b> drew the tournament's top seed — ${esc(topRanked.bestTeam.team.name)} enters as FIFA #${topRanked.minRank}.`);
-
-  // Lowest-ranked team in the pool
-  const bottomRanked = playerStats.reduce((worst,s)=>s.maxRank>worst.maxRank?s:worst);
-  if(bottomRanked.worstTeam) facts.push(`📉 <b>${esc(bottomRanked.player.name)}</b> is riding the longest long shot — ${esc(bottomRanked.worstTeam.team.name)} is ranked #${bottomRanked.maxRank} in the world.`);
-
-  // Most combined World Cup titles
-  const mostTitles = playerStats.reduce((best,s)=>s.totalTitles>best.totalTitles?s:best);
-  if(mostTitles.totalTitles>0){
-    const titleTeams = mostTitles.data.filter(x=>x.d.wcTitles>0).map(x=>`${esc(x.team.name)} ×${x.d.wcTitles}`).join(', ');
-    facts.push(`🥇 <b>${esc(mostTitles.player.name)}</b> has the most combined World Cup titles — ${mostTitles.totalTitles} total: ${titleTeams}.`);
-  }
-
-  // Best average FIFA ranking
-  const bestAvg = playerStats.reduce((best,s)=>s.avgRank<best.avgRank?s:best);
-  facts.push(`⭐ <b>${esc(bestAvg.player.name)}</b> has the strongest stable by average FIFA ranking — #${Math.round(bestAvg.avgRank)} avg across their ${bestAvg.owned.length} teams.`);
-
-  // Most confederation diversity
-  const mostDiverse = playerStats.reduce((best,s)=>s.confCount>best.confCount?s:best);
-  if(mostDiverse.confCount>=3){
-    const confNames = {UEFA:'Europe',CONMEBOL:'South America',CONCACAF:'North/Central America',CAF:'Africa',AFC:'Asia',OFC:'Oceania'};
-    const confs = [...new Set(mostDiverse.data.map(x=>x.d.conf))].map(c=>confNames[c]||c).join(', ');
-    facts.push(`🌍 <b>${esc(mostDiverse.player.name)}</b> has the widest global spread — teams from ${mostDiverse.confCount} confederations: ${confs}.`);
-  }
-
-  // Most debut nations
-  const mostDebuts = playerStats.reduce((best,s)=>s.debutTeams.length>best.debutTeams.length?s:best);
-  if(mostDebuts.debutTeams.length>0){
-    const names = mostDebuts.debutTeams.map(x=>esc(x.team.name)).join(' and ');
-    const plural = mostDebuts.debutTeams.length>1;
-    facts.push(`🆕 <b>${esc(mostDebuts.player.name)}</b> is betting on fresh blood — ${names} ${plural?'are':'is'} making their World Cup debut.`);
-  }
-
-  return facts;
-}
-
-/* ====================== Score sync ====================== */
-async function syncScores(){
-  const btn = $("#syncBtn");
-  if(btn){ btn.disabled=true; btn.textContent="Syncing…"; }
-  try{
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/sync-scores`, {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    const data = await resp.json();
-    if(data.ok && !data.skipped){
-      toast(data.updated>0 ? `Synced — ${data.updated} score${data.updated!==1?'s':''} updated` : 'All scores already current');
-      await loadAll(); renderCurrent();
-    } else if(data.skipped){
-      toast("Just synced — please wait a moment");
-    } else {
-      toast(data.error?.slice(0,60) || "Sync failed — check API key setup");
-    }
-  } catch(e){
-    toast("Sync error — check connection");
-  } finally{
-    if(btn){ btn.disabled=false; btn.textContent="Sync scores now"; }
-  }
-}
-
-/* ====================== Data load + realtime ====================== */
-async function loadAll(){
-  const [pl,tm,mt,st,rc] = await Promise.all([
-    sb.from("players").select("*").order("sort_order"),
-    sb.from("teams").select("*").order("grp").order("pos"),
-    sb.from("matches").select("*").order("id"),
-    sb.from("settings").select("*"),
-    sb.from("recaps").select("*").order("created_at",{ascending:false}),
-  ]);
-  if(pl.error||tm.error||mt.error||st.error){ console.error(pl.error||tm.error||mt.error||st.error); toast("Sync error — check connection"); }
-  state.players = pl.data||[];
-  state.teams   = tm.data||[];
-  state.matches = mt.data||[];
-  state.recaps  = rc.data||[];
-  state.settings = {};
-  (st.data||[]).forEach(r=> state.settings[r.key]=r.value);
-}
-
-function subscribeRealtime(){
-  sb.channel("pool-changes")
-    .on("postgres_changes",{event:"*",schema:"public"}, async ()=>{
-      await loadAll(); renderCurrent();
-      const t=$("#liveTxt"); if(t){t.textContent="Live · just updated"; clearTimeout(t._x); t._x=setTimeout(()=>t.textContent="Live · synced",2500);}
-    })
-    .subscribe();
-}
-
-/* ====================== Rendering ====================== */
-function renderCurrent(){
-  ({leaderboard:renderLeaderboard, draft:renderDraft, teams:renderTeams, matches:renderMatches, recaps:renderRecaps, settings:renderSettings}[currentTab])();
-}
-
-/* ---- Leaderboard ---- */
-function renderLeaderboard(){
-  const {rows, rec} = computeLeaderboard();
-  const played = state.matches.filter(m=>m.home_score!==null && m.away_score!==null).length;
-  let html = `<div class="card">
-    <h2>Leaderboard</h2>
-    <p class="hint">${played} of 72 group-stage matches scored. Tap a player to see their teams.</p>
-    <table class="lb"><thead><tr>
-      <th>#</th><th>Player</th><th>Teams</th><th>W-D-L</th><th style="text-align:right">Points</th>
-    </tr></thead><tbody>`;
-  rows.forEach((r,i)=>{
-    const rank=i+1;
-    html+=`<tr class="expand" data-pid="${r.player.id}">
-      <td class="rank ${rank<=2?'r'+rank:''}">${rank}</td>
-      <td class="pname">${esc(r.player.name)}</td>
-      <td>${r.count}</td>
-      <td style="color:var(--muted);font-size:13px">${r.w}-${r.d}-${r.l}</td>
-      <td class="pts">${r.pts}</td>
-    </tr>
-    <tr class="det hidden" data-det="${r.player.id}"><td colspan="5">
-      <div class="breakdown">${
-        r.owned.length? r.owned
-          .map(t=>({t,p:rec[t.name]?rec[t.name].pts:0}))
-          .sort((a,b)=>b.p-a.p)
-          .map(o=>`<div class="teamline"><span>${esc(o.t.name)} <span style="color:var(--muted)">(${o.t.grp})</span></span><b>${o.p} pt${o.p===1?'':'s'}</b></div>`).join("")
-        : '<div class="teamline" style="color:var(--muted)">No teams drafted yet</div>'
-      }</div>
-    </td></tr>`;
-  });
-  html+=`</tbody></table></div>`;
-
-  // Tiebreaker
-  html+=`<div class="card"><div class="section-title">Tie-breaker</div>
-    <p class="hint" style="margin:0">If players tie on total score, the winner is whoever's predicted pre-shootout goals in the Final is closest.</p></div>`;
-
-  // Fun facts (only show if teams are assigned)
-  const facts = computeFunFacts();
-  if(facts.length){
-    html+=`<div class="card"><div class="section-title">Fun Facts</div>
-      ${facts.map(f=>`<div class="fact-row">${f}</div>`).join("")}
-    </div>`;
-  }
-
-  $("#tab-leaderboard").innerHTML = html;
-  $$("#tab-leaderboard .expand").forEach(tr=>tr.addEventListener("click",()=>{
-    const d=$(`[data-det="${tr.dataset.pid}"]`); if(d) d.classList.toggle("hidden");
-  }));
-}
-
-/* ---- Auto-Draft Advisor ---- */
-function computeAdvisorScore(team, selectedPlayer, rules, lb){
-  const ht = team.name;
-  const htData = TEAM_DATA[ht];
-  const played = state.matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
-  const reasons=[]; let score=0;
-
-  function add(key, labelOverride){
-    const r=rules[key]; if(!r?.enabled) return;
-    score+=r.weight;
-    reasons.push({emoji:r.emoji, label:labelOverride||r.label});
-  }
-
-  // Evaluate each group opponent that's already owned
-  const groupOpponents = state.teams.filter(t=>t.grp===team.grp&&t.name!==ht);
-  groupOpponents.forEach(opTeam=>{
-    const opOwner = opTeam.owner_id ? playerById(opTeam.owner_id) : null;
-    if(!opOwner) return;
-    const at=opTeam.name, atData=TEAM_DATA[at];
-    const match=state.matches.find(m=>(m.home_team===ht&&m.away_team===at)||(m.home_team===at&&m.away_team===ht));
-    const round=match?.round||1;
-    const hn=selectedPlayer.name, an=opOwner.name;
-
-    // Couple / sibling
-    if(COUPLES.some(([a,b])=>(nameFits(hn,a)&&nameFits(an,b))||(nameFits(hn,b)&&nameFits(an,a))))
-      add("couple",`vs ${an}'s ${at} — couple match-up`);
-    if(SIBLINGS.some(([a,b])=>(nameFits(hn,a)&&nameFits(an,b))||(nameFits(hn,b)&&nameFits(an,a))))
-      add("sibling",`vs ${an}'s ${at} — sibling showdown`);
-
-    // Standings swing (both in top 4)
-    if(played>0){
-      const pos={}; lb.rows.forEach((r,i)=>pos[r.player.id]=i+1);
-      const sp=pos[selectedPlayer.id]||9, op=pos[opOwner.id]||9;
-      if(sp<=4&&op<=4) add("swing",`vs #${op} ${an} — standings impact`);
-    }
-
-    // Rivalry
-    if(RIVALRIES.has(`${ht}|${at}`)||RIVALRIES.has(`${at}|${ht}`))
-      add("rivalry",`${ht} vs ${at} — storied rivalry`);
-
-    // Leader's team
-    if(lb.rows.length&&opOwner.id===lb.rows[0].player.id)
-      add("leader",`vs pool leader ${an}'s ${at}`);
-
-    // Ranking gap
-    if(htData&&atData&&Math.abs(htData.rank-atData.rank)>=30){
-      const fav=htData.rank<atData.rank?ht:at, dog=htData.rank<atData.rank?at:ht;
-      add("rankgap",`Could upset ${fav} — upset watch`);
-    }
-
-    // Final group matchday
-    if(round===3) add("groupfinal","Meets in final group matchday");
-
-    // Club teammates
-    if(CLUB_CONNECTIONS.has(`${ht}|${at}`)||CLUB_CONNECTIONS.has(`${at}|${ht}`))
-      add("clubmates",`${ht} vs ${at} — club teammates`);
-  });
-
-  // Team-level rules (apply regardless of opponents)
-  if(HOST_NATIONS.has(ht)) add("host",`${ht} — playing on home turf`);
-  if(ht==="Argentina") add("defending","Argentina — defending world champions");
-  if(htData){
-    const sameConf=groupOpponents.some(t=>{ const d=TEAM_DATA[t.name]; return d&&d.conf===htData.conf; });
-    if(sameConf){
-      const cn={UEFA:"European",CONMEBOL:"South American",CONCACAF:"CONCACAF",CAF:"African",AFC:"Asian",OFC:"Oceanian"};
-      add("continent",`${cn[htData.conf]||htData.conf} derby in group`);
-    }
-  }
-
-  return {score, reasons};
-}
-
-function computeGroupSoftness(team){
-  const opponents=state.teams.filter(t=>t.grp===team.grp&&t.name!==team.name);
-  if(!opponents.length) return 0;
-  const total=opponents.reduce((s,t)=>s+(TEAM_DATA[t.name]?.rank||50),0);
-  return total/opponents.length; // higher avg rank = weaker opponents = softer group
-}
-
-function expectedPointsVsOpponent(myRank, oppRank){
-  // Probability model based on FIFA ranking gap
-  // diff > 0 means we are better ranked (lower number = better)
-  const diff = oppRank - myRank;
-  let pWin, pDraw;
-  if     (diff >= 40) { pWin=0.70; pDraw=0.15; }
-  else if(diff >= 20) { pWin=0.55; pDraw=0.20; }
-  else if(diff >=  5) { pWin=0.45; pDraw=0.25; }
-  else if(diff >= -5) { pWin=0.35; pDraw=0.30; }
-  else if(diff >=-20) { pWin=0.25; pDraw=0.30; }
-  else if(diff >=-40) { pWin=0.15; pDraw=0.20; }
-  else                { pWin=0.10; pDraw=0.15; }
-  return pWin * 3 + pDraw * 1;
-}
-
-function expectedGroupPoints(team){
-  const myRank = TEAM_DATA[team.name]?.rank || 99;
-  const opponents = state.teams.filter(t=>t.grp===team.grp&&t.name!==team.name);
-  return opponents.reduce((sum, opp)=>{
-    const oppRank = TEAM_DATA[opp.name]?.rank || 50;
-    return sum + expectedPointsVsOpponent(myRank, oppRank);
-  }, 0);
-}
-
-function renderAutoDraftAdvisor(){
-  const container=document.getElementById("advisor-container");
-  if(!container) return;
-
-  let html=`<div class="card">
-    <div class="section-title">🤖 Auto-Draft Advisor</div>
-    <p class="hint" style="margin:0 0 14px">Select your name to get 3 personalized picks. Skips groups where you already have a team.</p>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <select id="advisorPlayer" class="field" style="flex:1;min-width:160px;max-width:260px">
-        <option value="">— Select your name —</option>
-        ${state.players.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}
+<!-- Flight Modal -->
+<div class="modal-bg hidden" id="m-flight">
+  <div class="modal">
+    <h3 id="flight-modal-title">✈️ Add a Flight</h3>
+    <input type="hidden" id="f-edit-id">
+    <div class="form-group">
+      <label>Which family?</label>
+      <select id="f-fam">
+        <option value="Swanson">🏄 Swanson Family</option>
+        <option value="McNamara">🌺 McNamara Family</option>
+        <option value="PJ">🎉 PJ</option>
       </select>
-      <button class="btn-pop" id="advisorBtn">Draft for me! 🎲</button>
     </div>
-    <div id="advisor-results"></div>
-  </div>`;
+    <div class="form-group">
+      <label>Direction</label>
+      <select id="f-dir">
+        <option value="inbound">🛬 Inbound — Flying TO Fort Lauderdale</option>
+        <option value="outbound">🛫 Outbound — Flying HOME after the cruise</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Airline</label>
+        <input type="text" id="f-airline" placeholder="e.g. Delta">
+      </div>
+      <div class="form-group">
+        <label>Flight #</label>
+        <input type="text" id="f-num" placeholder="e.g. DL 442">
+      </div>
+    </div>
+    <div style="background:var(--sand);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:14px">
+      <div style="font-weight:700;color:var(--navy);font-size:15px;margin-bottom:12px">🛫 Departure</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2;min-width:130px">
+          <label>City</label>
+          <input type="text" id="f-from" placeholder="e.g. Boston">
+        </div>
+        <div class="form-group" style="flex:2;min-width:140px">
+          <label>Date</label>
+          <input type="date" id="f-dep-date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Timezone</label>
+        <select id="f-dep-tz">
+          <option value="-240|EDT">EDT — Eastern (Fort Lauderdale, Boston, NYC, Nassau)</option>
+          <option value="-300|CDT">CDT — Central</option>
+          <option value="-300|JAM">JAM — Jamaica (UTC−5, no DST)</option>
+          <option value="-360|MDT">MDT — Mountain</option>
+          <option value="-420|PDT">PDT — Pacific</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Time <span style="font-weight:400;color:var(--text-light);font-size:14px">(leave blank if unknown)</span></label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="f-dep-hr" style="flex:1">
+            <option value="">--</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+            <option>9</option><option>10</option><option>11</option><option>12</option>
+          </select>
+          <span style="font-size:22px;font-weight:700;color:var(--navy)">:</span>
+          <select id="f-dep-min" style="flex:1">
+            <option value="00">00</option><option value="05">05</option>
+            <option value="10">10</option><option value="15">15</option>
+            <option value="20">20</option><option value="25">25</option>
+            <option value="30">30</option><option value="35">35</option>
+            <option value="40">40</option><option value="45">45</option>
+            <option value="50">50</option><option value="55">55</option>
+          </select>
+          <select id="f-dep-ampm" style="flex:1">
+            <option>AM</option><option>PM</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--sand);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:14px">
+      <div style="font-weight:700;color:var(--navy);font-size:15px;margin-bottom:12px">🛬 Arrival</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2;min-width:130px">
+          <label>City</label>
+          <input type="text" id="f-to" placeholder="e.g. Fort Lauderdale">
+        </div>
+        <div class="form-group" style="flex:2;min-width:140px">
+          <label>Date</label>
+          <input type="date" id="f-arr-date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Timezone</label>
+        <select id="f-arr-tz">
+          <option value="-240|EDT">EDT — Eastern (Fort Lauderdale, Boston, NYC, Nassau)</option>
+          <option value="-300|CDT">CDT — Central</option>
+          <option value="-300|JAM">JAM — Jamaica (UTC−5, no DST)</option>
+          <option value="-360|MDT">MDT — Mountain</option>
+          <option value="-420|PDT">PDT — Pacific</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Time <span style="font-weight:400;color:var(--text-light);font-size:14px">(leave blank if unknown)</span></label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="f-arr-hr" style="flex:1">
+            <option value="">--</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+            <option>9</option><option>10</option><option>11</option><option>12</option>
+          </select>
+          <span style="font-size:22px;font-weight:700;color:var(--navy)">:</span>
+          <select id="f-arr-min" style="flex:1">
+            <option value="00">00</option><option value="05">05</option>
+            <option value="10">10</option><option value="15">15</option>
+            <option value="20">20</option><option value="25">25</option>
+            <option value="30">30</option><option value="35">35</option>
+            <option value="40">40</option><option value="45">45</option>
+            <option value="50">50</option><option value="55">55</option>
+          </select>
+          <select id="f-arr-ampm" style="flex:1">
+            <option>AM</option><option selected>PM</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <input type="text" id="f-notes" placeholder="e.g. Terminal 2, check bags early">
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-flight')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFlight()">Save Flight ✈️</button>
+    </div>
+  </div>
+</div>
 
-  container.innerHTML=html;
-  document.getElementById("advisorBtn")?.addEventListener("click",()=>{
-    const pid=parseInt(document.getElementById("advisorPlayer")?.value);
-    if(!pid){ toast("Pick your name first!"); return; }
-    const player=state.players.find(p=>p.id===pid);
-    if(player) runAdvisor(player);
-  });
+<!-- Packing Modal -->
+<div class="modal-bg hidden" id="m-packing">
+  <div class="modal">
+    <h3 id="pack-modal-title">🧳 Add Packing Item</h3>
+    <input type="hidden" id="p-edit-id">
+    <div class="form-group">
+      <label>Who is this for?</label>
+      <select id="p-person"></select>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div class="form-group" style="flex:1">
+        <label>Item</label>
+        <input type="text" id="p-item" placeholder="e.g. Sunscreen SPF 50">
+      </div>
+      <div class="form-group" style="width:80px">
+        <label>Qty</label>
+        <input type="number" id="p-qty" value="1" min="1" max="99" style="text-align:center">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="p-cat">
+        <option value="Clothes">👕 Clothes</option>
+        <option value="Toiletries">🧴 Toiletries</option>
+        <option value="Documents">📄 Documents &amp; ID</option>
+        <option value="Electronics">📱 Electronics</option>
+        <option value="Beach &amp; Pool">🏖️ Beach &amp; Pool</option>
+        <option value="Health">💊 Health &amp; Medicine</option>
+        <option value="Entertainment">🎮 Entertainment</option>
+        <option value="General">📦 General</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="p-status">
+        <option value="unpacked">○ Not packed yet</option>
+        <option value="need_to_buy">🛒 Need to buy</option>
+        <option value="packed">✅ Already packed</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Port Day <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <select id="p-port">
+        <option value="">No specific port</option>
+        <option value="Fort Lauderdale">🚢 Fort Lauderdale (Jun 21)</option>
+        <option value="Falmouth">🇯🇲 Falmouth / Jamaica (Jun 23)</option>
+        <option value="CocoCay">🏝️ CocoCay (Jun 24)</option>
+        <option value="Nassau">🏖️ Nassau (Jun 25)</option>
+        <option value="Sea Day">🌊 Sea Day</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700">
+        <input type="checkbox" id="p-shared" style="width:22px;height:22px;flex-shrink:0;accent-color:var(--teal)" onchange="toggleSharedBy()">
+        🤝 Shared with the whole group
+      </label>
+    </div>
+    <div class="form-group" id="p-sharedby-group" style="display:none">
+      <label>Who's bringing it?</label>
+      <select id="p-sharedby">
+        <option value="">— Pick a family —</option>
+        <option value="Swanson">🏄 Swanson</option>
+        <option value="McNamara">🌺 McNamara</option>
+        <option value="PJ">🎉 PJ</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Theme Night <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <select id="p-theme">
+        <option value="">Not a theme night item</option>
+        <option value="Resort Casual">🌴 Night 1: Resort Casual</option>
+      </select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-packing')">Cancel</button>
+      <button class="btn btn-mustard" onclick="savePackingItem()">Add to List 🧳</button>
+    </div>
+  </div>
+</div>
+
+<!-- Template Modal -->
+<div class="modal-bg hidden" id="m-template">
+  <div class="modal" style="max-width:560px">
+    <h3>📋 Cruise Starter Templates</h3>
+    <p style="color:var(--text-light);font-size:15px;margin-bottom:4px">Pick one or more templates to bulk-add items to <strong id="tmpl-person-label"></strong>'s list.</p>
+    <div class="tmpl-grid" id="tmpl-grid"></div>
+    <div style="font-size:13px;color:var(--text-light);margin-bottom:12px" id="tmpl-preview"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-template')">Cancel</button>
+      <button class="btn btn-mustard" onclick="applyTemplates()">Add Selected Items 🧳</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dream Modal -->
+<div class="modal-bg hidden" id="m-dream">
+  <div class="modal">
+    <h3 id="dream-modal-title">✨ Add a Dream</h3>
+    <input type="hidden" id="d-edit-id">
+    <input type="hidden" id="d-person">
+    <input type="hidden" id="d-family">
+    <div class="form-group">
+      <label>Category <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <select id="d-cat">
+        <option value="">No category</option>
+        <option value="🎭 Shows & Entertainment">🎭 Shows &amp; Entertainment</option>
+        <option value="🍽️ Food & Drink">🍽️ Food &amp; Drink</option>
+        <option value="🤿 Water & Adventure">🤿 Water &amp; Adventure</option>
+        <option value="🏖️ Beach & Relaxation">🏖️ Beach &amp; Relaxation</option>
+        <option value="🛍️ Shopping">🛍️ Shopping</option>
+        <option value="🌆 Explore Ashore">🌆 Explore Ashore</option>
+        <option value="🛳️ Ship Life">🛳️ Ship Life</option>
+        <option value="⭐ Other">⭐ Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>What's your dream for this trip?</label>
+      <textarea id="d-dream" placeholder="e.g. Swim with stingrays at CocoCay, try jerk chicken in Jamaica, see the ship's Broadway show…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Assign to a day <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <select id="d-day">
+        <option value="">Not scheduled yet</option>
+        <option value="June 21 — Departure Day (Fort Lauderdale)">June 21 — Departure Day (Fort Lauderdale)</option>
+        <option value="June 22 — Day at Sea">June 22 — Day at Sea</option>
+        <option value="June 23 — Falmouth, Jamaica">June 23 — Falmouth, Jamaica 🇯🇲</option>
+        <option value="June 24 — Day at Sea">June 24 — Day at Sea</option>
+        <option value="June 25 — CocoCay, Bahamas">June 25 — CocoCay, Bahamas 🇧🇸</option>
+        <option value="June 26 — Nassau, Bahamas">June 26 — Nassau, Bahamas 🇧🇸</option>
+        <option value="June 27 — Day at Sea">June 27 — Day at Sea</option>
+        <option value="June 28 — Return Day">June 28 — Return Day</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;color:var(--text-light)">(optional — e.g. need to book in advance, must-try restaurant)</span></label>
+      <textarea id="d-notes" rows="2" placeholder="e.g. Need to book via concierge before sailing" style="min-height:60px"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-dream')">Cancel</button>
+      <button class="btn btn-mustard" onclick="saveDream()">Save Dream ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dream Memory Modal -->
+<div class="modal-bg hidden" id="m-memory">
+  <div class="modal">
+    <h3>✅ Mark as Done!</h3>
+    <p style="color:var(--text-light);font-size:15px;margin-bottom:16px" id="memory-dream-label"></p>
+    <input type="hidden" id="memory-dream-id">
+    <div class="form-group">
+      <label>Add a memory note <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <textarea id="memory-note" rows="3" placeholder="How did it go? What was it like? Any highlights to remember…"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-memory')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveMemory()">✅ Mark Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dream Link Modal — visual picker -->
+<div class="modal-bg hidden" id="m-link">
+  <div class="modal" style="max-width:560px">
+    <h3>🔗 Link Dreams</h3>
+    <p style="color:var(--text-light);margin-bottom:4px;font-size:15px">Tap a dream below to connect it — they'll appear paired on the calendar.</p>
+    <input type="hidden" id="link-from-id">
+    <div class="link-picker" id="link-picker"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-link')">Cancel</button>
+      <button class="btn btn-purple" onclick="saveDreamLink()">Link Dreams 🔗</button>
+    </div>
+  </div>
+</div>
+
+<!-- To-Do Modal -->
+<div class="modal-bg hidden" id="m-todo">
+  <div class="modal">
+    <h3 id="todo-modal-title">✅ Add a Task</h3>
+    <input type="hidden" id="t-edit-id">
+    <div class="form-group">
+      <label>Task Title</label>
+      <input type="text" id="t-title" placeholder="e.g. Buy travel insurance">
+    </div>
+    <div class="form-group">
+      <label>Details <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <textarea id="t-desc" placeholder="Any extra info…" style="min-height:60px"></textarea>
+    </div>
+    <div class="form-group">
+      <label>When can you act on this?</label>
+      <select id="t-bucket">
+        <option value="do_now">🟢 Do Now — No blockers today</option>
+        <option value="waiting_concierge">⏳ Waiting on Concierge Email</option>
+        <option value="waiting_itinerary">📋 Waiting on Full RC Itinerary</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Assign To</label>
+      <select id="t-assign">
+        <option value="">Anyone</option>
+        <option value="All Families">All Families</option>
+        <option value="Swanson Family">Swanson Family</option>
+        <option value="McNamara Family">McNamara Family</option>
+        <option value="PJ">PJ</option>
+        <option value="Michelle McNamara">Michelle McNamara</option>
+        <option value="Jeremy">Jeremy</option>
+        <option value="Rob">Rob</option>
+        <option value="Bree">Bree</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Due Date <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <input type="date" id="t-due">
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-todo')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTodo()">Add Task ✅</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transit Edit Modal -->
+<div class="modal-bg hidden" id="m-transit">
+  <div class="modal">
+    <h3 id="transit-modal-title">✏️ Edit Transit Plan</h3>
+    <input type="hidden" id="tr-id">
+    <div class="form-group">
+      <label>How are you getting there?</label>
+      <select id="tr-method">
+        <option value="hotel_shuttle">🚌 Hotel Shuttle</option>
+        <option value="air2sea">✈️ Royal Caribbean Air2Sea</option>
+        <option value="rideshare">🚗 Rideshare (Uber / Lyft)</option>
+        <option value="own_car">🚙 Own Vehicle</option>
+        <option value="undecided">❓ Not Decided Yet</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+      <textarea id="tr-notes" placeholder="e.g. Pickup time, terminal, confirmation #…" style="min-height:60px"></textarea>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" id="tr-confirmed" style="width:22px;height:22px;flex-shrink:0;accent-color:var(--teal)">
+        ✅ Confirmed / Booked
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('m-transit')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveTransit()">Save 🚌</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toasts"></div>
+
+<!-- ═══ SCRIPT ═══ -->
+<script>
+const { createClient } = supabase;
+const sb = createClient(
+  'https://viudclgcdsskzlfosflg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpdWRjbGdjZHNza3psZm9zZmxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzkzNjIsImV4cCI6MjA5MDExNTM2Mn0.xGxMDVRRrlewP17cshC7ipx9V7uKbvzW-9iOguZnUiM'
+);
+
+// ── CONSTANTS ──
+const FAMILIES = {
+  Swanson:  { members: ['Swanson Family', 'Michelle McNamara', 'Jeremy', 'Audrey', 'Beau'],  bg: '#D04A28', light: '#FDEAE5' },
+  McNamara: { members: ['McNamara Family', 'Rob', 'Bree', 'Finn', 'May', 'Emmy'],  bg: '#1A8C7A', light: '#E0F4F1' },
+  PJ:       { members: ['PJ'],                                                       bg: '#7C3AED', light: '#F3EEFF' },
+};
+
+const PEOPLE = [
+  { person: 'Michelle McNamara', family: 'Swanson' },
+  { person: 'Jeremy',   family: 'Swanson' },
+  { person: 'Audrey',   family: 'Swanson' },
+  { person: 'Beau',     family: 'Swanson' },
+  { person: 'Rob',      family: 'McNamara' },
+  { person: 'Bree',     family: 'McNamara' },
+  { person: 'Finn',     family: 'McNamara' },
+  { person: 'May',      family: 'McNamara' },
+  { person: 'Emmy',     family: 'McNamara' },
+  { person: 'PJ',       family: 'PJ' },
+];
+
+const ITINERARY = [
+  { date:'2026-06-21', label:'Jun 21', port:'Fort Lauderdale',   emoji:'🇺🇸', sea:false, lat:26.1224, lon:-80.1373 },
+  { date:'2026-06-22', label:'Jun 22', port:'Day at Sea',        emoji:'🌊', sea:true },
+  { date:'2026-06-23', label:'Jun 23', port:'Falmouth, Jamaica', emoji:'🇯🇲', sea:false, lat:18.4953, lon:-77.6614 },
+  { date:'2026-06-24', label:'Jun 24', port:'Day at Sea',        emoji:'🌊', sea:true },
+  { date:'2026-06-25', label:'Jun 25', port:'CocoCay, Bahamas',  emoji:'🇧🇸', sea:false, lat:25.8313, lon:-77.9115 },
+  { date:'2026-06-26', label:'Jun 26', port:'Nassau, Bahamas',   emoji:'🇧🇸', sea:false, lat:25.0480, lon:-77.3580 },
+  { date:'2026-06-27', label:'Jun 27', port:'Day at Sea',        emoji:'🌊', sea:true },
+  { date:'2026-06-28', label:'Jun 28', port:'Fort Lauderdale',   emoji:'🇺🇸', sea:false, lat:26.1224, lon:-80.1373 },
+];
+
+const TRANSIT_LABELS = {
+  hotel_shuttle: '🚌 Hotel Shuttle',
+  air2sea:       '✈️ RC Air2Sea',
+  rideshare:     '🚗 Rideshare (Uber/Lyft)',
+  own_car:       '🚙 Own Vehicle',
+  undecided:     '❓ Not Decided Yet',
+};
+
+const WMO = {
+  0:{d:'Clear Sky',emoji:'☀️'}, 1:{d:'Mainly Clear',emoji:'🌤️'}, 2:{d:'Partly Cloudy',emoji:'⛅'},
+  3:{d:'Overcast',emoji:'☁️'}, 45:{d:'Foggy',emoji:'🌫️'}, 48:{d:'Icy Fog',emoji:'🌫️'},
+  51:{d:'Light Drizzle',emoji:'🌦️'}, 53:{d:'Drizzle',emoji:'🌦️'}, 55:{d:'Heavy Drizzle',emoji:'🌧️'},
+  61:{d:'Light Rain',emoji:'🌧️'}, 63:{d:'Rain',emoji:'🌧️'}, 65:{d:'Heavy Rain',emoji:'🌧️'},
+  80:{d:'Showers',emoji:'🌦️'}, 81:{d:'Showers',emoji:'🌦️'}, 82:{d:'Heavy Showers',emoji:'⛈️'},
+  95:{d:'Thunderstorm',emoji:'⛈️'}, 96:{d:'Thunderstorm',emoji:'⛈️'}, 99:{d:'Thunderstorm',emoji:'⛈️'},
+};
+
+// ── STATE ──
+let curFamily  = 'Swanson';
+let allTodos   = [];
+let allFlights = [];
+let allDreams  = [];
+let allTransit = [];
+let bannerIdx  = 0;
+let bannerTimer = null;
+
+// ── BANNER TIPS ──
+const BANNER_TIPS = [
+  { icon:'🧴', title:'Reef-Safe Sunscreen Required', text:'Jamaica & Bahamas ban oxybenzone and similar chemicals. Look for mineral-only, non-nano zinc oxide. Buy before you go — ports rarely carry it.' },
+  { icon:'🧲', title:'Pack Magnetic Hooks', text:'Cabin walls are metal. A few small magnetic hooks hold wet swimsuits, bags, and lanyards without damaging the walls. Game-changer for small cabins.' },
+  { icon:'🔌', title:'Bring a Plain Power Strip', text:'Cabins have 1–2 outlets for the whole family. Pack a regular (non-surge-protected) power strip — surge strips get confiscated at boarding.' },
+  { icon:'🎒', title:'Small Day Pack for Ports', text:'You\'ll need hands-free carrying at Falmouth, CocoCay, and Nassau. Pack a lightweight backpack for water, sunscreen, and purchases ashore.' },
+  { icon:'💵', title:'$1 Bills for the Ports', text:'Jamaica and Nassau have strong tip culture. A stack of $1s makes tipping vendors, guides, and photo ops easy without having to break bigger bills.' },
+  { icon:'🌧️', title:'Pack a Packable Rain Poncho', text:'Caribbean weather can surprise you. A light packable poncho fits in a day bag and can save a shore excursion from getting soaked.' },
+  { icon:'💊', title:'Motion Sickness Prep', text:'Even if you\'ve never had trouble before, pack Dramamine or Sea-Bands. Atlantic waters can be rougher than Caribbean itineraries look on a map.' },
+  { icon:'🥿', title:'Reef Shoes for CocoCay', text:'The beach at CocoCay can have rocky entry points. Water shoes make the swim-in much more comfortable, especially for the little ones.' },
+  { icon:'📵', title:'Airplane Mode = No Surprise Bills', text:'Turn airplane mode on immediately after boarding to avoid international roaming charges. Purchase a ship WiFi package if needed.' },
+  { icon:'🌅', title:'Wake Up for Port Arrivals', text:'Cruising into Nassau or Jamaica in the early morning is stunning. Set an alarm and watch from the upper decks as the ship docks — the kids will love it.' },
+  { icon:'🧾', title:'Check Your SeaPass Balance Daily', text:'Charges can stack up fast. Review your account each morning to catch any errors early — much easier to dispute on Day 2 than on the last night.' },
+  { icon:'👟', title:'Wear Your Most Comfortable Shoes', text:'Embarkation day involves a lot of walking. Save the cute sandals for later — broken-in shoes on Day 1 make the whole check-in process much smoother.' },
+];
+
+function renderBanner() {
+  const tip = BANNER_TIPS[bannerIdx];
+  const el = document.getElementById('banner-content');
+  el.classList.remove('banner-fade');
+  void el.offsetWidth;
+  el.innerHTML = `${tip.icon} <strong>${tip.title}</strong> — ${tip.text}`;
+  el.classList.add('banner-fade');
+
+  const dotsEl = document.getElementById('banner-dots');
+  dotsEl.innerHTML = BANNER_TIPS.map((_, i) =>
+    `<button class="banner-dot ${i===bannerIdx?'active':''}" onclick="jumpBanner(${i})" aria-label="Tip ${i+1}"></button>`
+  ).join('');
 }
 
-function runAdvisor(selectedPlayer){
-  const resultsEl=document.getElementById("advisor-results");
-  if(!resultsEl) return;
-  const rules=getMatchupRules();
-  const lb=computeLeaderboard();
+function jumpBanner(i) {
+  bannerIdx = i;
+  renderBanner();
+  clearInterval(bannerTimer);
+  bannerTimer = setInterval(nextBanner, 20000);
+}
 
-  const myTeams=state.teams.filter(t=>t.owner_id===selectedPlayer.id);
-  if(myTeams.length>=TEAMS_PER_PLAYER){
-    resultsEl.innerHTML=`<p class="hint" style="margin-top:12px">${esc(selectedPlayer.name)} already has ${TEAMS_PER_PLAYER} teams — fully drafted!</p>`;
-    return;
-  }
+function nextBanner() {
+  bannerIdx = (bannerIdx + 1) % BANNER_TIPS.length;
+  renderBanner();
+}
 
-  const myGroups=new Set(myTeams.map(t=>t.grp));
-  const eligible=state.teams.filter(t=>!t.owner_id&&!myGroups.has(t.grp));
+// ── COUNTDOWN ──
+function updateCountdown() {
+  const dep = new Date('2026-06-21T00:00:00');
+  const now = new Date();
+  const diff = dep - now;
+  if (diff <= 0) { document.getElementById('countdown').textContent = '🎉 Bon Voyage!'; return; }
+  const days = Math.ceil(diff / 86400000);
+  document.getElementById('countdown').textContent = `${days} day${days===1?'':'s'} to go!`;
+}
 
-  if(!eligible.length){
-    const grpList=[...myGroups].join(", ");
-    resultsEl.innerHTML=`<p class="hint" style="margin-top:12px">No eligible teams remaining outside groups ${esc(grpList)}.</p>`;
-    return;
-  }
+// ── TOAST ──
+function toast(msg, type='ok') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
 
-  // Score every eligible team — expected pts is primary, match-up interest is tiebreaker
-  const scored=eligible.map(team=>{
-    const d=TEAM_DATA[team.name]||{rank:99};
-    const {score:matchupScore,reasons}=computeAdvisorScore(team,selectedPlayer,rules,lb);
-    const expPts=expectedGroupPoints(team);
-    return {team, rank:d.rank, matchupScore, reasons, expPts};
+// ── TABS ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
   });
+});
 
-  // Pick 1: Best Available — highest expected group-stage points
-  const byExpPts=[...scored].sort((a,b)=>b.expPts-a.expPts||b.matchupScore-a.matchupScore);
-  const bestAvailable=byExpPts[0];
+// ── MODALS ──
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if (e.target === bg) bg.classList.add('hidden'); });
+});
 
-  // Pick 2: Match-Up Magnet — highest match-up interest score, but only among teams
-  // at or above the median expected-pts threshold (prevents weak teams winning on rule triggers)
-  const sortedForMedian=[...scored].sort((a,b)=>a.expPts-b.expPts);
-  const medianExpPts=sortedForMedian.length?sortedForMedian[Math.floor(sortedForMedian.length/2)].expPts:0;
-  const magnetPool=[...scored]
-    .filter(s=>s.team.name!==bestAvailable.team.name&&s.expPts>=medianExpPts)
-    .sort((a,b)=>b.matchupScore-a.matchupScore||b.expPts-a.expPts);
-  const matchUpMagnet=magnetPool[0]
-    ||[...scored].filter(s=>s.team.name!==bestAvailable.team.name).sort((a,b)=>b.expPts-a.expPts)[0];
+// ══════════════════════════════════════════
+// TRAVEL TAB — FLIGHTS
+// ══════════════════════════════════════════
 
-  // Pick 3: Under the Radar — best expected pts from a team ranked outside FIFA top 25
-  // (sleeper pick: not the obvious choice, but quietly solid)
-  const used=new Set([bestAvailable?.team.name,matchUpMagnet?.team.name]);
-  const radarPool=[...scored]
-    .filter(s=>!used.has(s.team.name)&&s.rank>25)
-    .sort((a,b)=>b.expPts-a.expPts||b.matchupScore-a.matchupScore);
-  const underTheRadar=radarPool[0]
-    ||[...scored].filter(s=>!used.has(s.team.name)).sort((a,b)=>b.expPts-a.expPts)[0];
+function buildDatetime(dateId, hrId, minId, ampmId, tzId) {
+  const date = document.getElementById(dateId).value;
+  const hr   = document.getElementById(hrId).value;
+  const min  = document.getElementById(minId).value;
+  const ampm = document.getElementById(ampmId).value;
+  const tzRaw = tzId ? (document.getElementById(tzId)?.value || '-240|EDT') : '-240|EDT';
+  if (!date || !hr) return { dt: null, tz: tzRaw };
+  let h = parseInt(hr);
+  if (ampm === 'AM' && h === 12) h = 0;
+  if (ampm === 'PM' && h !== 12) h += 12;
+  // Build ISO string with UTC offset so Supabase stores the correct UTC moment
+  const offsetMins  = parseInt(tzRaw.split('|')[0]);
+  const sign        = offsetMins <= 0 ? '-' : '+';
+  const absH        = String(Math.floor(Math.abs(offsetMins) / 60)).padStart(2, '0');
+  const absM        = String(Math.abs(offsetMins) % 60).padStart(2, '0');
+  const tzSuffix    = `${sign}${absH}:${absM}`;
+  return { dt: `${date}T${String(h).padStart(2,'0')}:${min}:00${tzSuffix}`, tz: tzRaw };
+}
 
-  const defs=[
-    bestAvailable && {
-      s:bestAvailable, icon:"🏆", label:"Best Available",
-      desc:`~${bestAvailable.expPts.toFixed(1)} expected group-stage pts — the strongest overall pick on the board.`
-    },
-    matchUpMagnet && {
-      s:matchUpMagnet, icon:"⚽", label:"Match-Up Magnet",
-      desc:matchUpMagnet.matchupScore>0
-        ?`~${matchUpMagnet.expPts.toFixed(1)} expected pts, plus creates high-interest group-stage match-ups for you.`
-        :`~${matchUpMagnet.expPts.toFixed(1)} expected pts — solid pick with the best match-up potential of what's left.`
-    },
-    underTheRadar && {
-      s:underTheRadar, icon:"🎲", label:"Under the Radar",
-      desc:`~${underTheRadar.expPts.toFixed(1)} expected pts — FIFA #${underTheRadar.rank}, not the flashiest name but the best sleeper available.`
-    },
-  ].filter(Boolean);
+// Display a flight time correctly using the stored timezone offset
+function fmtFlight(dt, tzRaw) {
+  if (!dt) return '';
+  if (!tzRaw) {
+    // Legacy: no tz stored — show as-is from the ISO string to avoid browser conversion
+    const m = dt.match(/T(\d{2}):(\d{2})/);
+    if (!m) return '';
+    const h24 = parseInt(m[1]), min = m[2];
+    const ampm = h24 >= 12 ? 'PM' : 'AM';
+    const h12  = h24 % 12 || 12;
+    const d = new Date(dt.slice(0,10) + 'T12:00:00Z');
+    return `${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})} ${h12}:${min} ${ampm}`;
+  }
+  const [offsetStr, label] = tzRaw.split('|');
+  const offsetMins = parseInt(offsetStr);
+  // Convert stored UTC back to the original local time
+  const utcMs   = new Date(dt).getTime();
+  const localMs = utcMs + offsetMins * 60 * 1000;
+  const ld      = new Date(localMs);
+  const months  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const h24  = ld.getUTCHours();
+  const min  = String(ld.getUTCMinutes()).padStart(2,'0');
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  const h12  = h24 % 12 || 12;
+  return `${months[ld.getUTCMonth()]} ${ld.getUTCDate()}, ${h12}:${min} ${ampm} ${label}`;
+}
 
-  let html=`<div class="advisor-cards">`;
-  defs.forEach(({s,icon,label,desc})=>{
-    // Build group context line
-    const groupTeams=state.teams.filter(t=>t.grp===s.team.grp&&t.name!==s.team.name);
-    const groupStr=groupTeams.map(t=>{
-      const o=t.owner_id?playerById(t.owner_id):null;
-      return esc(t.name)+(o?` <span style="color:var(--gold)">(${esc(o.name)})</span>`:'');
-    }).join(' · ');
+async function loadFlights() {
+  const { data } = await sb.from('vacation_flights').select('*').order('direction').order('departure_time');
+  allFlights = data || [];
+  renderFlights();
+}
 
-    html+=`<div class="advisor-card">
-      <div class="advisor-header">
-        <span class="advisor-icon">${icon}</span>
-        <div class="advisor-meta">
-          <div class="advisor-label">${label}</div>
-          <div class="advisor-team">${esc(s.team.name)}</div>
+function fmt(dt) {
+  if (!dt) return '';
+  return new Date(dt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+}
+
+function renderFlights() {
+  const el = document.getElementById('flights-list');
+  if (!allFlights.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">✈️</div><p>No flights added yet.<br>Add your travel details above!</p></div>`;
+    return;
+  }
+  let html = '';
+  for (const [fam, cfg] of Object.entries(FAMILIES)) {
+    const fFlights = allFlights.filter(f => f.family === fam);
+    if (!fFlights.length) continue;
+    html += `<div class="flight-block" style="border-left-color:${cfg.bg}">
+      <div class="flight-block-head" style="background:${cfg.bg}">
+        <span>${fam} Family</span>
+        <span style="font-size:14px;opacity:0.85">${fFlights.length} flight${fFlights.length>1?'s':''}</span>
+      </div>`;
+    for (const f of fFlights) {
+      const depDate = f.departure_time ? f.departure_time.slice(0,10) : '';
+      const safeNum = (f.flight_number||'').replace(/'/g,"\\'");
+      html += `<div class="flight-card">
+        <div class="f-dir">${f.direction==='inbound'?'🛬 Inbound → Fort Lauderdale':'🛫 Outbound → Flying Home'}</div>
+        <div class="f-route">
+          <span>${f.departure_city||'—'}</span>
+          <span class="f-arrow">→</span>
+          <span>${f.arrival_city||'—'}</span>
         </div>
-        <div class="advisor-rank">FIFA #${s.rank}<br><span style="font-size:11px;color:var(--muted);font-weight:500">Group ${s.team.grp}</span></div>
+        <div class="f-detail">
+          ${f.airline||''}${f.flight_number?' · '+f.flight_number:''}
+          ${f.departure_time?' · '+fmtFlight(f.departure_time, f.departure_tz):''}
+          ${f.arrival_time?' → '+fmtFlight(f.arrival_time, f.arrival_tz):''}
+          ${f.notes?'<br>📝 '+f.notes:''}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          ${f.flight_number ? `<button class="btn btn-teal btn-sm" onclick="checkFlightStatus('${f.id}','${safeNum}','${depDate}')">📡 Check Status</button>` : ''}
+          <button class="btn btn-sm" style="background:var(--mustard-light);color:var(--navy);border:none;font-weight:700;cursor:pointer;padding:8px 14px;border-radius:8px" onclick="openFlightEdit('${f.id}')">✏️ Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="delFlight('${f.id}')">🗑️ Remove</button>
+        </div>
+        <div id="fstatus-${f.id}" style="display:none"></div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function openFlightModal() {
+  document.getElementById('f-edit-id').value = '';
+  document.getElementById('flight-modal-title').textContent = '✈️ Add a Flight';
+  document.querySelectorAll('#m-flight input[type=text]').forEach(i => i.value='');
+  document.getElementById('f-dep-tz').value = '-240|EDT';
+  document.getElementById('f-arr-tz').value = '-240|EDT';
+  openModal('m-flight');
+}
+
+function openFlightEdit(id) {
+  const f = allFlights.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('f-edit-id').value    = id;
+  document.getElementById('flight-modal-title').textContent = '✏️ Edit Flight';
+  document.getElementById('f-fam').value        = f.family;
+  document.getElementById('f-dir').value        = f.direction;
+  document.getElementById('f-airline').value    = f.airline || '';
+  document.getElementById('f-num').value        = f.flight_number || '';
+  document.getElementById('f-from').value       = f.departure_city || '';
+  document.getElementById('f-to').value         = f.arrival_city || '';
+  document.getElementById('f-notes').value      = f.notes || '';
+  // Restore departure datetime
+  if (f.departure_time) {
+    const dt = new Date(f.departure_time);
+    const tzRaw = f.departure_tz || '-240|EDT';
+    const offsetMins = parseInt(tzRaw.split('|')[0]);
+    const local = new Date(dt.getTime() + offsetMins * 60000);
+    document.getElementById('f-dep-date').value = local.toISOString().slice(0,10);
+    const h24 = local.getUTCHours();
+    document.getElementById('f-dep-hr').value   = String(h24 % 12 || 12);
+    document.getElementById('f-dep-min').value  = String(local.getUTCMinutes()).padStart(2,'0');
+    document.getElementById('f-dep-ampm').value = h24 >= 12 ? 'PM' : 'AM';
+    document.getElementById('f-dep-tz').value   = tzRaw;
+  }
+  // Restore arrival datetime
+  if (f.arrival_time) {
+    const dt = new Date(f.arrival_time);
+    const tzRaw = f.arrival_tz || '-240|EDT';
+    const offsetMins = parseInt(tzRaw.split('|')[0]);
+    const local = new Date(dt.getTime() + offsetMins * 60000);
+    document.getElementById('f-arr-date').value = local.toISOString().slice(0,10);
+    const h24 = local.getUTCHours();
+    document.getElementById('f-arr-hr').value   = String(h24 % 12 || 12);
+    document.getElementById('f-arr-min').value  = String(local.getUTCMinutes()).padStart(2,'0');
+    document.getElementById('f-arr-ampm').value = h24 >= 12 ? 'PM' : 'AM';
+    document.getElementById('f-arr-tz').value   = tzRaw;
+  }
+  openModal('m-flight');
+}
+
+async function saveFlight() {
+  const dep = buildDatetime('f-dep-date','f-dep-hr','f-dep-min','f-dep-ampm','f-dep-tz');
+  const arr = buildDatetime('f-arr-date','f-arr-hr','f-arr-min','f-arr-ampm','f-arr-tz');
+  const editId = document.getElementById('f-edit-id').value;
+  const payload = {
+    family:          document.getElementById('f-fam').value,
+    direction:       document.getElementById('f-dir').value,
+    airline:         document.getElementById('f-airline').value,
+    flight_number:   document.getElementById('f-num').value,
+    departure_city:  document.getElementById('f-from').value,
+    departure_time:  dep.dt,
+    departure_tz:    dep.tz,
+    arrival_city:    document.getElementById('f-to').value,
+    arrival_time:    arr.dt,
+    arrival_tz:      arr.tz,
+    notes:           document.getElementById('f-notes').value,
+  };
+  let error;
+  if (editId) {
+    ({ error } = await sb.from('vacation_flights').update(payload).eq('id', editId));
+  } else {
+    ({ error } = await sb.from('vacation_flights').insert(payload));
+  }
+  if (error) { toast('Error saving flight','err'); return; }
+  toast(editId ? 'Flight updated! ✈️' : 'Flight added! ✈️');
+  closeModal('m-flight');
+  loadFlights();
+}
+
+async function delFlight(id) {
+  if (!confirm('Remove this flight?')) return;
+  await sb.from('vacation_flights').delete().eq('id', id);
+  toast('Flight removed');
+  loadFlights();
+}
+
+async function checkFlightStatus(flightId, flightNumber, flightDate) {
+  const el = document.getElementById(`fstatus-${flightId}`);
+  el.style.display = 'block';
+  el.innerHTML = `<div class="status-result">📡 Checking status for ${flightNumber}…</div>`;
+
+  try {
+    const body = { flightNumber };
+    if (flightDate) body.flightDate = flightDate;
+
+    const res = await fetch('https://viudclgcdsskzlfosflg.supabase.co/functions/v1/aviation-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (!data.found) {
+      el.innerHTML = `<div class="status-result">📅 No live data yet for <strong>${flightNumber}</strong>. Flight status becomes available closer to the departure date.</div>`;
+      return;
+    }
+
+    const statusEmoji = { active:'🛫', scheduled:'📅', landed:'🛬', cancelled:'❌', incident:'⚠️', diverted:'↩️' };
+    const statusClass = { active:'status-ontime', scheduled:'status-ontime', landed:'status-landed', cancelled:'status-cancelled', incident:'status-delayed', diverted:'status-delayed' };
+    const s = data.status || 'unknown';
+    const cls = statusClass[s] || '';
+    const fmtTime = t => t ? new Date(t).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '—';
+    const dep = data.departure, arr = data.arrival;
+    const delayNote = dep.delay ? `<span style="color:var(--terra);font-weight:700"> · ${dep.delay} min delay</span>` : '';
+
+    el.innerHTML = `<div class="status-result ${cls}">
+      <div class="status-label">${statusEmoji[s]||'✈️'} ${data.flightNumber} — ${s.charAt(0).toUpperCase()+s.slice(1)}${delayNote}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px">
+        <div><strong>Departure</strong><br>${dep.airport||'—'} (${dep.iata||'—'})<br>Scheduled: ${fmtTime(dep.scheduled)}<br>${dep.actual?'Actual: '+fmtTime(dep.actual)+'<br>':''}${dep.terminal?'Terminal '+dep.terminal:''}${dep.gate?' Gate '+dep.gate:''}</div>
+        <div><strong>Arrival</strong><br>${arr.airport||'—'} (${arr.iata||'—'})<br>Scheduled: ${fmtTime(arr.scheduled)}<br>${arr.actual?'Actual: '+fmtTime(arr.actual)+'<br>':''}${arr.estimated&&!arr.actual?'Estimated: '+fmtTime(arr.estimated)+'<br>':''}${arr.terminal?'Terminal '+arr.terminal:''}${arr.gate?' Gate '+arr.gate:''}</div>
       </div>
-      <div class="advisor-desc">${desc}</div>
-      ${s.reasons.length?`<div class="mtw-reasons" style="margin-top:6px">${s.reasons.map(r=>`<span class="mtw-badge">${r.emoji} ${esc(r.label)}</span>`).join("")}</div>`:''}
-      <div class="advisor-group">Also in Group ${s.team.grp}: ${groupStr||'<span style="color:var(--muted)">—</span>'}</div>
     </div>`;
-  });
-  html+=`</div>`;
-  resultsEl.innerHTML=html;
-}
-
-/* ---- Draft ---- */
-function renderDraft(){
-  const drafted = state.players.every(p=>p.slot) && state.players.length===8;
-  const ordered = [...state.players].filter(p=>p.slot).sort((a,b)=>a.slot-b.slot);
-  let html = `<div class="card">
-    <h2>Snake Draft</h2>
-    <p class="hint">${drafted ? 'Draft order is set. The order flips each round; everyone ends with '+TEAMS_PER_PLAYER+' teams. Picks are assigned on the Teams tab.' : 'The draft order has not been set yet.'}</p>
-    ${isAdmin ? `<button class="btn-gold" id="randBtn" style="max-width:260px">${drafted?'Re-randomize draft order':'Randomize draft order'}</button>
-    ${drafted?'<p class="warn">Re-randomizing overwrites the current order (team assignments stay).</p>':''}` : ''}
-  </div>`;
-
-  if(drafted){
-    html += `<div class="card"><div class="section-title">Draft Order</div><div class="draft-grid"><table>
-      <thead><tr><th>Rd</th>${ordered.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>`;
-    for(let r=1;r<=DRAFT_ROUNDS;r++){
-      const asc = r%2===1;
-      const cells = ordered.map(p=>{
-        const posInRound = asc ? p.slot : (9 - p.slot);
-        const pickNo = (r-1)*8 + posInRound;
-        return {p, pickNo};
-      });
-      html+=`<tr><td><b>${r}</b> <span class="arrow">${asc?'→':'←'}</span></td>${
-        ordered.map(p=>{ const c=cells.find(c=>c.p.id===p.id); return `<td><span class="pk">#${c.pickNo}</span>${esc(p.name.split('/')[0])}</td>`; }).join("")
-      }</tr>`;
-    }
-    html+=`</tbody></table></div><p class="hint" style="margin-top:10px">Round 1 picks left→right; even rounds snake back right→left. 48 picks total.</p></div>`;
-  }
-  $("#tab-draft").innerHTML = html + `<div id="advisor-container"></div>`;
-  const rb=$("#randBtn"); if(rb) rb.addEventListener("click",randomizeDraft);
-  renderAutoDraftAdvisor();
-}
-
-async function randomizeDraft(){
-  if(state.players.some(p=>p.slot) && !confirm("Re-randomize the draft order? Current order will be overwritten.")) return;
-  const ids = state.players.map(p=>p.id);
-  for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
-  const {error} = await rpc("admin_randomize_draft", {p_ids:ids});
-  if(error) return;
-  await loadAll(); renderDraft(); toast("Draft order randomized");
-}
-
-/* ---- Teams ---- */
-function renderTeams(){
-  const rec = computeTeamStats();
-  const groups = [...new Set(state.teams.map(t=>t.grp))];
-  const assigned = state.teams.filter(t=>t.owner_id).length;
-  const counts={}; state.players.forEach(p=>counts[p.id]=0);
-  state.teams.forEach(t=>{ if(t.owner_id) counts[t.owner_id]=(counts[t.owner_id]||0)+1; });
-  const over = state.players.filter(p=>counts[p.id]>TEAMS_PER_PLAYER);
-
-  let html=`<div class="card"><h2>Teams &amp; Assignments</h2>
-    <p class="hint">${assigned}/48 teams assigned. Each player should own ${TEAMS_PER_PLAYER}. Standings update from the Scores tab.</p>
-    ${over.length?`<div class="warn">Over ${TEAMS_PER_PLAYER} teams: ${over.map(p=>esc(p.name)+' ('+counts[p.id]+')').join(", ")}</div>`:''}
-    <div class="hint" style="margin-top:8px">${state.players.map(p=>`<span class="pill ${counts[p.id]===TEAMS_PER_PLAYER?'owned':''}">${esc(p.name)} ${counts[p.id]}/${TEAMS_PER_PLAYER}</span>`).join(" ")}</div>
-    <div class="btn-line"><button class="btn-ghost" id="copyTeamList">📋 Copy Team List</button></div>
-  </div>`;
-
-  groups.forEach(g=>{
-    const teams = state.teams.filter(t=>t.grp===g)
-      .sort((a,b)=> (rec[b.name].pts-rec[a.name].pts) || (rec[b.name].gd-rec[a.name].gd) || (rec[b.name].gf-rec[a.name].gf) || a.pos-b.pos);
-    html+=`<div class="card"><div class="grp-head"><span class="g">Group ${g}</span><span class="stand">Pld·W-D-L·Pts</span></div>`;
-    teams.forEach(t=>{
-      const r=rec[t.name];
-      const ownerP = t.owner_id ? playerById(t.owner_id) : null;
-      const control = isAdmin
-        ? `<select data-team="${t.id}"><option value="">— Unassigned —</option>${state.players.map(p=>`<option value="${p.id}" ${t.owner_id===p.id?'selected':''}>${esc(p.name)}</option>`).join("")}</select>`
-        : `<span class="owner-tag ${ownerP?'':'none'}">${ownerP?esc(ownerP.name):'—'}</span>`;
-      html+=`<div class="team-row">
-        <span class="tn">${esc(t.name)}</span>
-        <span class="rec">${r.pld}· ${r.w}-${r.d}-${r.l}</span>
-        <span class="tpts">${r.pts}</span>
-        ${control}
-      </div>`;
-    });
-    html+=`</div>`;
-  });
-  $("#tab-teams").innerHTML=html;
-
-  $("#copyTeamList")?.addEventListener("click",()=>{
-    const sorted = [...state.players].sort((a,b)=>a.sort_order-b.sort_order);
-    const lines = ['🌍 World Cup 2026 Pool — Draft Picks', ''];
-    sorted.forEach(p=>{
-      const teams = state.teams.filter(t=>t.owner_id===p.id).map(t=>t.name);
-      lines.push(`${p.name}: ${teams.length ? teams.join(', ') : '(no teams yet)'}`);
-    });
-    navigator.clipboard.writeText(lines.join('\n'))
-      .then(()=>toast("Team list copied to clipboard!"))
-      .catch(()=>toast("Copy failed — try selecting and copying manually"));
-  });
-
-  $$('#tab-teams select[data-team]').forEach(sel=>sel.addEventListener("change",async()=>{
-    const id=parseInt(sel.dataset.team,10); const owner=sel.value?parseInt(sel.value,10):null;
-    const {error}=await rpc("admin_set_team_owner",{p_team:id,p_owner:owner});
-    if(error) return;
-    await loadAll(); renderTeams(); toast("Assignment saved");
-  }));
-}
-
-/* ---- Match to Watch ---- */
-function getMatchupRules(){
-  const saved = state.settings["matchup_rules"];
-  if(!saved) return JSON.parse(JSON.stringify(DEFAULT_RULES));
-  try{
-    const parsed = JSON.parse(saved);
-    const merged = {};
-    Object.keys(DEFAULT_RULES).forEach(k=>{
-      merged[k] = parsed[k] ? {...DEFAULT_RULES[k], ...parsed[k]} : {...DEFAULT_RULES[k]};
-    });
-    return merged;
-  } catch(e){ return JSON.parse(JSON.stringify(DEFAULT_RULES)); }
-}
-
-function ownerOf(teamName){
-  const t = state.teams.find(x=>x.name===teamName);
-  if(!t||!t.owner_id) return null;
-  return playerById(t.owner_id);
-}
-
-function nameFits(playerName, frag){
-  return playerName.toLowerCase().includes(frag.toLowerCase());
-}
-
-function scoreMatch(match, rules, lb){
-  const {home_team:ht, away_team:at, round} = match;
-  const homeOwner = ownerOf(ht);
-  const awayOwner = ownerOf(at);
-  const homeData  = TEAM_DATA[ht];
-  const awayData  = TEAM_DATA[at];
-  const played = state.matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
-  const reasons=[]; let score=0;
-
-  function add(key, labelOverride){
-    const r=rules[key]; if(!r?.enabled) return;
-    score+=r.weight;
-    reasons.push({emoji:r.emoji, label:labelOverride||r.label});
-  }
-
-  // Couple / sibling (both teams must have owners)
-  if(homeOwner&&awayOwner){
-    const hn=homeOwner.name, an=awayOwner.name;
-    if(COUPLES.some(([a,b])=>(nameFits(hn,a)&&nameFits(an,b))||(nameFits(hn,b)&&nameFits(an,a))))
-      add("couple",`${hn} vs ${an} — couple showdown`);
-    if(SIBLINGS.some(([a,b])=>(nameFits(hn,a)&&nameFits(an,b))||(nameFits(hn,b)&&nameFits(an,a))))
-      add("sibling",`${hn} vs ${an} — sibling rivalry`);
-  }
-
-  // Pool standings swing — both owners currently in top 4, after ≥1 match played
-  if(homeOwner&&awayOwner&&homeOwner.id!==awayOwner.id&&played>0){
-    const pos={};
-    lb.rows.forEach((r,i)=>pos[r.player.id]=i+1);
-    const hp=pos[homeOwner.id]||9, ap=pos[awayOwner.id]||9;
-    if(hp<=4&&ap<=4) add("swing",`#${hp} ${homeOwner.name} vs #${ap} ${awayOwner.name} — standings on the line`);
-  }
-
-  // High-stakes — the top-2 FIFA-ranked owned teams face each other
-  if(homeData&&awayData){
-    const ownedRanks=state.teams.filter(t=>t.owner_id).map(t=>TEAM_DATA[t.name]?.rank).filter(Boolean).sort((a,b)=>a-b);
-    if(ownedRanks.length>=2){
-      const [r1,r2]=ownedRanks;
-      const ranks=[homeData.rank,awayData.rank];
-      if(ranks.includes(r1)&&ranks.includes(r2))
-        add("highstakes",`FIFA #${homeData.rank} vs #${awayData.rank} — pool's top two seeds`);
-    }
-  }
-
-  // Historic rivalry
-  if(RIVALRIES.has(`${ht}|${at}`)) add("rivalry",`${ht} vs ${at} — storied rivalry`);
-
-  // Host nation
-  const hostTeam=HOST_NATIONS.has(ht)?ht:HOST_NATIONS.has(at)?at:null;
-  if(hostTeam) add("host",`${hostTeam} — playing on home turf`);
-
-  // Leader's team
-  if(lb.rows.length&&(homeOwner||awayOwner)){
-    const leaderId=lb.rows[0].player.id;
-    if(homeOwner?.id===leaderId||awayOwner?.id===leaderId){
-      const ln=(homeOwner?.id===leaderId?homeOwner:awayOwner).name;
-      add("leader",`${ln}'s team — current pool leader`);
-    }
-  }
-
-  // Defending champion
-  if(ht==="Argentina"||at==="Argentina") add("defending","Argentina — defending world champions");
-
-  // Ranking gap / upset watch (30+ spots apart)
-  if(homeData&&awayData){
-    const gap=Math.abs(homeData.rank-awayData.rank);
-    if(gap>=30){
-      const fav=homeData.rank<awayData.rank?ht:at;
-      const dog=homeData.rank<awayData.rank?at:ht;
-      const favRk=Math.min(homeData.rank,awayData.rank);
-      const dogRk=Math.max(homeData.rank,awayData.rank);
-      add("rankgap",`${dog} (#${dogRk}) could upset ${fav} (#${favRk})`);
-    }
-  }
-
-  // Final group matchday
-  if(round===3) add("groupfinal","Final group matchday — advancement at stake");
-
-  // Continent derby — same confederation
-  if(homeData&&awayData&&homeData.conf===awayData.conf){
-    const cn={UEFA:"European",CONMEBOL:"South American",CONCACAF:"CONCACAF",CAF:"African",AFC:"Asian",OFC:"Oceanian"};
-    add("continent",`${cn[homeData.conf]||homeData.conf} derby`);
-  }
-
-  // Club teammates
-  if(CLUB_CONNECTIONS.has(`${ht}|${at}`)) add("clubmates","Club teammates on opposite sides");
-
-  return {score, reasons};
-}
-
-function findMatchToWatch(rules){
-  const upcoming=state.matches.filter(m=>m.home_score===null&&m.away_score===null).sort((a,b)=>a.id-b.id).slice(0,4);
-  if(!upcoming.length) return null;
-  const lb=computeLeaderboard();
-  let best=null, bestScore=-1;
-  upcoming.forEach(m=>{
-    const {score,reasons}=scoreMatch(m,rules,lb);
-    if(score>bestScore){ bestScore=score; best={match:m,score,reasons}; }
-  });
-  return best;
-}
-
-function renderMatchToWatch(){
-  const container=document.getElementById("mtw-container");
-  if(!container) return;
-  const rules=getMatchupRules();
-  const best=findMatchToWatch(rules);
-
-  let html=`<div class="card"><div class="section-title">⚽ Match to Watch</div>`;
-
-  if(!best){
-    html+=`<p class="hint" style="margin:0">No upcoming matches — check back soon!</p>`;
-  } else {
-    const m=best.match;
-    const ho=ownerOf(m.home_team), ao=ownerOf(m.away_team);
-    html+=`<div class="mtw-match">
-      <div class="mtw-side">
-        <div class="mtw-team">${esc(m.home_team)}</div>
-        <div class="mtw-owner">${ho?esc(ho.name):'—'}</div>
-      </div>
-      <div class="mtw-vs">vs</div>
-      <div class="mtw-side mtw-away">
-        <div class="mtw-team">${esc(m.away_team)}</div>
-        <div class="mtw-owner">${ao?esc(ao.name):'—'}</div>
-      </div>
-    </div>
-    <div class="mtw-meta">Group ${m.grp} · Matchday ${m.round}</div>`;
-    if(best.reasons.length){
-      html+=`<div class="mtw-reasons">${best.reasons.map(r=>`<span class="mtw-badge">${r.emoji} ${esc(r.label)}</span>`).join("")}</div>`;
-    } else {
-      html+=`<p class="hint" style="margin:4px 0 0;font-size:12px">Next up in the schedule</p>`;
-    }
-  }
-
-  if(isAdmin){
-    html+=`<div style="margin-top:12px">
-      <button class="btn-ghost" id="mtwEditBtn" style="font-size:12px;padding:7px 12px">${mtwEditorOpen?"▲ Hide Rules":"▼ Edit Rules"}</button>`;
-    if(mtwEditorOpen){
-      html+=`<div class="mtw-editor">
-        <div class="mtw-editor-head">
-          <span style="flex:1">Rule</span>
-          <span style="width:58px;text-align:center">Weight</span>
-          <span style="width:40px;text-align:center">On</span>
-        </div>`;
-      Object.entries(rules).forEach(([k,r])=>{
-        html+=`<div class="mtw-rule-row">
-          <span class="mtw-rule-label">${r.emoji} ${esc(r.label)}</span>
-          <input type="number" min="1" max="20" class="mtw-weight" data-rule="${k}" value="${r.weight}">
-          <input type="checkbox" class="mtw-toggle" data-rule="${k}" ${r.enabled?'checked':''}>
-        </div>`;
-      });
-      html+=`<button class="btn-gold mtw-save" style="margin-top:10px;max-width:140px;padding:9px 14px;font-size:13px">Save Rules</button>
-      </div>`;
-    }
-    html+=`</div>`;
-  }
-
-  html+=`</div>`;
-  container.innerHTML=html;
-
-  document.getElementById("mtwEditBtn")?.addEventListener("click",()=>{
-    mtwEditorOpen=!mtwEditorOpen; renderMatchToWatch();
-  });
-
-  if(mtwEditorOpen&&isAdmin){
-    container.querySelector(".mtw-save")?.addEventListener("click",async()=>{
-      const updated={};
-      Object.keys(rules).forEach(k=>updated[k]={...rules[k]});
-      container.querySelectorAll(".mtw-weight[data-rule]").forEach(inp=>{
-        const k=inp.dataset.rule; if(updated[k]) updated[k].weight=Math.max(1,Math.min(20,parseInt(inp.value)||1));
-      });
-      container.querySelectorAll(".mtw-toggle[data-rule]").forEach(inp=>{
-        const k=inp.dataset.rule; if(updated[k]) updated[k].enabled=inp.checked;
-      });
-      const {error}=await rpc("admin_set_setting",{p_key:"matchup_rules",p_value:JSON.stringify(updated)});
-      if(error) return;
-      await loadAll(); renderMatchToWatch(); toast("Rules saved");
-    });
+  } catch(e) {
+    el.innerHTML = `<div class="status-result">⚠️ Could not reach flight status service. Please try again.</div>`;
   }
 }
 
-/* ---- Matches / Scores ---- */
-function renderMatches(){
-  const groups=[...new Set(state.teams.map(t=>t.grp))];
-  const ownerName = name=>{ const t=state.teams.find(x=>x.name===name); if(!t||!t.owner_id) return null; const p=playerById(t.owner_id); return p?p.name:null; };
-  const lastSync = state.settings["last_sync"];
-  const syncNote = lastSync ? ` · Auto-synced ${formatLastSync()}` : '';
+// ══════════════════════════════════════════
+// TRANSIT
+// ══════════════════════════════════════════
+async function loadTransit() {
+  const { data } = await sb.from('vacation_transit').select('*').order('created_at');
+  allTransit = data || [];
+  renderTransit();
+}
 
-  let html=`<div class="card"><h2>Match Scores</h2>
-    <p class="hint">${isAdmin ? 'Enter final scores (pre-shootout). Standings update instantly for everyone.' : `Live results — only the commissioner can enter scores.${syncNote}`}</p>
-    <div class="filters">
-      <select id="grpFilter"><option value="all">All groups</option>${groups.map(g=>`<option value="${g}" ${matchFilterGroup===g?'selected':''}>Group ${g}</option>`).join("")}</select>
-    </div></div>`;
+function renderTransit() {
+  const el = document.getElementById('transit-content');
+  const toShip   = allTransit.filter(t => t.direction === 'to_ship');
+  const fromShip = allTransit.filter(t => t.direction === 'from_ship');
 
-  const rounds=[1,2,3];
-  rounds.forEach(rd=>{
-    let ms=state.matches.filter(m=>m.round===rd);
-    if(matchFilterGroup!=="all") ms=ms.filter(m=>m.grp===matchFilterGroup);
-    if(!ms.length) return;
-    ms.sort((a,b)=>a.id-b.id);
-    html+=`<div class="card"><div class="section-title">Matchday ${rd}</div>`;
-    ms.forEach(m=>{
-      const ho=ownerName(m.home_team), ao=ownerName(m.away_team);
-      const hs=m.home_score, as_=m.away_score; const done=hs!==null&&as_!==null;
-      const hWin=done&&hs>as_, aWin=done&&as_>hs;
-      html+=`<div class="match">
-        <div class="mlabel">Group ${m.grp} · Match ${m.id}</div>
-        <div class="side home">
-          <span class="tm ${hWin?'winner':''}">${esc(m.home_team)}</span>
-          <span class="own ${ho?'':'none'}">${ho?esc(ho):'unassigned'}</span>
-        </div>
-        <div class="scorebox">${ isAdmin
-          ? `<input type="number" min="0" inputmode="numeric" data-mid="${m.id}" data-side="home" value="${hs===null?'':hs}"><span>–</span><input type="number" min="0" inputmode="numeric" data-mid="${m.id}" data-side="away" value="${as_===null?'':as_}">`
-          : `<span class="sc">${hs===null?'·':hs}</span><span>–</span><span class="sc">${as_===null?'·':as_}</span>` }
-        </div>
-        <div class="side away">
-          <span class="tm ${aWin?'winner':''}">${esc(m.away_team)}</span>
-          <span class="own ${ao?'':'none'}">${ao?esc(ao):'unassigned'}</span>
+  function renderCards(items) {
+    return items.map(t => {
+      const cfg = FAMILIES[t.family] || { bg:'#888', light:'#eee' };
+      const isAir2Sea = t.method === 'air2sea';
+      return `<div class="transit-card">
+        <div class="transit-head" style="background:${cfg.bg}">${t.family === 'PJ' ? '🎉 PJ' : t.family === 'Swanson' ? '🏄 Swansons' : '🌺 McNamaras'}</div>
+        <div class="transit-body">
+          <div class="transit-method">${TRANSIT_LABELS[t.method] || '❓ Not Decided'}</div>
+          ${t.notes ? `<div class="transit-note">${t.notes}</div>` : ''}
+          ${isAir2Sea ? `<div style="background:var(--purple-light);border:1.5px solid var(--purple);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:14px;color:var(--purple);line-height:1.5"><strong style="display:block;margin-bottom:4px">📞 Action Required</strong>Contact Royal Caribbean to arrange Air2Sea group transfer. Book through the Cruise Planner in your RC account.</div>` : ''}
+          ${t.confirmed ? `<div class="transit-confirmed">✅ Confirmed</div>` : ''}
+          <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="openTransitEdit('${t.id}')">✏️ Edit</button>
         </div>
       </div>`;
-    });
-    html+=`</div>`;
-  });
-  $("#tab-matches").innerHTML=`<div id="mtw-container"></div>`+html;
-  renderMatchToWatch();
-  $("#grpFilter").addEventListener("change",e=>{ matchFilterGroup=e.target.value; renderMatches(); });
-  $$('#tab-matches input[data-mid]').forEach(inp=>inp.addEventListener("change",onScoreChange));
-}
-
-async function onScoreChange(e){
-  const id=parseInt(e.target.dataset.mid,10);
-  const box=e.target.closest(".match");
-  const h=box.querySelector('input[data-side="home"]').value;
-  const a=box.querySelector('input[data-side="away"]').value;
-  const home=num(h), away=num(a);
-  const clear = (home===null||away===null);
-  const {error}=await rpc("admin_set_match",{p_id:id,p_home:clear?null:home,p_away:clear?null:away});
-  if(error) return;
-  await loadAll(); renderMatches(); toast(clear?"Score cleared":"Score saved");
-}
-
-/* ---- Updates / Recaps ---- */
-function renderRecaps(){
-  let html=`<div class="card">
-    <h2>Updates &amp; Recaps</h2>
-    <p class="hint">Match recaps and pool news from Commissioner Michelle.</p>
-    ${isAdmin ? `<div class="recap-form">
-      <input id="rcTitle" class="field" type="text" placeholder="Title — e.g. Matchday 1 Recap" />
-      <textarea id="rcBody" class="field" placeholder="Write your recap here…"></textarea>
-      <button class="btn-gold" id="rcPost" style="width:auto;max-width:160px">Post Update</button>
-    </div>` : ''}
-  </div>`;
-
-  if(!state.recaps.length){
-    html+=`<div class="card" style="text-align:center"><p class="hint" style="margin:0">No updates yet — check back after the first matches play!</p></div>`;
-  } else {
-    state.recaps.forEach(r=>{
-      html+=`<div class="card">
-        <div class="recap-head">
-          <span class="recap-title">${esc(r.title)}</span>
-          <span class="recap-date">${formatDate(r.created_at)}</span>
-          ${isAdmin?`<button class="recap-del" data-rid="${r.id}" title="Delete">✕</button>`:''}
-        </div>
-        <div class="recap-body">${esc(r.body)}</div>
-      </div>`;
-    });
+    }).join('');
   }
 
-  $("#tab-recaps").innerHTML=html;
+  el.innerHTML = `
+    <div class="transit-dir-head">🛳️ Getting to the Ship <span style="font-size:14px;font-weight:500;color:var(--text-light)">— June 21</span></div>
+    <div class="transit-grid">${renderCards(toShip)}</div>
+    <div class="transit-dir-head">🏠 Getting Home <span style="font-size:14px;font-weight:500;color:var(--text-light)">— June 28</span></div>
+    <div class="transit-grid">${renderCards(fromShip)}</div>`;
+}
 
-  if(isAdmin){
-    $("#rcPost")?.addEventListener("click", postRecap);
-    $$(".recap-del").forEach(btn=>btn.addEventListener("click",async()=>{
-      if(!confirm("Delete this update?")) return;
-      const {error}=await rpc("admin_delete_recap",{p_id:parseInt(btn.dataset.rid,10)});
-      if(error) return;
-      await loadAll(); renderRecaps(); toast("Update deleted");
+function openTransitEdit(id) {
+  const t = allTransit.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('tr-id').value = id;
+  document.getElementById('tr-method').value = t.method;
+  document.getElementById('tr-notes').value  = t.notes || '';
+  document.getElementById('tr-confirmed').checked = t.confirmed;
+  const dirLabel = t.direction === 'to_ship' ? 'To the Ship' : 'Getting Home';
+  document.getElementById('transit-modal-title').textContent = `✏️ ${t.family} — ${dirLabel}`;
+  openModal('m-transit');
+}
+
+async function saveTransit() {
+  const id     = document.getElementById('tr-id').value;
+  const method = document.getElementById('tr-method').value;
+  const notes  = document.getElementById('tr-notes').value.trim();
+  const confirmed = document.getElementById('tr-confirmed').checked;
+  const { error } = await sb.from('vacation_transit').update({ method, notes: notes||null, confirmed }).eq('id', id);
+  if (error) { toast('Error saving','err'); return; }
+  toast('Transit updated! 🚌');
+  closeModal('m-transit');
+  loadTransit();
+}
+
+// ══════════════════════════════════════════
+// PACKING TAB
+// ══════════════════════════════════════════
+let packFilter = 'all';
+let packAllItems = [];
+
+// ── Starter templates ──
+const PACK_TEMPLATES = {
+  'Documents & ID': {
+    emoji: '📄', category: 'Documents',
+    items: [
+      'Passport','Credit cards'
+    ]
+  },
+  'Toiletries': {
+    emoji: '🧴', category: 'Toiletries',
+    items: [
+      'Reef-safe sunscreen SPF 50+','Aloe vera gel','Shampoo & conditioner',
+      'Body wash','Deodorant','Razors','Toothbrush & toothpaste',
+      'Lip balm with SPF','Makeup remover wipes','Hair ties'
+    ]
+  },
+  'Clothing': {
+    emoji: '👕', category: 'Clothes',
+    items: [
+      'Swimsuits (×2)','Coverup / beach dress','Shorts','T-shirts',
+      'One smart-casual dinner outfit','Sandals / flip flops',
+      'Comfortable walking shoes','Light cardigan (A/C on ship)',
+      'Pajamas','Underwear (×7)','Socks'
+    ]
+  },
+  'Beach & Pool': {
+    emoji: '🏖️', category: 'Beach & Pool',
+    items: [
+      'Beach bag','Snorkel gear',
+      'Reef shoes (for CocoCay rocky entry)','Waterproof sunscreen stick for face',
+      'Reusable water bottle'
+    ]
+  },
+  'Tech & Essentials': {
+    emoji: '📱', category: 'Electronics',
+    items: [
+      'Phone charger','Portable battery / power bank',
+      'Plain power strip (no surge protector — cruise ships ban them)',
+      'Magnetic hooks (for cabin walls)','Waterproof Bluetooth speaker',
+      'Earbuds / headphones','Universal travel adapter',
+      'Downloaded movies / shows (airplane mode at sea)'
+    ]
+  },
+  'Health & Meds': {
+    emoji: '💊', category: 'Health',
+    items: [
+      'Pain relievers','Antidiarrheal','Antacids','Allergy medication',
+      'Daily prescriptions (+ extra days supply)','First aid kit',
+      'Hand sanitizer','Insect repellent (for Jamaica)'
+    ]
+  },
+  'Sky Class Extras': {
+    emoji: '⭐', category: 'General',
+    items: [
+      'Formal outfit for specialty dining','Day pack / small backpack for ports',
+      '$1 bills for tips at ports','Lanyard for SeaPass card',
+      'Collapsible bag for shopping haul','Clothes clips / mini hangers',
+      'Nightlight (for kids in cabin)','Reusable shopping bag'
+    ]
+  },
+};
+
+let selectedTemplates = new Set();
+let templateTargetPerson = '';
+
+function openTemplateModal(fam, person) {
+  templateTargetPerson = person;
+  document.getElementById('tmpl-person-label').textContent = person;
+  selectedTemplates.clear();
+  const grid = document.getElementById('tmpl-grid');
+  grid.innerHTML = Object.entries(PACK_TEMPLATES).map(([name, t]) =>
+    `<button class="tmpl-card" id="tmpl-${name}" onclick="toggleTemplate('${name}')">
+      <div class="tmpl-card-title">${t.emoji} ${name}</div>
+      <div class="tmpl-card-count">${t.items.length} items</div>
+    </button>`
+  ).join('');
+  updateTemplatePreview();
+  openModal('m-template');
+}
+
+function toggleTemplate(name) {
+  if (selectedTemplates.has(name)) selectedTemplates.delete(name);
+  else selectedTemplates.add(name);
+  document.getElementById(`tmpl-${name}`).classList.toggle('selected', selectedTemplates.has(name));
+  updateTemplatePreview();
+}
+
+function updateTemplatePreview() {
+  const count = [...selectedTemplates].reduce((s, n) => s + PACK_TEMPLATES[n].items.length, 0);
+  document.getElementById('tmpl-preview').textContent =
+    selectedTemplates.size ? `${count} items will be added across ${selectedTemplates.size} categor${selectedTemplates.size===1?'y':'ies'}.` : 'Select templates above.';
+}
+
+async function applyTemplates() {
+  if (!selectedTemplates.size) { toast('Pick at least one template','err'); return; }
+  const rows = [];
+  selectedTemplates.forEach(name => {
+    const t = PACK_TEMPLATES[name];
+    t.items.forEach(item => rows.push({
+      family: curFamily, person: templateTargetPerson,
+      item, category: t.category,
+      status: 'unpacked', quantity: 1,
+      packed: false, is_shared: false,
     }));
-  }
+  });
+  const { error } = await sb.from('vacation_packing').insert(rows);
+  if (error) { toast('Error adding items','err'); return; }
+  toast(`${rows.length} items added! 🧳`);
+  closeModal('m-template');
+  loadPacking(curFamily);
+  loadSharedOverview();
 }
 
-async function postRecap(){
-  const title = ($("#rcTitle")?.value||"").trim();
-  const body  = ($("#rcBody")?.value||"").trim();
-  if(!title||!body){ toast("Title and text are both required"); return; }
-  const btn = $("#rcPost");
-  if(btn){ btn.disabled=true; btn.textContent="Posting…"; }
-  const {error}=await rpc("admin_post_recap",{p_title:title,p_body:body});
-  if(btn){ btn.disabled=false; btn.textContent="Post Update"; }
-  if(error) return;
-  await loadAll(); renderRecaps(); toast("Update posted!");
+// ── Filter ──
+function setPackFilter(filter, btn) {
+  packFilter = filter;
+  document.querySelectorAll('.pack-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPacking(curFamily, packAllItems);
 }
 
-/* ---- Settings ---- */
-function renderSettings(){
-  let html=`<div class="card"><h2>Players &amp; Tie-breakers</h2>
-    <p class="hint">Edit names and each player's Final pre-shootout goal prediction.</p>
-    ${state.players.map(p=>`<div class="set-row">
-      <input class="name" data-pname="${p.id}" value="${esc(p.name)}">
-      <input type="number" min="0" inputmode="numeric" data-ptb="${p.id}" placeholder="goals" value="${p.tiebreaker??''}" style="width:90px">
-    </div>`).join("")}
-    <span class="saved" id="savedPlayers">Saved</span>
-  </div>
+function applyFilter(items) {
+  if (packFilter === 'all')         return items;
+  if (packFilter === 'unpacked')    return items.filter(i => i.status === 'unpacked' || (!i.status && !i.packed));
+  if (packFilter === 'need_to_buy') return items.filter(i => i.status === 'need_to_buy');
+  if (packFilter === 'packed')      return items.filter(i => i.status === 'packed' || (!i.status && i.packed));
+  if (packFilter === 'shared')      return items.filter(i => i.is_shared);
+  if (packFilter === 'theme')       return items.filter(i => i.theme_night);
+  if (packFilter === 'port')        return items.filter(i => i.port_day);
+  return items;
+}
 
-  <div class="card"><h2>Scoring</h2>
-    <p class="hint">Group-stage points per result. Defaults: Win 3, Draw 1, Loss 0.</p>
-    <div class="set-row"><label>Win points</label><input type="number" data-set="win_points" value="${setVal('win_points','3')}"></div>
-    <div class="set-row"><label>Draw points</label><input type="number" data-set="draw_points" value="${setVal('draw_points','1')}"></div>
-    <div class="set-row"><label>Loss points</label><input type="number" data-set="loss_points" value="${setVal('loss_points','0')}"></div>
-    <span class="saved" id="savedScoring">Saved</span>
-  </div>
+// ── Shared overview (cross-family) ──
+async function loadSharedOverview() {
+  const { data } = await sb.from('vacation_packing').select('*').eq('is_shared', true).order('item');
+  const el = document.getElementById('shared-overview');
+  if (!data || !data.length) { el.innerHTML = ''; return; }
+  const rows = data.map(i => {
+    const ownerBadge = i.shared_by
+      ? `<span class="shared-owner">${i.shared_by}</span>`
+      : `<span style="font-size:12px;color:var(--text-light);font-style:italic">owner TBD</span>`;
+    return `<div class="shared-row">
+      <span style="flex:1">${i.item}${(i.quantity||1)>1?` ×${i.quantity}`:''}</span>
+      ${ownerBadge}
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="shared-overview">
+    <div class="shared-overview-title">🤝 Shared Group Items (${data.length})</div>
+    ${rows}
+  </div>`;
+}
 
-  <div class="card"><h2>Score Sync</h2>
-    <p class="hint">Scores auto-sync from <a href="https://football-data.org" target="_blank" rel="noopener">football-data.org</a> once the API key is configured in Supabase. Use the button below to force a sync now.</p>
-    <div class="set-row"><label>Last synced</label><span style="font-size:13px;color:var(--muted)">${formatLastSync()}</span></div>
-    <div class="btn-line"><button class="btn-ghost" id="syncBtn">Sync scores now</button></div>
-  </div>
+function selectFamily(fam) {
+  curFamily = fam;
+  packFilter = 'all';
+  document.querySelectorAll('.pack-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter==='all'));
+  document.querySelectorAll('.family-tab').forEach(t => {
+    t.className = 'family-tab';
+    if (t.dataset.family === fam) {
+      if (fam==='Swanson') t.classList.add('fs');
+      else if (fam==='McNamara') t.classList.add('fm');
+      else t.classList.add('fpj');
+    }
+  });
+  loadPacking(fam);
+}
 
-  <div class="card"><h2>Access</h2>
-    <p class="hint">The <b>pool password</b> is what every player types to view the pool. The <b>commissioner password</b> unlocks editing — keep it to yourself.</p>
-    <div class="set-row"><label>Pool (view) password</label><input data-set="password" value="${esc(setVal('password',''))}" style="width:170px;text-align:left"></div>
-    <span class="saved" id="savedPw">Saved</span>
-    <div style="height:12px"></div>
-    <div class="set-row"><label>New commissioner password</label><input id="newAdminPw" type="text" placeholder="min 4 characters" style="width:170px;text-align:left"></div>
-    <div class="btn-line"><button class="btn-ghost" id="changeAdmin">Change commissioner password</button></div>
-  </div>
+async function loadPacking(fam) {
+  document.getElementById('packing-content').innerHTML = '<div class="loading">⏳ Loading…</div>';
+  const { data } = await sb.from('vacation_packing').select('*').eq('family', fam).order('created_at');
+  packAllItems = data || [];
+  renderPacking(fam, packAllItems);
+}
 
-  <div class="card"><h2>Reset</h2>
-    <p class="hint">Careful — these affect everyone instantly.</p>
-    <div class="btn-line">
-      <button class="btn-ghost" id="resetScores">Clear all scores</button>
-      <button class="btn-ghost" id="resetDraft">Reset draft &amp; teams</button>
-      <button class="btn-danger" id="resetAll">Reset everything</button>
+const STATUS_ICON = { unpacked: '○', need_to_buy: '🛒', packed: '✅' };
+const STATUS_NEXT = { unpacked: 'need_to_buy', need_to_buy: 'packed', packed: 'unpacked' };
+
+function renderPacking(fam, allItems) {
+  const cfg  = FAMILIES[fam];
+  const el   = document.getElementById('packing-content');
+  const items = applyFilter(allItems);
+  const tot  = allItems.length;
+  const done = allItems.filter(i => i.status === 'packed' || (!i.status && i.packed)).length;
+  const toBuy = allItems.filter(i => i.status === 'need_to_buy').length;
+  const pct  = tot ? Math.round((done/tot)*100) : 0;
+
+  let html = `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-weight:600;color:var(--navy)">${done} of ${tot} packed${toBuy ? ` · 🛒 ${toBuy} to buy` : ''}</span>
+      <span style="font-size:28px;font-weight:700;color:${cfg.bg}">${pct}%</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" style="width:${pct}%;background:${cfg.bg}"></div>
     </div>
   </div>`;
-  $("#tab-settings").innerHTML=html;
 
-  // player names + tiebreakers
-  $$('#tab-settings input[data-pname]').forEach(inp=>inp.addEventListener("change",async()=>{
-    const {error}=await rpc("admin_set_player_name",{p_id:parseInt(inp.dataset.pname,10),p_name:inp.value});
-    if(error) return; await loadAll(); flash("savedPlayers"); toast("Name saved");
-  }));
-  $$('#tab-settings input[data-ptb]').forEach(inp=>inp.addEventListener("change",async()=>{
-    const {error}=await rpc("admin_set_player_tb",{p_id:parseInt(inp.dataset.ptb,10),p_tb:num(inp.value)});
-    if(error) return; await loadAll(); flash("savedPlayers"); toast("Prediction saved");
-  }));
-  // scoring + view password
-  $$('#tab-settings input[data-set]').forEach(inp=>inp.addEventListener("change",async()=>{
-    const key=inp.dataset.set;
-    const {error}=await rpc("admin_set_setting",{p_key:key,p_value:String(inp.value)});
-    if(error) return; await loadAll();
-    if(key==="password") flash("savedPw"); else flash("savedScoring");
-    toast("Saved");
-  }));
-  // score sync button
-  $("#syncBtn")?.addEventListener("click", syncScores);
-  // change commissioner password
-  $("#changeAdmin").addEventListener("click",async()=>{
-    const np=$("#newAdminPw").value.trim();
-    if(np.length<4){ toast("Password must be at least 4 characters"); return; }
-    if(!confirm("Change the commissioner password? You'll use the new one from now on.")) return;
-    const {data,error}=await sb.rpc("admin_change_password",{p_pw_old:adminPw,p_pw_new:np});
-    if(error||!data){ toast("Couldn't change password"); return; }
-    adminPw=np; try{sessionStorage.setItem("wc_admin",np);}catch(e){}
-    $("#newAdminPw").value=""; toast("Commissioner password changed");
-  });
-  // resets
-  $("#resetScores").addEventListener("click",async()=>{ if(!confirm("Clear ALL match scores for everyone?"))return;
-    const {error}=await rpc("admin_reset",{p_mode:"scores"}); if(error)return; await loadAll(); toast("Scores cleared"); });
-  $("#resetDraft").addEventListener("click",async()=>{ if(!confirm("Reset draft order AND all team assignments?"))return;
-    const {error}=await rpc("admin_reset",{p_mode:"draft"}); if(error)return; await loadAll(); toast("Draft & teams reset"); });
-  $("#resetAll").addEventListener("click",async()=>{ if(!confirm("Reset EVERYTHING — scores, draft, and assignments? This cannot be undone."))return;
-    const {error}=await rpc("admin_reset",{p_mode:"all"}); if(error)return; await loadAll(); toast("Everything reset"); });
-}
-function flash(id){ const e=$("#"+id); if(!e)return; e.classList.add("show"); setTimeout(()=>e.classList.remove("show"),1400); }
-
-/* ====================== Tabs ====================== */
-function switchTab(tab){
-  currentTab=tab;
-  $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  ["leaderboard","draft","teams","matches","recaps","settings"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==tab));
-  renderCurrent();
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-
-/* ====================== Countdown ====================== */
-const KICKOFF_TIME = new Date('2026-06-12T00:30:00Z'); // June 11, 2026 8:30 PM ET
-function updateCountdown(){
-  const banner = $("#countdown-banner"); if(!banner) return;
-  const diff = KICKOFF_TIME - Date.now();
-  if(diff <= 0){ banner.classList.add("hidden"); return; }
-  banner.classList.remove("hidden");
-  const d = Math.floor(diff/86400000);
-  const h = Math.floor((diff%86400000)/3600000);
-  const m = Math.floor((diff%3600000)/60000);
-  const s = Math.floor((diff%60000)/1000);
-  $("#cd-days").textContent = d;
-  $("#cd-hours").textContent = String(h).padStart(2,"0");
-  $("#cd-mins").textContent = String(m).padStart(2,"0");
-  $("#cd-secs").textContent = String(s).padStart(2,"0");
-}
-
-/* ====================== Auth gate ====================== */
-async function tryUnlock(pw){
-  const want = setVal("password","");
-  if(pw===want){ unlock(); localStorage.setItem("wc_pw",pw); return true; }
-  return false;
-}
-function unlock(){ $("#gate").classList.add("hidden"); $("#app").classList.remove("hidden"); renderCurrent(); }
-
-async function init(){
-  await loadAll();
-  let savedAdmin=null; try{ savedAdmin=sessionStorage.getItem("wc_admin"); }catch(e){}
-  if(savedAdmin){
-    const {data}=await sb.rpc("verify_admin",{p_pw:savedAdmin});
-    if(data){ isAdmin=true; adminPw=savedAdmin; }
+  if (!items.length && packFilter !== 'all') {
+    html += `<div class="card" style="text-align:center;color:var(--text-light);font-style:italic;padding:24px">No items match this filter.</div>`;
+    el.innerHTML = html;
+    return;
   }
-  const saved = localStorage.getItem("wc_pw");
-  if(saved && saved===setVal("password","")) { unlock(); }
-  subscribeRealtime();
-  updateCountdown(); setInterval(updateCountdown, 1000);
 
-  $("#gateBtn").addEventListener("click",async()=>{
-    const ok=await tryUnlock($("#gatePw").value);
-    if(!ok){ $("#gateErr").textContent="Incorrect password"; $("#gatePw").value=""; }
-  });
-  $("#gatePw").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#gateBtn").click(); });
-  $$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
-  $("#commishBtn").addEventListener("click",()=> isAdmin ? commishLogout() : commishLogin());
-  applyMode();
+  for (const m of cfg.members) {
+    const mItems = items.filter(i => i.person === m);
+    html += `<div class="card">
+      <div class="card-title">
+        ${m}
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" style="background:#F5F0FF;color:var(--purple);border:none;font-weight:700;cursor:pointer;padding:8px 12px;border-radius:8px;font-size:13px" onclick="openTemplateModal('${fam}','${m}')">📋 Templates</button>
+          <button class="btn btn-sm" style="background:${cfg.light};color:${cfg.bg};border:none;font-weight:700;cursor:pointer;padding:8px 16px;border-radius:8px" onclick="openPackModal('${fam}','${m}')">+ Add</button>
+        </div>
+      </div>`;
+
+    if (!mItems.length) {
+      html += `<p style="color:var(--text-light);font-style:italic">Nothing here — use Templates for a quick start, or Add to enter items manually.</p>`;
+    } else {
+      const byCat = {};
+      mItems.forEach(i => { if(!byCat[i.category]) byCat[i.category]=[]; byCat[i.category].push(i); });
+      for (const [cat, catItems] of Object.entries(byCat)) {
+        html += `<div class="cat-head">${cat}</div>`;
+        catItems.forEach(i => {
+          const st = i.status || (i.packed ? 'packed' : 'unpacked');
+          const tags = [];
+          if (i.is_shared) {
+            const owner = i.shared_by ? ` · ${i.shared_by}` : '';
+            tags.push(`<span class="pack-tag pack-tag-shared">🤝 Shared${owner}</span>`);
+          }
+          if (i.theme_night) tags.push(`<span class="pack-tag pack-tag-theme">🎉 ${i.theme_night}</span>`);
+          if (i.port_day)    tags.push(`<span class="pack-tag pack-tag-port">🗺️ ${i.port_day}</span>`);
+          if (st === 'need_to_buy') tags.push(`<span class="pack-tag pack-tag-buy">🛒 Need to buy</span>`);
+          html += `<div class="packing-item ${st==='packed'?'packed':''}" id="pi-${i.id}">
+            <button class="status-btn s-${st}" onclick="cycleStatus('${i.id}','${st}','${fam}')" title="Tap to cycle: unpacked → need to buy → packed">${STATUS_ICON[st]||'○'}</button>
+            <div class="pack-main">
+              <div class="pack-text">${i.item}${(i.quantity||1)>1?`<span class="pack-qty">×${i.quantity}</span>`:''}</div>
+              ${tags.length ? `<div class="pack-tags">${tags.join('')}</div>` : ''}
+            </div>
+            <button onclick="openPackEdit('${i.id}','${fam}')" class="del-btn" style="font-size:14px;color:var(--mustard)" title="Edit item">✏️</button>
+            <button onclick="delPacking('${i.id}','${fam}')" class="del-btn">×</button>
+          </div>`;
+        });
+      }
+    }
+    html += '</div>';
+  }
+
+  html += `<button class="btn btn-mustard btn-full" onclick="openPackModal('${fam}','${cfg.members[0]}')">+ Add Item for ${fam} Family</button>`;
+  el.innerHTML = html;
 }
-init();
+
+function toggleSharedBy() {
+  const checked = document.getElementById('p-shared').checked;
+  document.getElementById('p-sharedby-group').style.display = checked ? '' : 'none';
+  if (!checked) document.getElementById('p-sharedby').value = '';
+}
+
+function openPackModal(fam, person) {
+  const sel = document.getElementById('p-person');
+  sel.innerHTML = FAMILIES[fam].members.map(m => `<option value="${m}" ${m===person?'selected':''}>${m}</option>`).join('');
+  document.getElementById('p-edit-id').value  = '';
+  document.getElementById('pack-modal-title').textContent = '🧳 Add Packing Item';
+  document.getElementById('p-item').value   = '';
+  document.getElementById('p-qty').value    = '1';
+  document.getElementById('p-cat').value    = 'Clothes';
+  document.getElementById('p-status').value = 'unpacked';
+  document.getElementById('p-port').value   = '';
+  document.getElementById('p-shared').checked = false;
+  document.getElementById('p-sharedby-group').style.display = 'none';
+  document.getElementById('p-sharedby').value = '';
+  document.getElementById('p-theme').value  = '';
+  openModal('m-packing');
+}
+
+function openPackEdit(id, fam) {
+  const i = packAllItems.find(x => x.id === id);
+  if (!i) return;
+  const cfg = FAMILIES[fam];
+  const sel = document.getElementById('p-person');
+  sel.innerHTML = cfg.members.map(m => `<option value="${m}" ${m===i.person?'selected':''}>${m}</option>`).join('');
+  document.getElementById('p-edit-id').value  = id;
+  document.getElementById('pack-modal-title').textContent = '✏️ Edit Packing Item';
+  document.getElementById('p-item').value   = i.item;
+  document.getElementById('p-qty').value    = i.quantity || 1;
+  document.getElementById('p-cat').value    = i.category || 'General';
+  document.getElementById('p-status').value = i.status || 'unpacked';
+  document.getElementById('p-port').value   = i.port_day || '';
+  document.getElementById('p-shared').checked = !!i.is_shared;
+  document.getElementById('p-sharedby-group').style.display = i.is_shared ? '' : 'none';
+  document.getElementById('p-sharedby').value = i.shared_by || '';
+  document.getElementById('p-theme').value  = i.theme_night || '';
+  openModal('m-packing');
+}
+
+async function savePackingItem() {
+  const item = document.getElementById('p-item').value.trim();
+  if (!item) { toast('Please enter an item name','err'); return; }
+  const isShared = document.getElementById('p-shared').checked;
+  const editId = document.getElementById('p-edit-id').value;
+  const payload = {
+    person:      document.getElementById('p-person').value,
+    item,
+    quantity:    parseInt(document.getElementById('p-qty').value) || 1,
+    category:    document.getElementById('p-cat').value,
+    status:      document.getElementById('p-status').value,
+    packed:      document.getElementById('p-status').value === 'packed',
+    port_day:    document.getElementById('p-port').value || null,
+    is_shared:   isShared,
+    shared_by:   isShared ? (document.getElementById('p-sharedby').value || null) : null,
+    theme_night: document.getElementById('p-theme').value || null,
+  };
+  let error;
+  if (editId) {
+    ({ error } = await sb.from('vacation_packing').update(payload).eq('id', editId));
+  } else {
+    payload.family = curFamily;
+    ({ error } = await sb.from('vacation_packing').insert(payload));
+  }
+  if (error) { toast('Error saving item','err'); return; }
+  toast(editId ? 'Item updated! 🧳' : 'Item added! 🧳');
+  closeModal('m-packing');
+  loadPacking(curFamily);
+  loadSharedOverview();
+}
+
+async function cycleStatus(id, current, fam) {
+  const next = STATUS_NEXT[current] || 'unpacked';
+  await sb.from('vacation_packing').update({ status: next, packed: next === 'packed' }).eq('id', id);
+  // Optimistically update the button
+  const btn = document.querySelector(`#pi-${id} .status-btn`);
+  if (btn) {
+    btn.className = `status-btn s-${next}`;
+    btn.textContent = STATUS_ICON[next];
+    btn.setAttribute('onclick', `cycleStatus('${id}','${next}','${fam}')`);
+    const row = document.getElementById(`pi-${id}`);
+    if (row) row.className = `packing-item ${next==='packed'?'packed':''}`;
+    // Update tag display inline — re-render is heavier, refresh asynchronously
+  }
+  loadPacking(fam);
+}
+
+async function delPacking(id, fam) {
+  await sb.from('vacation_packing').delete().eq('id', id);
+  toast('Item removed');
+  loadPacking(fam);
+  loadSharedOverview();
+}
+
+// ══════════════════════════════════════════
+// WEATHER TAB
+// ══════════════════════════════════════════
+async function loadWeather() {
+  const grid = document.getElementById('weather-grid');
+  grid.innerHTML = '';
+
+  for (const stop of ITINERARY) {
+    const card = document.createElement('div');
+    card.className = 'w-card' + (stop.sea ? ' sea-day' : '');
+
+    if (stop.sea) {
+      card.innerHTML = `
+        <div class="w-date">${stop.label}</div>
+        <div class="w-port">Day at Sea</div>
+        <span class="w-emoji">🌊</span>
+        <div class="w-desc">Relax &amp; explore the ship!</div>`;
+      grid.appendChild(card);
+      continue;
+    }
+
+    card.innerHTML = `
+      <div class="w-date">${stop.label}</div>
+      <div class="w-port">${stop.emoji} ${stop.port}</div>
+      <span class="w-emoji">⏳</span>
+      <div class="w-desc">Fetching…</div>`;
+    grid.appendChild(card);
+
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${stop.lat}&longitude=${stop.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${stop.date}&end_date=${stop.date}`;
+      const res  = await fetch(url);
+      const json = await res.json();
+      const d    = json.daily;
+
+      if (d && d.temperature_2m_max && d.temperature_2m_max.length > 0) {
+        const hi   = Math.round(d.temperature_2m_max[0]);
+        const lo   = Math.round(d.temperature_2m_min[0]);
+        const code = d.weathercode[0];
+        const rain = d.precipitation_sum[0];
+        const wmo  = WMO[code] || {d:'Variable', emoji:'🌤️'};
+        card.innerHTML = `
+          <div class="w-date">${stop.label}</div>
+          <div class="w-port">${stop.emoji} ${stop.port}</div>
+          <span class="w-emoji">${wmo.emoji}</span>
+          <div class="w-temp">${hi}° / ${lo}°F</div>
+          <div class="w-desc">${wmo.d}${rain>0?' · 💧'+rain.toFixed(1)+'mm':''}</div>`;
+      } else {
+        card.innerHTML = `
+          <div class="w-date">${stop.label}</div>
+          <div class="w-port">${stop.emoji} ${stop.port}</div>
+          <span class="w-emoji">📅</span>
+          <div class="w-desc">Forecast available closer to departure!</div>`;
+      }
+    } catch(e) {
+      card.innerHTML = `
+        <div class="w-date">${stop.label}</div>
+        <div class="w-port">${stop.emoji} ${stop.port}</div>
+        <span class="w-emoji">🌐</span>
+        <div class="w-desc">Could not load forecast</div>`;
+    }
+  }
+
+  document.getElementById('weather-note').style.display = 'block';
+}
+
+// ══════════════════════════════════════════
+// DREAMS TAB
+// ══════════════════════════════════════════
+const DREAM_CAP = 3;
+let allDreamJoins = [];
+
+async function loadDreams() {
+  const [{ data: dreams }, { data: joins }] = await Promise.all([
+    sb.from('vacation_dreams').select('*').order('created_at'),
+    sb.from('vacation_dream_joins').select('*'),
+  ]);
+  allDreams     = dreams || [];
+  allDreamJoins = joins  || [];
+  renderDreams();
+}
+
+function renderDreams() {
+  // Populate viewer selector
+  const viewerEl = document.getElementById('dream-viewer');
+  if (viewerEl && !viewerEl.options.length) {
+    viewerEl.innerHTML = PEOPLE.map(p => `<option value="${p.person}">${p.person} (${p.family})</option>`).join('');
+    // Default to Michelle McNamara
+    const michelle = PEOPLE.find(p => p.person === 'Michelle McNamara');
+    if (michelle) viewerEl.value = 'Michelle McNamara';
+  }
+  const viewer = viewerEl ? viewerEl.value : '';
+  const viewerPerson = PEOPLE.find(p => p.person === viewer);
+
+  const grid = document.getElementById('dreams-grid');
+  let html = '';
+
+  for (const { person, family } of PEOPLE) {
+    const dreams    = allDreams.filter(d => d.person === person);
+    const cfg       = FAMILIES[family];
+    const isMe      = person === viewer;
+    const canAdd    = isMe && dreams.length < DREAM_CAP;
+    // Dreams this person is joining (from others)
+    const joiningIds = allDreamJoins.filter(j => j.person === person).map(j => j.dream_id);
+    const joiningDreams = joiningIds.map(id => allDreams.find(d => d.id === id)).filter(Boolean);
+
+    html += `<div class="person-card">
+      <div class="pc-head" style="background:${cfg.bg}">
+        <span>${person}</span>
+        <span class="fam-sub">${family} Family</span>
+      </div>
+      <div class="pc-body">`;
+
+    if (!dreams.length) {
+      html += `<p style="color:var(--text-light);font-style:italic;margin-bottom:8px">No dreams added yet!</p>`;
+    }
+
+    dreams.forEach(d => {
+      const linkedDream = d.linked_dream_id ? allDreams.find(x => x.id === d.linked_dream_id) : null;
+      // Joiners for this dream (other than the dream owner)
+      const joiners = allDreamJoins.filter(j => j.dream_id === d.id);
+      const iJoined = joiners.some(j => j.person === viewer);
+      const joinerNames = joiners.map(j => j.person);
+
+      html += `<div class="dream-row">
+        <span class="dream-star">${d.is_done ? '✅' : '⭐'}</span>
+        <div class="dream-body">
+          ${d.category ? `<div class="dream-cat">${d.category}</div>` : ''}
+          <div class="dream-txt${d.is_done?' done':''}">${d.dream}</div>
+          ${d.assigned_day ? `<div class="dream-day">📅 ${d.assigned_day}</div>` : ''}
+          ${d.notes ? `<div class="dream-note">📝 ${d.notes}</div>` : ''}
+          ${d.memory_note ? `<div class="dream-memory">💭 ${d.memory_note}</div>` : ''}
+          ${joinerNames.length ? `<div class="dream-joiners">👋 ${joinerNames.join(', ')} joining</div>` : ''}
+          <div class="dream-actions">
+            ${isMe
+              ? `${linkedDream
+                  ? `<button class="dream-linked" onclick="unlinkDream('${d.id}')">🔗 ${linkedDream.person} · unlink</button>`
+                  : `<button class="dream-link-btn" onclick="openLinkModal('${d.id}')">🔗 Link</button>`}
+                 <button class="dream-done-btn${d.is_done?' is-done':''}" onclick="${d.is_done?`unmarkDone('${d.id}')`:`openMemoryModal('${d.id}')`}">${d.is_done?'✅ Done':'○ Mark done'}</button>
+                 <button class="dream-edit-btn" onclick="openDreamEdit('${d.id}')">✏️ Edit</button>`
+              : `<button class="dream-join-btn${iJoined?' joined':''}" onclick="toggleJoin('${d.id}','${person}')">
+                   ${iJoined ? '👋 I\'m joining' : '👋 I\'ll join this'}
+                 </button>`
+            }
+          </div>
+        </div>
+        ${isMe ? `<button onclick="delDream('${d.id}')" class="del-btn">×</button>` : ''}
+      </div>`;
+    });
+
+    if (canAdd) {
+      html += `<button class="add-dream" onclick="openDreamModal('${person}','${family}')">
+        ✨ Add dream${dreams.length>0?` (${DREAM_CAP-dreams.length} more allowed)`:''}
+      </button>`;
+    } else if (isMe) {
+      html += `<p style="text-align:center;font-size:13px;color:var(--teal);font-weight:700;margin-top:10px">✅ ${DREAM_CAP} dreams captured!</p>`;
+    }
+
+    // Joining section — show dreams this person is joining from others
+    if (joiningDreams.length) {
+      html += `<div class="joining-section">
+        <div class="joining-label">👋 Also joining</div>
+        ${joiningDreams.map(d => {
+          const owner = PEOPLE.find(p => p.person === d.person);
+          const ownerCfg = owner ? FAMILIES[owner.family] : { bg:'#888' };
+          return `<div class="joining-row">
+            <span style="font-weight:700;color:${ownerCfg.bg};margin-right:6px">${d.person}:</span>${d.dream}
+            ${isMe ? `<button style="float:right;font-size:12px;background:none;border:none;color:var(--text-light);cursor:pointer" onclick="toggleJoin('${d.id}','${d.person}')">✕</button>` : ''}
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  grid.innerHTML = html;
+  renderDreamsCalendar();
+}
+
+function renderDreamsCalendar() {
+  const calSection = document.getElementById('dream-calendar-section');
+  const calEl = document.getElementById('dream-calendar');
+
+  if (!allDreams.length) { calSection.style.display = 'none'; return; }
+  calSection.style.display = 'block';
+
+  let html = '';
+  for (const stop of ITINERARY) {
+    const dayNum = parseInt(stop.date.slice(8));
+    const dayDreams = allDreams.filter(d =>
+      d.assigned_day && d.assigned_day.startsWith(`June ${dayNum}`)
+    );
+
+    const shown = new Set();
+    const dreamItems = [];
+    for (const d of dayDreams) {
+      if (shown.has(d.id)) continue;
+      shown.add(d.id);
+      if (d.linked_dream_id) {
+        const partner = dayDreams.find(x => x.id === d.linked_dream_id);
+        if (partner && !shown.has(partner.id)) {
+          shown.add(partner.id);
+          const c1 = FAMILIES[d.family]?.bg || '#888';
+          const c2 = FAMILIES[partner.family]?.bg || '#888';
+          dreamItems.push(`<div class="dcal-dream">
+            <span class="dcal-who" style="color:${c1}">${d.person}</span>
+            <span class="dcal-who" style="color:${c2}">${partner.person}</span>
+            <span>🔗 ${d.dream}${d.is_done?' ✅':''}</span>
+          </div>`);
+          continue;
+        }
+      }
+      const col = FAMILIES[d.family]?.bg || '#888';
+      dreamItems.push(`<div class="dcal-dream">
+        <span class="dcal-who" style="color:${col}">${d.person}</span>
+        <span${d.is_done?' style="text-decoration:line-through;opacity:0.6"':''}>${d.dream}${d.is_done?' ✅':''}</span>
+      </div>`);
+    }
+
+    html += `<div class="dcal-card ${stop.sea?'sea':''}">
+      <div class="dcal-date">${stop.label}</div>
+      <div class="dcal-port">${stop.emoji} ${stop.port}</div>
+      ${dreamItems.length ? dreamItems.join('') : '<div class="dcal-empty">Nothing scheduled</div>'}
+    </div>`;
+  }
+
+  const unscheduled = allDreams.filter(d => !d.assigned_day);
+  if (unscheduled.length) {
+    html += `<div class="dcal-card" style="border:2px dashed var(--border);box-shadow:none">
+      <div class="dcal-date">UNSCHEDULED</div>
+      <div class="dcal-port" style="font-size:14px;margin-bottom:6px">Not yet assigned to a day</div>
+      ${unscheduled.map(d => {
+        const col = FAMILIES[d.family]?.bg || '#888';
+        return `<div class="dcal-dream"><span class="dcal-who" style="color:${col}">${d.person}</span><span>${d.dream}</span></div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  calEl.innerHTML = html;
+}
+
+function openDreamModal(person, family) {
+  document.getElementById('d-edit-id').value = '';
+  document.getElementById('d-person').value  = person;
+  document.getElementById('d-family').value  = family;
+  document.getElementById('d-dream').value   = '';
+  document.getElementById('d-notes').value   = '';
+  document.getElementById('d-day').value     = '';
+  document.getElementById('d-cat').value     = '';
+  document.getElementById('dream-modal-title').textContent = `✨ ${person}'s Dream`;
+  openModal('m-dream');
+}
+
+function openDreamEdit(id) {
+  const d = allDreams.find(x => x.id === id);
+  if (!d) return;
+  document.getElementById('d-edit-id').value = id;
+  document.getElementById('d-person').value  = d.person;
+  document.getElementById('d-family').value  = d.family;
+  document.getElementById('d-dream').value   = d.dream;
+  document.getElementById('d-notes').value   = d.notes || '';
+  document.getElementById('d-day').value     = d.assigned_day || '';
+  document.getElementById('d-cat').value     = d.category || '';
+  document.getElementById('dream-modal-title').textContent = `✏️ Edit ${d.person}'s Dream`;
+  openModal('m-dream');
+}
+
+async function saveDream() {
+  const dream = document.getElementById('d-dream').value.trim();
+  if (!dream) { toast('Please describe your dream!','err'); return; }
+  const editId = document.getElementById('d-edit-id').value;
+  const payload = {
+    dream,
+    assigned_day: document.getElementById('d-day').value  || null,
+    notes:        document.getElementById('d-notes').value.trim() || null,
+    category:     document.getElementById('d-cat').value  || null,
+  };
+  let error;
+  if (editId) {
+    ({ error } = await sb.from('vacation_dreams').update(payload).eq('id', editId));
+  } else {
+    payload.person = document.getElementById('d-person').value;
+    payload.family = document.getElementById('d-family').value;
+    ({ error } = await sb.from('vacation_dreams').insert(payload));
+  }
+  if (error) { toast('Error saving dream','err'); return; }
+  toast(editId ? 'Dream updated! ✨' : 'Dream saved! ✨');
+  closeModal('m-dream');
+  loadDreams();
+}
+
+function openMemoryModal(id) {
+  const d = allDreams.find(x => x.id === id);
+  if (!d) return;
+  document.getElementById('memory-dream-id').value = id;
+  document.getElementById('memory-dream-label').textContent = `"${d.dream}"`;
+  document.getElementById('memory-note').value = '';
+  openModal('m-memory');
+}
+
+async function saveMemory() {
+  const id   = document.getElementById('memory-dream-id').value;
+  const note = document.getElementById('memory-note').value.trim();
+  const { error } = await sb.from('vacation_dreams').update({ is_done: true, memory_note: note || null }).eq('id', id);
+  if (error) { toast('Error saving','err'); return; }
+  toast('Marked done! 🎉');
+  closeModal('m-memory');
+  loadDreams();
+}
+
+async function unmarkDone(id) {
+  await sb.from('vacation_dreams').update({ is_done: false }).eq('id', id);
+  toast('Unmarked');
+  loadDreams();
+}
+
+async function delDream(id) {
+  if (!confirm('Remove this dream?')) return;
+  await sb.from('vacation_dreams').update({ linked_dream_id: null }).eq('linked_dream_id', id);
+  await sb.from('vacation_dreams').delete().eq('id', id);
+  toast('Dream removed');
+  loadDreams();
+}
+
+let selectedLinkId = null;
+
+function openLinkModal(dreamId) {
+  const currentDream = allDreams.find(d => d.id === dreamId);
+  if (!currentDream) return;
+  const candidates = allDreams.filter(d =>
+    d.id !== dreamId && d.person !== currentDream.person && !d.linked_dream_id
+  );
+  if (!candidates.length) { toast('No other unlinked dreams to connect with yet!','err'); return; }
+  document.getElementById('link-from-id').value = dreamId;
+  selectedLinkId = null;
+  const picker = document.getElementById('link-picker');
+  picker.innerHTML = candidates.map(d => {
+    const cfg = FAMILIES[d.family] || { bg: '#888' };
+    return `<button class="link-card" id="lc-${d.id}" onclick="selectLinkCard('${d.id}')">
+      <div class="link-card-name" style="color:${cfg.bg}">${d.person}</div>
+      <div class="link-card-dream">${d.dream}</div>
+      ${d.assigned_day ? `<div style="font-size:11px;color:var(--teal);margin-top:4px">📅 ${d.assigned_day}</div>` : ''}
+    </button>`;
+  }).join('');
+  openModal('m-link');
+}
+
+function selectLinkCard(id) {
+  selectedLinkId = id;
+  document.querySelectorAll('.link-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`lc-${id}`)?.classList.add('selected');
+}
+
+async function saveDreamLink() {
+  const fromId = document.getElementById('link-from-id').value;
+  if (!selectedLinkId) { toast('Pick a dream to link with','err'); return; }
+  await sb.from('vacation_dreams').update({ linked_dream_id: selectedLinkId }).eq('id', fromId);
+  await sb.from('vacation_dreams').update({ linked_dream_id: fromId }).eq('id', selectedLinkId);
+  toast('Dreams linked! 🔗');
+  closeModal('m-link');
+  loadDreams();
+}
+
+async function unlinkDream(dreamId) {
+  const d = allDreams.find(x => x.id === dreamId);
+  if (!d) return;
+  if (!confirm('Unlink this dream?')) return;
+  if (d.linked_dream_id) {
+    await sb.from('vacation_dreams').update({ linked_dream_id: null }).eq('id', d.linked_dream_id);
+  }
+  await sb.from('vacation_dreams').update({ linked_dream_id: null }).eq('id', dreamId);
+  toast('Dreams unlinked');
+  loadDreams();
+}
+
+async function toggleJoin(dreamId, dreamOwner) {
+  const viewer = document.getElementById('dream-viewer')?.value;
+  if (!viewer || viewer === dreamOwner) return;
+  const vp = PEOPLE.find(p => p.person === viewer);
+  if (!vp) return;
+  const existing = allDreamJoins.find(j => j.dream_id === dreamId && j.person === viewer);
+  if (existing) {
+    await sb.from('vacation_dream_joins').delete().eq('id', existing.id);
+    toast('Removed join');
+  } else {
+    await sb.from('vacation_dream_joins').insert({ dream_id: dreamId, person: viewer, family: vp.family });
+    toast('👋 You\'re joining this!');
+  }
+  loadDreams();
+}
+
+// ══════════════════════════════════════════
+// TO-DO TAB — BUCKET MODEL
+// ══════════════════════════════════════════
+function openTodoModal() {
+  document.getElementById('t-edit-id').value = '';
+  document.getElementById('todo-modal-title').textContent = '✅ Add a Task';
+  document.getElementById('t-title').value  = '';
+  document.getElementById('t-desc').value   = '';
+  document.getElementById('t-due').value    = '';
+  document.getElementById('t-bucket').value = 'do_now';
+  document.getElementById('t-assign').value = '';
+  openModal('m-todo');
+}
+
+function openTodoEdit(id) {
+  const t = allTodos.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('t-edit-id').value = id;
+  document.getElementById('todo-modal-title').textContent = '✏️ Edit Task';
+  document.getElementById('t-title').value  = t.title;
+  document.getElementById('t-desc').value   = t.description || '';
+  document.getElementById('t-due').value    = t.due_date || '';
+  document.getElementById('t-bucket').value = t.action_group || 'do_now';
+  document.getElementById('t-assign').value = t.assigned_to || '';
+  openModal('m-todo');
+}
+
+async function loadTodos() {
+  const { data } = await sb.from('vacation_todos').select('*').order('created_at');
+  allTodos = data || [];
+  renderTodos();
+}
+
+function renderTodoItem(t) {
+  const barColor = { do_now:'var(--terra)', waiting_concierge:'var(--mustard)', waiting_itinerary:'var(--teal)' }[t.action_group] || 'var(--border)';
+  const dueStr = t.due_date ? `📅 Due ${new Date(t.due_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}` : '';
+  return `<div class="todo-item" id="td-${t.id}">
+    <div class="t-bar" style="background:${barColor}"></div>
+    <div class="t-body">
+      <div class="t-title">${t.title}</div>
+      <div class="t-meta">
+        ${t.assigned_to ? `<span>👤 ${t.assigned_to}</span>` : ''}
+        ${dueStr ? `<span>${dueStr}</span>` : ''}
+      </div>
+      ${t.description ? `<div class="t-desc">${t.description}</div>` : ''}
+    </div>
+    <div class="t-actions">
+      <button class="btn btn-teal btn-sm" onclick="markTodoDone('${t.id}')">✅ Mark as done</button>
+      <button class="btn btn-sm" style="background:var(--mustard-light);color:var(--navy);border:none;font-weight:700;cursor:pointer;padding:8px 12px;border-radius:8px;font-size:13px" onclick="openTodoEdit('${t.id}')">✏️ Edit</button>
+      <select class="bucket-mover" onchange="moveBucket('${t.id}',this.value)" title="Move to bucket">
+        <option value="do_now"             ${t.action_group==='do_now'?'selected':''}>🟢 Do Now</option>
+        <option value="waiting_concierge"  ${t.action_group==='waiting_concierge'?'selected':''}>⏳ Concierge</option>
+        <option value="waiting_itinerary"  ${t.action_group==='waiting_itinerary'?'selected':''}>📋 Itinerary</option>
+      </select>
+      <button class="del-btn" onclick="delTodo('${t.id}')">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function renderTodoDone(t) {
+  return `<div class="todo-item t-done" id="td-${t.id}">
+    <div class="t-bar" style="background:var(--success)"></div>
+    <div class="t-body">
+      <div class="t-title">${t.title}</div>
+      ${t.assigned_to ? `<div class="t-meta">👤 ${t.assigned_to}</div>` : ''}
+    </div>
+    <div class="t-actions">
+      <button class="btn btn-ghost btn-sm" onclick="restoreTodo('${t.id}')">↩️ Restore</button>
+      <button class="del-btn" onclick="delTodo('${t.id}')">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function renderTodos() {
+  const el = document.getElementById('todos-list');
+  const active = allTodos.filter(t => t.status !== 'done');
+  const done   = allTodos.filter(t => t.status === 'done');
+
+  const buckets = [
+    { key:'do_now',            label:'🟢 Do Now',                   cls:'bucket-do',   sub:'Tasks you can act on right now' },
+    { key:'waiting_concierge', label:'⏳ Waiting on Concierge Email', cls:'bucket-wait', sub:'Blocked until the suite welcome email arrives' },
+    { key:'waiting_itinerary', label:'📋 Waiting on Full RC Itinerary', cls:'bucket-itin', sub:'Needs the complete Royal Caribbean schedule' },
+  ];
+
+  let html = '';
+  for (const b of buckets) {
+    const items = active.filter(t => t.action_group === b.key);
+    html += `<div class="bucket-section">
+      <div class="bucket-hd ${b.cls}">
+        <div>
+          <div>${b.label}</div>
+          <div style="font-size:13px;font-weight:500;opacity:0.75;margin-top:2px">${b.sub}</div>
+        </div>
+        <span class="bucket-count">${items.length}</span>
+      </div>`;
+    if (!items.length) {
+      html += `<p style="color:var(--text-light);font-style:italic;padding:4px 0 12px;font-size:16px">All clear! Nothing here.</p>`;
+    } else {
+      html += items.map(renderTodoItem).join('');
+    }
+    html += `</div>`;
+  }
+
+  if (done.length) {
+    html += `<details>
+      <summary class="bucket-hd bucket-done" style="cursor:pointer">
+        <div>✅ Done <span style="font-size:13px;font-weight:500;opacity:0.75"> — ${done.length} completed task${done.length===1?'':''}</span></div>
+        <span class="bucket-count">${done.length}</span>
+      </summary>
+      <div style="margin-top:8px">${done.map(renderTodoDone).join('')}</div>
+    </details>`;
+  }
+
+  if (!allTodos.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>No tasks yet — add one above!</p></div>`;
+    return;
+  }
+
+  el.innerHTML = html;
+}
+
+async function saveTodo() {
+  const title = document.getElementById('t-title').value.trim();
+  if (!title) { toast('Please enter a task title','err'); return; }
+  const editId = document.getElementById('t-edit-id').value;
+  const payload = {
+    title,
+    description:  document.getElementById('t-desc').value,
+    action_group: document.getElementById('t-bucket').value,
+    priority:     document.getElementById('t-bucket').value === 'do_now' ? 'high' : 'medium',
+    assigned_to:  document.getElementById('t-assign').value,
+    due_date:     document.getElementById('t-due').value || null,
+  };
+  let error;
+  if (editId) {
+    ({ error } = await sb.from('vacation_todos').update(payload).eq('id', editId));
+  } else {
+    payload.status = 'pending';
+    ({ error } = await sb.from('vacation_todos').insert(payload));
+  }
+  if (error) { toast('Error saving task','err'); return; }
+  toast(editId ? 'Task updated! ✅' : 'Task added! ✅');
+  closeModal('m-todo');
+  loadTodos();
+}
+
+async function markTodoDone(id) {
+  await sb.from('vacation_todos').update({ status:'done' }).eq('id', id);
+  loadTodos();
+}
+
+async function restoreTodo(id) {
+  await sb.from('vacation_todos').update({ status:'pending' }).eq('id', id);
+  loadTodos();
+}
+
+async function moveBucket(id, bucket) {
+  await sb.from('vacation_todos').update({ action_group: bucket }).eq('id', id);
+  loadTodos();
+}
+
+async function delTodo(id) {
+  if (!confirm('Remove this task?')) return;
+  await sb.from('vacation_todos').delete().eq('id', id);
+  toast('Task removed');
+  loadTodos();
+}
+
+// ── INIT ──
+(async function init() {
+  updateCountdown();
+  setInterval(updateCountdown, 60000);
+  renderBanner();
+  bannerTimer = setInterval(nextBanner, 20000);
+  await Promise.all([loadFlights(), loadPacking('Swanson'), loadDreams(), loadTodos(), loadTransit()]);
+  loadSharedOverview();
+  loadWeather();
+})();
 </script>
 </body>
 </html>
