@@ -303,17 +303,13 @@
 
     <nav class="tabs">
       <button data-tab="leaderboard" class="active">Leaderboard</button>
-      <button data-tab="teams">Teams</button>
       <button data-tab="matches">Scores</button>
-      <button data-tab="smacktalk">💬 Smack Talk</button>
       <button data-tab="recaps">Updates</button>
-      <button data-tab="settings" id="settingsTab" class="hidden">Settings</button>
+      <button data-tab="settings" id="settingsTab">Settings</button>
     </nav>
 
     <section id="tab-leaderboard"></section>
-    <section id="tab-teams" class="hidden"></section>
     <section id="tab-matches" class="hidden"></section>
-    <section id="tab-smacktalk" class="hidden"></section>
     <section id="tab-recaps" class="hidden"></section>
     <section id="tab-settings" class="hidden"></section>
 
@@ -485,7 +481,7 @@ function fmtKickoffPT(utcStr){
     timeZone:'America/Los_Angeles',
     weekday:'short', month:'short', day:'numeric',
     hour:'numeric', minute:'2-digit', hour12:true
-  });
+  }) + ' PT';
 }
 
 /* ====================== Commissioner mode ====================== */
@@ -511,7 +507,6 @@ function commishLogout(){
 }
 function applyMode(){
   const b=$("#commishBtn"); if(b) b.textContent = isAdmin ? "Commissioner mode · Log out" : "Commissioner login";
-  const st=$("#settingsTab"); if(st) st.classList.toggle("hidden", !isAdmin);
   renderCurrent();
 }
 
@@ -726,7 +721,7 @@ function subscribeRealtime(){
 
 /* ====================== Rendering ====================== */
 function renderCurrent(){
-  ({leaderboard:renderLeaderboard, draft:renderDraft, teams:renderTeams, matches:renderMatches, recaps:renderRecaps, settings:renderSettings, smacktalk:renderSmackTalk}[currentTab])();
+  ({leaderboard:renderLeaderboard, draft:renderDraft, matches:renderMatches, recaps:renderRecaps, settings:renderSettings}[currentTab])();
 }
 
 /* ---- Tip rotation ---- */
@@ -848,6 +843,11 @@ function renderLeaderboard(){
   $$("#tab-leaderboard .mr-btn").forEach(btn=>btn.addEventListener("click",()=>
     toggleMatchReaction(parseInt(btn.dataset.mid), btn.dataset.emoji)
   ));
+  // Embed Smack Talk beneath leaderboard content
+  const stContainer=document.createElement("div");
+  stContainer.id="tab-smacktalk";
+  $("#tab-leaderboard").appendChild(stContainer);
+  renderSmackTalk();
 }
 
 async function toggleMatchReaction(matchId, emoji){
@@ -1297,7 +1297,14 @@ function scoreMatch(match, rules, lb){
 }
 
 function findMatchToWatch(rules){
-  const upcoming=state.matches.filter(m=>m.home_score===null&&m.away_score===null).sort((a,b)=>a.id-b.id).slice(0,4);
+  // Sort by actual kickoff time (kickoff_utc), fall back to match_date+id
+  const upcoming=state.matches
+    .filter(m=>m.home_score===null&&m.away_score===null)
+    .sort((a,b)=>{
+      if(a.kickoff_utc&&b.kickoff_utc) return new Date(a.kickoff_utc)-new Date(b.kickoff_utc);
+      return (a.match_date||'').localeCompare(b.match_date||'')||a.id-b.id;
+    })
+    .slice(0,8); // wider window gives the scoring algo more candidates
   if(!upcoming.length) return null;
   const lb=computeLeaderboard();
   let best=null, bestScore=-1;
@@ -1305,6 +1312,8 @@ function findMatchToWatch(rules){
     const {score,reasons}=scoreMatch(m,rules,lb);
     if(score>bestScore){ bestScore=score; best={match:m,score,reasons}; }
   });
+  // If nothing scored (all zero), fall back to the chronologically next match
+  if(!best||bestScore===0) best={match:upcoming[0],score:0,reasons:[]};
   return best;
 }
 
@@ -1332,7 +1341,7 @@ function renderMatchToWatch(){
         <div class="mtw-owner">${ao?esc(ao.name):'—'}</div>
       </div>
     </div>
-    <div class="mtw-meta">Group ${m.grp} · Matchday ${m.round}</div>`;
+    <div class="mtw-meta">Group ${m.grp} · Matchday ${m.round}${m.kickoff_utc?` · ${fmtKickoffPT(m.kickoff_utc)}`:''}</div>`;
     if(best.reasons.length){
       html+=`<div class="mtw-reasons">${best.reasons.map(r=>`<span class="mtw-badge">${r.emoji} ${esc(r.label)}</span>`).join("")}</div>`;
     } else {
@@ -1508,47 +1517,59 @@ async function postRecap(){
 
 /* ---- Settings ---- */
 function renderSettings(){
-  let html=`<div class="card"><h2>Players &amp; Tie-breakers</h2>
-    <p class="hint">Edit names and each player's Final pre-shootout goal prediction.</p>
-    ${state.players.map(p=>`<div class="set-row">
-      <input class="name" data-pname="${p.id}" value="${esc(p.name)}">
-      <input type="number" min="0" inputmode="numeric" data-ptb="${p.id}" placeholder="goals" value="${p.tiebreaker??''}" style="width:90px">
-    </div>`).join("")}
-    <span class="saved" id="savedPlayers">Saved</span>
-  </div>
+  // Teams section — visible to everyone
+  let html=`<div id="tab-teams"></div>`;
 
-  <div class="card"><h2>Scoring</h2>
-    <p class="hint">Group-stage points per result. Defaults: Win 3, Draw 1, Loss 0.</p>
-    <div class="set-row"><label>Win points</label><input type="number" data-set="win_points" value="${setVal('win_points','3')}"></div>
-    <div class="set-row"><label>Draw points</label><input type="number" data-set="draw_points" value="${setVal('draw_points','1')}"></div>
-    <div class="set-row"><label>Loss points</label><input type="number" data-set="loss_points" value="${setVal('loss_points','0')}"></div>
-    <span class="saved" id="savedScoring">Saved</span>
-  </div>
-
-  <div class="card"><h2>Score Sync</h2>
-    <p class="hint">Scores auto-sync from <a href="https://football-data.org" target="_blank" rel="noopener">football-data.org</a> once the API key is configured in Supabase. Use the button below to force a sync now.</p>
-    <div class="set-row"><label>Last synced</label><span style="font-size:13px;color:var(--muted)">${formatLastSync()}</span></div>
-    <div class="btn-line"><button class="btn-ghost" id="syncBtn">Sync scores now</button></div>
-  </div>
-
-  <div class="card"><h2>Access</h2>
-    <p class="hint">The <b>pool password</b> is what every player types to view the pool. The <b>commissioner password</b> unlocks editing — keep it to yourself.</p>
-    <div class="set-row"><label>Pool (view) password</label><input data-set="password" value="${esc(setVal('password',''))}" style="width:170px;text-align:left"></div>
-    <span class="saved" id="savedPw">Saved</span>
-    <div style="height:12px"></div>
-    <div class="set-row"><label>New commissioner password</label><input id="newAdminPw" type="text" placeholder="min 4 characters" style="width:170px;text-align:left"></div>
-    <div class="btn-line"><button class="btn-ghost" id="changeAdmin">Change commissioner password</button></div>
-  </div>
-
-  <div class="card"><h2>Reset</h2>
-    <p class="hint">Careful — these affect everyone instantly.</p>
-    <div class="btn-line">
-      <button class="btn-ghost" id="resetScores">Clear all scores</button>
-      <button class="btn-ghost" id="resetDraft">Reset draft &amp; teams</button>
-      <button class="btn-danger" id="resetAll">Reset everything</button>
+  // Admin-only sections
+  if(isAdmin){
+    html+=`<div class="card"><h2>Players &amp; Tie-breakers</h2>
+      <p class="hint">Edit names and each player's Final pre-shootout goal prediction.</p>
+      ${state.players.map(p=>`<div class="set-row">
+        <input class="name" data-pname="${p.id}" value="${esc(p.name)}">
+        <input type="number" min="0" inputmode="numeric" data-ptb="${p.id}" placeholder="goals" value="${p.tiebreaker??''}" style="width:90px">
+      </div>`).join("")}
+      <span class="saved" id="savedPlayers">Saved</span>
     </div>
-  </div>`;
+
+    <div class="card"><h2>Scoring</h2>
+      <p class="hint">Group-stage points per result. Defaults: Win 3, Draw 1, Loss 0.</p>
+      <div class="set-row"><label>Win points</label><input type="number" data-set="win_points" value="${setVal('win_points','3')}"></div>
+      <div class="set-row"><label>Draw points</label><input type="number" data-set="draw_points" value="${setVal('draw_points','1')}"></div>
+      <div class="set-row"><label>Loss points</label><input type="number" data-set="loss_points" value="${setVal('loss_points','0')}"></div>
+      <span class="saved" id="savedScoring">Saved</span>
+    </div>
+
+    <div class="card"><h2>Score Sync</h2>
+      <p class="hint">Scores auto-sync from <a href="https://football-data.org" target="_blank" rel="noopener">football-data.org</a> once the API key is configured in Supabase. Use the button below to force a sync now.</p>
+      <div class="set-row"><label>Last synced</label><span style="font-size:13px;color:var(--muted)">${formatLastSync()}</span></div>
+      <div class="btn-line"><button class="btn-ghost" id="syncBtn">Sync scores now</button></div>
+    </div>
+
+    <div class="card"><h2>Access</h2>
+      <p class="hint">The <b>pool password</b> is what every player types to view the pool. The <b>commissioner password</b> unlocks editing — keep it to yourself.</p>
+      <div class="set-row"><label>Pool (view) password</label><input data-set="password" value="${esc(setVal('password',''))}" style="width:170px;text-align:left"></div>
+      <span class="saved" id="savedPw">Saved</span>
+      <div style="height:12px"></div>
+      <div class="set-row"><label>New commissioner password</label><input id="newAdminPw" type="text" placeholder="min 4 characters" style="width:170px;text-align:left"></div>
+      <div class="btn-line"><button class="btn-ghost" id="changeAdmin">Change commissioner password</button></div>
+    </div>
+
+    <div class="card"><h2>Reset</h2>
+      <p class="hint">Careful — these affect everyone instantly.</p>
+      <div class="btn-line">
+        <button class="btn-ghost" id="resetScores">Clear all scores</button>
+        <button class="btn-ghost" id="resetDraft">Reset draft &amp; teams</button>
+        <button class="btn-danger" id="resetAll">Reset everything</button>
+      </div>
+    </div>`;
+  }
+
   $("#tab-settings").innerHTML=html;
+
+  // Always render teams into the container at top
+  renderTeams();
+
+  if(!isAdmin) return;
 
   // player names + tiebreakers
   $$('#tab-settings input[data-pname]').forEach(inp=>inp.addEventListener("change",async()=>{
@@ -1593,7 +1614,7 @@ function flash(id){ const e=$("#"+id); if(!e)return; e.classList.add("show"); se
 function switchTab(tab){
   currentTab=tab;
   $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  ["leaderboard","teams","matches","recaps","settings","smacktalk"].forEach(t=>{ const el=$("#tab-"+t); if(el) el.classList.toggle("hidden",t!==tab); });
+  ["leaderboard","matches","recaps","settings"].forEach(t=>{ const el=$("#tab-"+t); if(el) el.classList.toggle("hidden",t!==tab); });
   renderCurrent();
   window.scrollTo({top:0,behavior:"smooth"});
 }
