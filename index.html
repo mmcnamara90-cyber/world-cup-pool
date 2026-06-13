@@ -49,8 +49,8 @@
   .scorebox .sc{display:inline-block;min-width:18px;text-align:center;font-weight:800;font-size:16px}
 
   /* Tabs */
-  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;padding:10px 0;background:var(--navy);margin-bottom:6px;-webkit-overflow-scrolling:touch}
-  nav.tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:9px 14px;white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.2px}
+  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;padding:10px 0;background:var(--navy);margin-bottom:6px}
+  nav.tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:9px 10px;white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.2px;flex:1;text-align:center}
   nav.tabs button.active{background:var(--gold);color:#fff8ec;border-color:var(--gold)}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
@@ -125,6 +125,7 @@
   .recap-body{font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap}
 
   /* Match to Watch */
+  .mtw-card{background:var(--panel2);border-color:var(--gold-dim) !important}
   .mtw-match{display:flex;align-items:center;gap:12px;padding:12px 0 8px}
   .mtw-side{flex:1}
   .mtw-side.mtw-away{text-align:right}
@@ -181,9 +182,7 @@
   .st-page-btn:hover{border-color:var(--gold);color:var(--gold)}
   .st-page-info{font-size:12px;color:var(--muted);font-weight:600}
 
-  /* Next 4 Matches widget */
-  .n4m-player-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .n4m-player-sel{background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:7px 10px;font-size:13px;font-family:inherit;flex:1;max-width:200px}
+  /* Upcoming Games widget */
   .n4m-list{display:flex;flex-direction:column;gap:10px}
   .n4m-match{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
   .n4m-kickoff{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
@@ -192,6 +191,7 @@
   .n4m-reacts{display:flex;gap:6px}
   .mr-btn{background:var(--navy2);border:1px solid var(--line);border-radius:18px;padding:5px 11px;font-size:14px;cursor:pointer;color:var(--text);transition:border-color .15s,background .15s;display:inline-flex;align-items:center;gap:4px;line-height:1}
   .mr-btn.mine{border-color:var(--gold);background:rgba(212,175,55,.15)}
+  .mr-btn.disabled{opacity:.45;cursor:default}
   .mr-cnt{font-size:12px;color:var(--muted);font-weight:600}
 
   /* Pool Tips */
@@ -426,7 +426,7 @@ const CLUB_CONNECTIONS = new Set([
 ]);
 
 /* ====================== State ====================== */
-let state = { players:[], teams:[], matches:[], settings:{}, recaps:[], smacktalk:[], smacktalk_reactions:[], match_reactions:[] };
+let state = { players:[], teams:[], matches:[], settings:{}, recaps:[], smacktalk:[], smacktalk_reactions:[], match_reaction_counts:[] };
 let currentTab = "leaderboard";
 let matchFilterGroup = "all";
 let isAdmin = false;
@@ -561,49 +561,11 @@ function computeFunFacts(){
   }).filter(Boolean);
 
   if(!playerStats.length) return [];
-  const facts = [];
 
-  // Defending champion (Argentina)
-  const argOwner = playerStats.find(s=>s.owned.some(t=>t.name==='Argentina'));
-  if(argOwner) facts.push(`🏆 <b>${esc(argOwner.player.name)}</b> holds the defending champions — Argentina is going for back-to-back.`);
-
-  // Highest-ranked team in the pool
-  const topRanked = playerStats.reduce((best,s)=>s.minRank<best.minRank?s:best);
-  if(topRanked.bestTeam) facts.push(`📈 <b>${esc(topRanked.player.name)}</b> drew the tournament's top seed — ${esc(topRanked.bestTeam.team.name)} enters as FIFA #${topRanked.minRank}.`);
-
-  // Lowest-ranked team in the pool
-  const bottomRanked = playerStats.reduce((worst,s)=>s.maxRank>worst.maxRank?s:worst);
-  if(bottomRanked.worstTeam) facts.push(`📉 <b>${esc(bottomRanked.player.name)}</b> is riding the longest long shot — ${esc(bottomRanked.worstTeam.team.name)} is ranked #${bottomRanked.maxRank} in the world.`);
-
-  // Most combined World Cup titles
-  const mostTitles = playerStats.reduce((best,s)=>s.totalTitles>best.totalTitles?s:best);
-  if(mostTitles.totalTitles>0){
-    const titleTeams = mostTitles.data.filter(x=>x.d.wcTitles>0).map(x=>`${esc(x.team.name)} ×${x.d.wcTitles}`).join(', ');
-    facts.push(`🥇 <b>${esc(mostTitles.player.name)}</b> has the most combined World Cup titles — ${mostTitles.totalTitles} total: ${titleTeams}.`);
-  }
-
-  // Best average FIFA ranking
-  const bestAvg = playerStats.reduce((best,s)=>s.avgRank<best.avgRank?s:best);
-  facts.push(`⭐ <b>${esc(bestAvg.player.name)}</b> has the strongest stable by average FIFA ranking — #${Math.round(bestAvg.avgRank)} avg across their ${bestAvg.owned.length} teams.`);
-
-  // Most confederation diversity
-  const mostDiverse = playerStats.reduce((best,s)=>s.confCount>best.confCount?s:best);
-  if(mostDiverse.confCount>=3){
-    const confNames = {UEFA:'Europe',CONMEBOL:'South America',CONCACAF:'North/Central America',CAF:'Africa',AFC:'Asia',OFC:'Oceania'};
-    const confs = [...new Set(mostDiverse.data.map(x=>x.d.conf))].map(c=>confNames[c]||c).join(', ');
-    facts.push(`🌍 <b>${esc(mostDiverse.player.name)}</b> has the widest global spread — teams from ${mostDiverse.confCount} confederations: ${confs}.`);
-  }
-
-  // Most debut nations
-  const mostDebuts = playerStats.reduce((best,s)=>s.debutTeams.length>best.debutTeams.length?s:best);
-  if(mostDebuts.debutTeams.length>0){
-    const names = mostDebuts.debutTeams.map(x=>esc(x.team.name)).join(' and ');
-    const plural = mostDebuts.debutTeams.length>1;
-    facts.push(`🆕 <b>${esc(mostDebuts.player.name)}</b> is betting on fresh blood — ${names} ${plural?'are':'is'} making their World Cup debut.`);
-  }
-
-  // === Live match-based facts (update as results come in) ===
+  // === Live facts — go first if data is available ===
+  const liveFacts = [];
   const played = state.matches.filter(m=>m.home_score!==null && m.away_score!==null);
+
   if(played.length > 0){
     // Goals scored per player
     const goalsByPlayer = {};
@@ -614,28 +576,13 @@ function computeFunFacts(){
       if(homeOwner) goalsByPlayer[homeOwner]=(goalsByPlayer[homeOwner]||0)+m.home_score;
       if(awayOwner) goalsByPlayer[awayOwner]=(goalsByPlayer[awayOwner]||0)+m.away_score;
     });
-    const topGoalerId = Object.entries(goalsByPlayer).sort((a,b)=>b[1]-a[1])[0];
-    if(topGoalerId && topGoalerId[1]>0){
-      const gp = state.players.find(p=>p.id===topGoalerId[0]);
-      if(gp) facts.push(`⚽ <b>${esc(gp.name)}</b> leads the pool with <b>${topGoalerId[1]} goals</b> scored by their teams so far.`);
+    const [topId, topGoals] = Object.entries(goalsByPlayer).sort((a,b)=>b[1]-a[1])[0]||[];
+    if(topGoals>0){
+      const gp = state.players.find(p=>p.id===topId);
+      if(gp) liveFacts.push(`⚽ <b>${esc(gp.name)}</b> leads the pool with <b>${topGoals} goals</b> scored by their teams so far.`);
     }
 
-    // Most wins
-    const winsByPlayer = {};
-    state.players.forEach(p=>{ winsByPlayer[p.id]=0; });
-    played.forEach(m=>{
-      const homeOwner = state.teams.find(t=>t.name===m.home_team)?.owner_id;
-      const awayOwner = state.teams.find(t=>t.name===m.away_team)?.owner_id;
-      if(m.home_score > m.away_score && homeOwner) winsByPlayer[homeOwner]=(winsByPlayer[homeOwner]||0)+1;
-      if(m.away_score > m.home_score && awayOwner) winsByPlayer[awayOwner]=(winsByPlayer[awayOwner]||0)+1;
-    });
-    const topWinnerId = Object.entries(winsByPlayer).sort((a,b)=>b[1]-a[1])[0];
-    if(topWinnerId && topWinnerId[1]>0){
-      const wp = state.players.find(p=>p.id===topWinnerId[0]);
-      if(wp) facts.push(`🏅 <b>${esc(wp.name)}</b> has the most team wins so far — <b>${topWinnerId[1]} W</b> across their squad.`);
-    }
-
-    // Undefeated players (all played matches are W or D, at least 2 matches played)
+    // Undefeated players (≥2 matches played, zero losses)
     const matchesByPlayer = {};
     state.players.forEach(p=>{ matchesByPlayer[p.id]={played:0,lost:0}; });
     played.forEach(m=>{
@@ -650,18 +597,65 @@ function computeFunFacts(){
         if(m.away_score < m.home_score) matchesByPlayer[awayOwner].lost++;
       }
     });
-    const undefeated = state.players.filter(p=>{
-      const s=matchesByPlayer[p.id];
-      return s && s.played>=2 && s.lost===0;
+    const undefeated = state.players.filter(p=>{ const s=matchesByPlayer[p.id]; return s&&s.played>=2&&s.lost===0; });
+    if(undefeated.length===1)
+      liveFacts.push(`🛡️ <b>${esc(undefeated[0].name)}</b> is the last undefeated player — none of their teams have lost yet.`);
+    else if(undefeated.length>1&&undefeated.length<=5)
+      liveFacts.push(`🛡️ Still undefeated: ${undefeated.map(p=>`<b>${esc(p.name)}</b>`).join(', ')} — none of their teams have lost yet.`);
+
+    // Most wins
+    const winsByPlayer = {};
+    state.players.forEach(p=>{ winsByPlayer[p.id]=0; });
+    played.forEach(m=>{
+      const homeOwner = state.teams.find(t=>t.name===m.home_team)?.owner_id;
+      const awayOwner = state.teams.find(t=>t.name===m.away_team)?.owner_id;
+      if(m.home_score > m.away_score && homeOwner) winsByPlayer[homeOwner]=(winsByPlayer[homeOwner]||0)+1;
+      if(m.away_score > m.home_score && awayOwner) winsByPlayer[awayOwner]=(winsByPlayer[awayOwner]||0)+1;
     });
-    if(undefeated.length===1){
-      facts.push(`🛡️ <b>${esc(undefeated[0].name)}</b> is the last undefeated player in the pool — none of their teams have lost yet.`);
-    } else if(undefeated.length>1 && undefeated.length<=4){
-      facts.push(`🛡️ Still undefeated: ${undefeated.map(p=>`<b>${esc(p.name)}</b>`).join(', ')} — none of their teams have lost yet.`);
+    const [topWinId, topWins] = Object.entries(winsByPlayer).sort((a,b)=>b[1]-a[1])[0]||[];
+    if(topWins>0){
+      const wp = state.players.find(p=>p.id===topWinId);
+      if(wp) liveFacts.push(`🏅 <b>${esc(wp.name)}</b> has the most team wins — <b>${topWins} W</b> across their squad.`);
+    }
+
+    // Highest-scoring single team in the tournament
+    const teamGoals = {};
+    played.forEach(m=>{
+      teamGoals[m.home_team]=(teamGoals[m.home_team]||0)+m.home_score;
+      teamGoals[m.away_team]=(teamGoals[m.away_team]||0)+m.away_score;
+    });
+    const [topTeam, topTeamGoals] = Object.entries(teamGoals).sort((a,b)=>b[1]-a[1])[0]||[];
+    if(topTeamGoals>=3){
+      const tOwner = state.teams.find(t=>t.name===topTeam)?.owner_id;
+      const tPlayer = tOwner ? state.players.find(p=>p.id===tOwner) : null;
+      if(tPlayer) liveFacts.push(`🔥 <b>${esc(topTeam)}</b> (${esc(tPlayer.name)}'s) is the tournament's top scorer so far — <b>${topTeamGoals} goals</b> and counting.`);
     }
   }
 
-  return facts;
+  // === Static facts — used as fallback / filler ===
+  const staticFacts = [];
+
+  // Defending champion (Argentina)
+  const argOwner = playerStats.find(s=>s.owned.some(t=>t.name==='Argentina'));
+  if(argOwner) staticFacts.push(`🏆 <b>${esc(argOwner.player.name)}</b> holds the defending champions — Argentina is going for back-to-back.`);
+
+  // Best average FIFA ranking
+  const bestAvg = playerStats.reduce((best,s)=>s.avgRank<best.avgRank?s:best);
+  staticFacts.push(`⭐ <b>${esc(bestAvg.player.name)}</b> has the strongest stable — #${Math.round(bestAvg.avgRank)} avg FIFA ranking across their ${bestAvg.owned.length} teams.`);
+
+  // Most combined World Cup titles
+  const mostTitles = playerStats.reduce((best,s)=>s.totalTitles>best.totalTitles?s:best);
+  if(mostTitles.totalTitles>0){
+    const titleTeams = mostTitles.data.filter(x=>x.d.wcTitles>0).map(x=>`${esc(x.team.name)} ×${x.d.wcTitles}`).join(', ');
+    staticFacts.push(`🥇 <b>${esc(mostTitles.player.name)}</b> has the most combined WC titles — ${mostTitles.totalTitles} total: ${titleTeams}.`);
+  }
+
+  // Lowest-ranked team
+  const bottomRanked = playerStats.reduce((worst,s)=>s.maxRank>worst.maxRank?s:worst);
+  if(bottomRanked.worstTeam) staticFacts.push(`📉 <b>${esc(bottomRanked.player.name)}</b> is riding the biggest long shot — ${esc(bottomRanked.worstTeam.team.name)} is FIFA #${bottomRanked.maxRank}.`);
+
+  // Live facts first, then static; cap at 3
+  return [...liveFacts, ...staticFacts].slice(0,3);
 }
 
 /* ====================== Score sync ====================== */
@@ -696,16 +690,16 @@ async function loadAll(){
     sb.from("recaps").select("*").order("created_at",{ascending:false}),
     sb.from("smacktalk").select("*").order("created_at",{ascending:false}),
     sb.from("smacktalk_reactions").select("*"),
-    sb.from("match_reactions").select("*"),
+    sb.from("match_reaction_counts").select("*"),
   ]);
   if(pl.error||tm.error||mt.error||st.error){ console.error(pl.error||tm.error||mt.error||st.error); toast("Sync error — check connection"); }
-  state.players             = pl.data||[];
-  state.teams               = tm.data||[];
-  state.matches             = mt.data||[];
-  state.recaps              = rc.data||[];
-  state.smacktalk           = sk.data||[];
-  state.smacktalk_reactions = sr.data||[];
-  state.match_reactions     = mr.data||[];
+  state.players               = pl.data||[];
+  state.teams                 = tm.data||[];
+  state.matches               = mt.data||[];
+  state.recaps                = rc.data||[];
+  state.smacktalk             = sk.data||[];
+  state.smacktalk_reactions   = sr.data||[];
+  state.match_reaction_counts = mr.data||[];
   state.settings = {};
   (st.data||[]).forEach(r=> state.settings[r.key]=r.value);
 }
@@ -746,7 +740,11 @@ function startTipRotation(){
 function renderLeaderboard(){
   const {rows, rec} = computeLeaderboard();
   const played = state.matches.filter(m=>m.home_score!==null && m.away_score!==null).length;
-  let html = `<div class="card">
+
+  // MTW container at the top
+  let html = `<div id="mtw-container"></div>`;
+
+  html += `<div class="card">
     <h2>Leaderboard</h2>
     <p class="hint">${played} of 72 group-stage matches scored. Tap a player to see their teams.</p>
     <table class="lb"><thead><tr>
@@ -773,11 +771,7 @@ function renderLeaderboard(){
   });
   html+=`</tbody></table></div>`;
 
-  // Tiebreaker
-  html+=`<div class="card"><div class="section-title">Tie-breaker</div>
-    <p class="hint" style="margin:0">If players tie on total score, the winner is whoever's predicted pre-shootout goals in the Final is closest.</p></div>`;
-
-  // Fun facts (only show if teams are assigned)
+  // Fun facts — 3 max, live-first
   const facts = computeFunFacts();
   if(facts.length){
     html+=`<div class="card"><div class="section-title">Fun Facts</div>
@@ -785,30 +779,21 @@ function renderLeaderboard(){
     </div>`;
   }
 
-  // Tips card
-  const dotsHtml = POOL_TIPS.map((_,i)=>`<span class="tip-dot${i===tipIndex?' active':''}" data-i="${i}"></span>`).join('');
-  const tipsCard = `<div class="tips-card">
-    <div class="section-title">💡 Pool Tips</div>
-    <div class="tip-text" id="tip-text">${POOL_TIPS[tipIndex]}</div>
-    <div class="tip-dots" id="tip-dots">${dotsHtml}</div>
-  </div>`;
-  html = tipsCard + html;
-
-  // Next 4 Matches widget
-  const n4upcoming = state.matches
+  // Upcoming Games widget (2 matches, anonymous reactions capped at 10)
+  const upcoming2 = state.matches
     .filter(m=>m.home_score===null&&m.away_score===null&&m.kickoff_utc)
     .sort((a,b)=>new Date(a.kickoff_utc)-new Date(b.kickoff_utc))
-    .slice(0,4);
-  if(n4upcoming.length){
-    const n4playerOpts = state.players.map(p=>`<option value="${p.id}"${p.id===smackPlayerId?' selected':''}>${esc(p.name)}</option>`).join('');
-    const n4cards = n4upcoming.map(m=>{
+    .slice(0,2);
+  if(upcoming2.length){
+    const ugCards = upcoming2.map(m=>{
       const hOwner=stOwnerName(m.home_team), aOwner=stOwnerName(m.away_team);
       const ownerLine=hOwner&&aOwner?`${esc(hOwner)} vs ${esc(aOwner)}`:hOwner?esc(hOwner):aOwner?esc(aOwner):'—';
-      const reacts=['👀','🌶️','😴'].map(emoji=>{
-        const rxrs=state.match_reactions.filter(r=>r.match_id===m.id&&r.emoji===emoji);
-        const cnt=rxrs.length;
-        const mine=smackPlayerId&&rxrs.find(r=>r.player_id===smackPlayerId);
-        return `<button class="mr-btn${mine?' mine':''}" data-mid="${m.id}" data-emoji="${emoji}">${emoji}${cnt>0?`<span class="mr-cnt">${cnt}</span>`:''}</button>`;
+      const totalReacts = state.match_reaction_counts.filter(r=>r.match_id===m.id).reduce((s,r)=>s+r.count,0);
+      const capped = totalReacts>=10;
+      const reacts=['👀','🌶️','😴','🙅'].map(emoji=>{
+        const rc=state.match_reaction_counts.find(r=>r.match_id===m.id&&r.emoji===emoji);
+        const cnt=rc?.count||0;
+        return `<button class="mr-btn${capped?' disabled':''}" data-mid="${m.id}" data-emoji="${emoji}" ${capped?'title="Max 10 reactions reached"':''}>${emoji}${cnt>0?`<span class="mr-cnt">${cnt}</span>`:''}</button>`;
       }).join('');
       return `<div class="n4m-match">
         <div class="n4m-kickoff">${esc(fmtKickoffPT(m.kickoff_utc))}</div>
@@ -818,30 +803,19 @@ function renderLeaderboard(){
       </div>`;
     }).join('');
     html += `<div class="card">
-      <div class="section-title">📅 Next 4 Matches</div>
-      <div class="n4m-player-row">
-        <span style="font-size:13px;color:var(--muted)">React as:</span>
-        <select id="n4m-player" class="n4m-player-sel"><option value="">— your name —</option>${n4playerOpts}</select>
-        <span style="font-size:12px;color:var(--muted)">👀 watching · 🌶️ spicy · 😴 don't care</span>
-      </div>
-      <div class="n4m-list">${n4cards}</div>
+      <div class="section-title">📅 Upcoming Games</div>
+      <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">👀 watching · 🌶️ spicy · 😴 don't care · 🙅 can't watch · max 10 reacts/match</p>
+      <div class="n4m-list">${ugCards}</div>
     </div>`;
   }
 
   $("#tab-leaderboard").innerHTML = html;
+  renderMatchToWatch();
   $$("#tab-leaderboard .expand").forEach(tr=>tr.addEventListener("click",()=>{
     const d=$(`[data-det="${tr.dataset.pid}"]`); if(d) d.classList.toggle("hidden");
   }));
-  $$("#tip-dots .tip-dot").forEach(dot=>dot.addEventListener("click",()=>{
-    tipIndex = parseInt(dot.dataset.i) - 1;
-    advanceTip(1);
-    startTipRotation();
-  }));
-  startTipRotation();
-  const n4Sel=$("#n4m-player");
-  if(n4Sel) n4Sel.addEventListener("change",()=>{ smackPlayerId=parseInt(n4Sel.value)||null; });
-  $$("#tab-leaderboard .mr-btn").forEach(btn=>btn.addEventListener("click",()=>
-    toggleMatchReaction(parseInt(btn.dataset.mid), btn.dataset.emoji)
+  $$("#tab-leaderboard .mr-btn:not(.disabled)").forEach(btn=>btn.addEventListener("click",()=>
+    addMatchReaction(parseInt(btn.dataset.mid), btn.dataset.emoji)
   ));
   // Embed Smack Talk beneath leaderboard content
   const stContainer=document.createElement("div");
@@ -850,15 +824,13 @@ function renderLeaderboard(){
   renderSmackTalk();
 }
 
-async function toggleMatchReaction(matchId, emoji){
-  if(!smackPlayerId){
-    const sel=$("#n4m-player");
-    if(sel&&sel.value) smackPlayerId=parseInt(sel.value);
-    else{ toast("Select your name first to react"); return; }
-  }
-  await sb.rpc("toggle_match_reaction",{p_player_id:smackPlayerId,p_match_id:matchId,p_emoji:emoji});
+async function addMatchReaction(matchId, emoji){
+  const {data, error} = await sb.rpc("add_match_reaction",{p_match_id:matchId,p_emoji:emoji});
+  if(error){ console.error(error); return; }
+  if(data===false){ toast("Max 10 reactions for this match!"); return; }
   await loadAll(); renderLeaderboard();
 }
+
 
 /* ---- Auto-Draft Advisor ---- */
 function computeAdvisorScore(team, selectedPlayer, rules, lb){
@@ -1323,7 +1295,7 @@ function renderMatchToWatch(){
   const rules=getMatchupRules();
   const best=findMatchToWatch(rules);
 
-  let html=`<div class="card"><div class="section-title">⚽ Match to Watch</div>`;
+  let html=`<div class="card mtw-card"><div class="section-title">⚽ Match to Watch</div>`;
 
   if(!best){
     html+=`<p class="hint" style="margin:0">No upcoming matches — check back soon!</p>`;
@@ -1438,8 +1410,17 @@ function renderMatches(){
     });
     html+=`</div>`;
   });
-  $("#tab-matches").innerHTML=`<div id="mtw-container"></div>`+html;
-  renderMatchToWatch();
+  const dotsHtmlM = POOL_TIPS.map((_,i)=>`<span class="tip-dot${i===tipIndex?' active':''}" data-i="${i}"></span>`).join('');
+  const tipsHtml = `<div class="tips-card">
+    <div class="section-title">💡 Pool Tips</div>
+    <div class="tip-text" id="tip-text">${POOL_TIPS[tipIndex]}</div>
+    <div class="tip-dots" id="tip-dots">${dotsHtmlM}</div>
+  </div>`;
+  $("#tab-matches").innerHTML=tipsHtml+html;
+  $$("#tip-dots .tip-dot").forEach(dot=>dot.addEventListener("click",()=>{
+    tipIndex=parseInt(dot.dataset.i)-1; advanceTip(1); startTipRotation();
+  }));
+  startTipRotation();
   $("#grpFilter").addEventListener("change",e=>{ matchFilterGroup=e.target.value; renderMatches(); });
   $$('#tab-matches input[data-mid]').forEach(inp=>{
     inp.addEventListener("change", onScoreChange);
@@ -1620,7 +1601,7 @@ function switchTab(tab){
 }
 
 /* ====================== Smack Talk ====================== */
-const SMACK_EMOJIS = ['🔥','⚽','🤯','😂','👍'];
+const SMACK_EMOJIS = ['🔥','⚽','🤯','😂','👍','💀','➕'];
 
 function stOwnerName(teamName){
   const t = state.teams.find(t=>t.name===teamName);
@@ -1683,22 +1664,22 @@ function getAllSmackOpeners(upcomingMatches){
   openers.push({score:0,text:`Someone in this pool is about to have a very bad time. Predictions? 😈`});
   openers.push({score:0,text:`Which upset would hurt you the most out of today's matches? 🎯`});
 
-  // Sort by score, dedupe by prefix, return top 6
+  // Sort by score, dedupe by prefix, return top 4
   openers.sort((a,b)=>b.score-a.score);
   const seen=new Set();
   return openers.filter(o=>{
     const k=o.text.slice(0,40);
     if(seen.has(k)) return false;
     seen.add(k); return true;
-  }).slice(0,6).map(o=>o.text);
+  }).slice(0,4).map(o=>o.text);
 }
 
 function renderSmackTalk(){
-  // Next 4 upcoming matches sorted by kickoff_utc
+  // Next 2 upcoming matches sorted by kickoff_utc
   const upcoming = state.matches
     .filter(m=>m.home_score===null&&m.away_score===null&&m.kickoff_utc)
     .sort((a,b)=>new Date(a.kickoff_utc)-new Date(b.kickoff_utc))
-    .slice(0,4);
+    .slice(0,2);
 
   // Helper panel
   let helperHtml='';
