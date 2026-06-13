@@ -177,6 +177,22 @@
   .st-del-btn:hover{color:var(--bad)}
   .st-empty{color:var(--muted);font-size:14px;text-align:center;padding:28px 0}
   .st-divider{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .st-page-btn{background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  .st-page-btn:hover{border-color:var(--gold);color:var(--gold)}
+  .st-page-info{font-size:12px;color:var(--muted);font-weight:600}
+
+  /* Next 4 Matches widget */
+  .n4m-player-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .n4m-player-sel{background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:7px 10px;font-size:13px;font-family:inherit;flex:1;max-width:200px}
+  .n4m-list{display:flex;flex-direction:column;gap:10px}
+  .n4m-match{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+  .n4m-kickoff{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+  .n4m-teams{font-weight:700;font-size:15px;margin-bottom:3px}
+  .n4m-owners{font-size:12px;color:var(--gold);margin-bottom:8px}
+  .n4m-reacts{display:flex;gap:6px}
+  .mr-btn{background:var(--navy2);border:1px solid var(--line);border-radius:18px;padding:5px 11px;font-size:14px;cursor:pointer;color:var(--text);transition:border-color .15s,background .15s;display:inline-flex;align-items:center;gap:4px;line-height:1}
+  .mr-btn.mine{border-color:var(--gold);background:rgba(212,175,55,.15)}
+  .mr-cnt{font-size:12px;color:var(--muted);font-weight:600}
 
   /* Pool Tips */
   .tips-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px;position:relative;min-height:72px}
@@ -414,7 +430,7 @@ const CLUB_CONNECTIONS = new Set([
 ]);
 
 /* ====================== State ====================== */
-let state = { players:[], teams:[], matches:[], settings:{}, recaps:[], smacktalk:[], smacktalk_reactions:[] };
+let state = { players:[], teams:[], matches:[], settings:{}, recaps:[], smacktalk:[], smacktalk_reactions:[], match_reactions:[] };
 let currentTab = "leaderboard";
 let matchFilterGroup = "all";
 let isAdmin = false;
@@ -422,7 +438,7 @@ let adminPw = null;
 let mtwEditorOpen = false;
 let tipIndex = 0;
 let tipTimerId = null;
-let selectedSmackMatchId = null;
+let smackOffset = 0;
 let smackPlayerId = null;
 
 const POOL_TIPS = [
@@ -461,6 +477,15 @@ function formatLastSync(){
   const hrs = Math.floor(mins/60);
   if(hrs<24) return `${hrs} hr${hrs!==1?'s':''} ago`;
   return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+}
+function fmtKickoffPT(utcStr){
+  if(!utcStr) return '';
+  const d = new Date(utcStr);
+  return d.toLocaleString('en-US',{
+    timeZone:'America/Los_Angeles',
+    weekday:'short', month:'short', day:'numeric',
+    hour:'numeric', minute:'2-digit', hour12:true
+  });
 }
 
 /* ====================== Commissioner mode ====================== */
@@ -668,7 +693,7 @@ async function syncScores(){
 
 /* ====================== Data load + realtime ====================== */
 async function loadAll(){
-  const [pl,tm,mt,st,rc,sk,sr] = await Promise.all([
+  const [pl,tm,mt,st,rc,sk,sr,mr] = await Promise.all([
     sb.from("players").select("*").order("sort_order"),
     sb.from("teams").select("*").order("grp").order("pos"),
     sb.from("matches").select("*").order("match_date",{nullsFirst:false}).order("id"),
@@ -676,6 +701,7 @@ async function loadAll(){
     sb.from("recaps").select("*").order("created_at",{ascending:false}),
     sb.from("smacktalk").select("*").order("created_at",{ascending:false}),
     sb.from("smacktalk_reactions").select("*"),
+    sb.from("match_reactions").select("*"),
   ]);
   if(pl.error||tm.error||mt.error||st.error){ console.error(pl.error||tm.error||mt.error||st.error); toast("Sync error — check connection"); }
   state.players             = pl.data||[];
@@ -684,6 +710,7 @@ async function loadAll(){
   state.recaps              = rc.data||[];
   state.smacktalk           = sk.data||[];
   state.smacktalk_reactions = sr.data||[];
+  state.match_reactions     = mr.data||[];
   state.settings = {};
   (st.data||[]).forEach(r=> state.settings[r.key]=r.value);
 }
@@ -733,7 +760,7 @@ function renderLeaderboard(){
   rows.forEach((r,i)=>{
     const rank=i+1;
     html+=`<tr class="expand" data-pid="${r.player.id}">
-      <td class="rank ${rank<=2?'r'+rank:''}">${rank}</td>
+      <td class="rank ${rank<=2?'r'+rank:''}">${rank===1?'👑':rank===2?'🥈':rank}</td>
       <td class="pname">${esc(r.player.name)}</td>
       <td>${r.count}</td>
       <td style="color:var(--muted);font-size:13px">${r.w}-${r.d}-${r.l}</td>
@@ -772,6 +799,40 @@ function renderLeaderboard(){
   </div>`;
   html = tipsCard + html;
 
+  // Next 4 Matches widget
+  const n4upcoming = state.matches
+    .filter(m=>m.home_score===null&&m.away_score===null&&m.kickoff_utc)
+    .sort((a,b)=>new Date(a.kickoff_utc)-new Date(b.kickoff_utc))
+    .slice(0,4);
+  if(n4upcoming.length){
+    const n4playerOpts = state.players.map(p=>`<option value="${p.id}"${p.id===smackPlayerId?' selected':''}>${esc(p.name)}</option>`).join('');
+    const n4cards = n4upcoming.map(m=>{
+      const hOwner=stOwnerName(m.home_team), aOwner=stOwnerName(m.away_team);
+      const ownerLine=hOwner&&aOwner?`${esc(hOwner)} vs ${esc(aOwner)}`:hOwner?esc(hOwner):aOwner?esc(aOwner):'—';
+      const reacts=['👀','🌶️','😴'].map(emoji=>{
+        const rxrs=state.match_reactions.filter(r=>r.match_id===m.id&&r.emoji===emoji);
+        const cnt=rxrs.length;
+        const mine=smackPlayerId&&rxrs.find(r=>r.player_id===smackPlayerId);
+        return `<button class="mr-btn${mine?' mine':''}" data-mid="${m.id}" data-emoji="${emoji}">${emoji}${cnt>0?`<span class="mr-cnt">${cnt}</span>`:''}</button>`;
+      }).join('');
+      return `<div class="n4m-match">
+        <div class="n4m-kickoff">${esc(fmtKickoffPT(m.kickoff_utc))}</div>
+        <div class="n4m-teams">${esc(m.home_team)} vs ${esc(m.away_team)}</div>
+        <div class="n4m-owners">${ownerLine}</div>
+        <div class="n4m-reacts">${reacts}</div>
+      </div>`;
+    }).join('');
+    html += `<div class="card">
+      <div class="section-title">📅 Next 4 Matches</div>
+      <div class="n4m-player-row">
+        <span style="font-size:13px;color:var(--muted)">React as:</span>
+        <select id="n4m-player" class="n4m-player-sel"><option value="">— your name —</option>${n4playerOpts}</select>
+        <span style="font-size:12px;color:var(--muted)">👀 watching · 🌶️ spicy · 😴 don't care</span>
+      </div>
+      <div class="n4m-list">${n4cards}</div>
+    </div>`;
+  }
+
   $("#tab-leaderboard").innerHTML = html;
   $$("#tab-leaderboard .expand").forEach(tr=>tr.addEventListener("click",()=>{
     const d=$(`[data-det="${tr.dataset.pid}"]`); if(d) d.classList.toggle("hidden");
@@ -782,6 +843,21 @@ function renderLeaderboard(){
     startTipRotation();
   }));
   startTipRotation();
+  const n4Sel=$("#n4m-player");
+  if(n4Sel) n4Sel.addEventListener("change",()=>{ smackPlayerId=parseInt(n4Sel.value)||null; });
+  $$("#tab-leaderboard .mr-btn").forEach(btn=>btn.addEventListener("click",()=>
+    toggleMatchReaction(parseInt(btn.dataset.mid), btn.dataset.emoji)
+  ));
+}
+
+async function toggleMatchReaction(matchId, emoji){
+  if(!smackPlayerId){
+    const sel=$("#n4m-player");
+    if(sel&&sel.value) smackPlayerId=parseInt(sel.value);
+    else{ toast("Select your name first to react"); return; }
+  }
+  await sb.rpc("toggle_match_reaction",{p_player_id:smackPlayerId,p_match_id:matchId,p_emoji:emoji});
+  await loadAll(); renderLeaderboard();
 }
 
 /* ---- Auto-Draft Advisor ---- */
@@ -1531,97 +1607,106 @@ function stOwnerName(teamName){
   return state.players.find(p=>p.id===t.owner_id)?.name||null;
 }
 
-function getSmackOpeners(match){
-  const hOwner = stOwnerName(match.home_team);
-  const aOwner = stOwnerName(match.away_team);
-  const hRank  = TEAM_DATA[match.home_team]?.rank||50;
-  const aRank  = TEAM_DATA[match.away_team]?.rank||50;
-  const gap    = Math.abs(hRank-aRank);
-  const fav    = hRank<aRank?match.home_team:match.away_team;
-  const dog    = hRank>aRank?match.home_team:match.away_team;
-  const dogOwner = hRank>aRank?hOwner:aOwner;
-  const isRivalry = RIVALRIES.has(`${match.home_team}|${match.away_team}`)||RIVALRIES.has(`${match.away_team}|${match.home_team}`);
-  const isCouple  = COUPLES.some(([a,b])=>(hOwner===a&&aOwner===b)||(hOwner===b&&aOwner===a));
-  const isSibling = SIBLINGS.some(([a,b])=>(hOwner===a&&aOwner===b)||(hOwner===b&&aOwner===a));
+function getAllSmackOpeners(upcomingMatches){
+  const {rows} = computeLeaderboard();
+  const rank1Name = rows[0]?.player?.name;
+  const openers = [];
 
-  const openers=[];
-  if(isCouple&&hOwner&&aOwner)
-    openers.push(`Couple showdown — ${hOwner} vs ${aOwner} 🏠 who's winning bragging rights tonight?`);
-  if(isSibling&&hOwner&&aOwner)
-    openers.push(`Sibling rivalry on the pitch! ${hOwner} vs ${aOwner} — family dinner is about to get interesting 😂`);
-  if(isRivalry)
-    openers.push(`One of the great rivalries in football — this one always delivers drama ⚔️`);
-  if(gap>=30&&dogOwner)
-    openers.push(`${dog} is ranked #${Math.max(hRank,aRank)} in the world — ${dogOwner}, how are you feeling right now? 😬`);
-  else if(gap>=15)
-    openers.push(`${fav} should handle this on paper — but upsets happen at every World Cup 👀`);
-  if(openers.length<2&&hOwner&&aOwner&&hOwner!==aOwner)
-    openers.push(`${hOwner} vs ${aOwner} — one of you is not going to enjoy the next 90 minutes 😏`);
-  if(openers.length<2)
-    openers.push(`Every group-stage point matters — no easy games left 💪`);
-  if(openers.length<3)
-    openers.push(`Who's feeling confident about this one? Sound off below 👇`);
-  return openers.slice(0,3);
+  upcomingMatches.forEach(m=>{
+    const hOwner=stOwnerName(m.home_team), aOwner=stOwnerName(m.away_team);
+    const hRank=TEAM_DATA[m.home_team]?.rank||50;
+    const aRank=TEAM_DATA[m.away_team]?.rank||50;
+    const gap=Math.abs(hRank-aRank);
+    const fav=hRank<aRank?m.home_team:m.away_team;
+    const dog=hRank>aRank?m.home_team:m.away_team;
+    const dogOwner=hRank>aRank?hOwner:aOwner;
+    const isRivalry=RIVALRIES.has(`${m.home_team}|${m.away_team}`)||RIVALRIES.has(`${m.away_team}|${m.home_team}`);
+    const isCouple=COUPLES.some(([a,b])=>(hOwner===a&&aOwner===b)||(hOwner===b&&aOwner===a));
+    const isSibling=SIBLINGS.some(([a,b])=>(hOwner===a&&aOwner===b)||(hOwner===b&&aOwner===a));
+    const isHost=HOST_NATIONS.has(m.home_team)||HOST_NATIONS.has(m.away_team);
+
+    if(isCouple&&hOwner&&aOwner)
+      openers.push({score:10,text:`${hOwner} vs ${aOwner} — bragging rights on the line when ${m.home_team} plays ${m.away_team} 🏠 who's nervous?`});
+    if(isSibling&&hOwner&&aOwner)
+      openers.push({score:10,text:`Sibling rivalry! ${hOwner} vs ${aOwner} when ${m.home_team} takes on ${m.away_team} — family dinner is about to get awkward 😂`});
+    if(isRivalry)
+      openers.push({score:8,text:`${m.home_team} vs ${m.away_team} — one of the great rivalries in world football ⚔️ always delivers drama`});
+    if(hOwner&&aOwner&&hOwner!==aOwner){
+      if(gap>=20)
+        openers.push({score:7,text:`Pool battle: ${hOwner}'s ${m.home_team} vs ${aOwner}'s ${m.away_team} — and the FIFA gap is ${gap} ranks. Someone is in trouble 😬`});
+      else
+        openers.push({score:5,text:`${hOwner} vs ${aOwner} — one of you is not going to enjoy the next 90 minutes 😏`});
+    }
+    if(gap>=30&&dogOwner)
+      openers.push({score:6,text:`${dog} (FIFA #${Math.max(hRank,aRank)}) vs ${fav} — ${dogOwner}, say something brave 💀`});
+    else if(gap>=15&&!hOwner&&!aOwner)
+      openers.push({score:4,text:`${fav} is heavily favored over ${dog} — but nobody picks upsets until they happen 👀`});
+    if(isHost){
+      const host=HOST_NATIONS.has(m.home_team)?m.home_team:m.away_team;
+      openers.push({score:5,text:`${host} plays on home soil today — home crowd energy at the World Cup is something else 🏟️`});
+    }
+    if(m.home_team==="Argentina"||m.away_team==="Argentina")
+      openers.push({score:5,text:`Argentina on the pitch — defending champs going back-to-back? 🏆 calling it here`});
+    if(rank1Name&&(hOwner===rank1Name||aOwner===rank1Name)){
+      const leadTeam=hOwner===rank1Name?m.home_team:m.away_team;
+      openers.push({score:5,text:`Pool leader ${rank1Name} has ${leadTeam} in this one — extend the lead or give the rest of us hope? 📊`});
+    }
+    openers.push({score:1,text:`${m.home_team} vs ${m.away_team} — calling your shot right now: final score? ⚽`});
+  });
+
+  // Universal fillers for variety
+  openers.push({score:0,text:`Hot take: which team in today's slate is the biggest fraud? 🌶️`});
+  openers.push({score:0,text:`If there's a scoreline that completely flips the pool standings today, what is it? 📊`});
+  openers.push({score:0,text:`Be honest — which of your teams have you mentally written off already? 😭`});
+  openers.push({score:0,text:`Group stage crunch — every point matters. Who's sweating the most right now? 💀`});
+  openers.push({score:0,text:`Someone in this pool is about to have a very bad time. Predictions? 😈`});
+  openers.push({score:0,text:`Which upset would hurt you the most out of today's matches? 🎯`});
+
+  // Sort by score, dedupe by prefix, return top 6
+  openers.sort((a,b)=>b.score-a.score);
+  const seen=new Set();
+  return openers.filter(o=>{
+    const k=o.text.slice(0,40);
+    if(seen.has(k)) return false;
+    seen.add(k); return true;
+  }).slice(0,6).map(o=>o.text);
 }
 
 function renderSmackTalk(){
+  // Next 4 upcoming matches sorted by kickoff_utc
   const upcoming = state.matches
-    .filter(m=>m.home_score===null&&m.away_score===null)
+    .filter(m=>m.home_score===null&&m.away_score===null&&m.kickoff_utc)
+    .sort((a,b)=>new Date(a.kickoff_utc)-new Date(b.kickoff_utc))
     .slice(0,4);
 
-  if(!upcoming.length){
-    $("#tab-smacktalk").innerHTML=`<div class="card"><div class="section-title">💬 Smack Talk</div>
-      <p class="hint">No upcoming matches right now — check back after the next round!</p></div>`;
-    return;
-  }
-
-  if(!selectedSmackMatchId||!upcoming.find(m=>m.id===selectedSmackMatchId))
-    selectedSmackMatchId=upcoming[0].id;
-
-  const sel=upcoming.find(m=>m.id===selectedSmackMatchId)||upcoming[0];
-
-  // Match selector
-  const matchBtns=upcoming.map(m=>{
-    const ho=stOwnerName(m.home_team), ao=stOwnerName(m.away_team);
-    const ownerLine=ho&&ao?`${esc(ho)} vs ${esc(ao)}`:(ho||ao||'Unowned');
-    return `<button class="st-match-btn${m.id===selectedSmackMatchId?' active':''}" data-mid="${m.id}">
-      <div class="st-teams">${esc(m.home_team)} vs ${esc(m.away_team)}</div>
-      <div class="st-meta">Group ${m.grp} · ${ownerLine}</div>
-    </button>`;
-  }).join('');
-
   // Helper panel
-  const hRank=TEAM_DATA[sel.home_team]?.rank||50;
-  const aRank=TEAM_DATA[sel.away_team]?.rank||50;
-  const gap=Math.abs(hRank-aRank);
-  const hOwner=stOwnerName(sel.home_team), aOwner=stOwnerName(sel.away_team);
-  const isRivalry=RIVALRIES.has(`${sel.home_team}|${sel.away_team}`)||RIVALRIES.has(`${sel.away_team}|${sel.home_team}`);
-  const {rows}=computeLeaderboard();
-  const hRow=hOwner?rows.find(r=>r.player.name===hOwner):null;
-  const aRow=aOwner?rows.find(r=>r.player.name===aOwner):null;
-  const hPos=hRow?rows.indexOf(hRow)+1:'—';
-  const aPos=aRow?rows.indexOf(aRow)+1:'—';
-  const hPts=hRow?hRow.pts:0, aPts=aRow?aRow.pts:0;
+  let helperHtml='';
+  if(upcoming.length){
+    const {rows}=computeLeaderboard();
+    const upcomingRows=upcoming.map(m=>{
+      const hOwner=stOwnerName(m.home_team), aOwner=stOwnerName(m.away_team);
+      const hRank=TEAM_DATA[m.home_team]?.rank||50;
+      const aRank=TEAM_DATA[m.away_team]?.rank||50;
+      const gap=Math.abs(hRank-aRank);
+      const ownerLine=hOwner&&aOwner?`${esc(hOwner)} vs ${esc(aOwner)}`:hOwner?esc(hOwner):aOwner?esc(aOwner):'—';
+      const tags=[];
+      if(gap>=30) tags.push('🎯 upset watch');
+      if(RIVALRIES.has(`${m.home_team}|${m.away_team}`)||RIVALRIES.has(`${m.away_team}|${m.home_team}`)) tags.push('⚔️ rivalry');
+      const tagStr=tags.length?` · <span style="color:var(--muted)">${tags.join(' · ')}</span>`:'';
+      const kt=fmtKickoffPT(m.kickoff_utc);
+      return `<div class="st-context-row">⚽ <b>${esc(m.home_team)} vs ${esc(m.away_team)}</b> · ${ownerLine} · <span style="color:var(--muted)">${esc(kt)}</span>${tagStr}</div>`;
+    }).join('');
 
-  const contextRows=hOwner&&aOwner?`
-    <div class="st-context-row">⚽ <b>${esc(sel.home_team)}</b> → <b>${esc(hOwner)}</b> — #${hPos} in pool, ${hPts} pts</div>
-    <div class="st-context-row">⚽ <b>${esc(sel.away_team)}</b> → <b>${esc(aOwner)}</b> — #${aPos} in pool, ${aPts} pts</div>`
-    :`<div class="st-context-row" style="color:var(--muted)">No pool owners for these teams</div>`;
+    const openers=getAllSmackOpeners(upcoming);
+    const openerChips=openers.map(o=>`<button class="st-opener-chip" data-text="${esc(o)}">${esc(o)}</button>`).join('');
 
-  const statParts=[`FIFA: ${esc(sel.home_team)} #${hRank} vs ${esc(sel.away_team)} #${aRank}`];
-  if(gap>=20) statParts.push(`🎯 Upset watch — ${gap}-rank gap`);
-  if(isRivalry) statParts.push(`⚔️ Historic rivalry`);
-
-  const openers=getSmackOpeners(sel);
-  const openerChips=openers.map(o=>`<button class="st-opener-chip" data-text="${o.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}">${esc(o)}</button>`).join('');
-
-  const helperHtml=`<div class="st-helper">
-    <div class="st-helper-label">Pool Context</div>
-    ${contextRows}
-    <div class="st-stat-row">${statParts.join(' · ')}</div>
-    <div class="st-helper-label" style="margin-top:12px">Suggested openers — tap to use</div>
-    <div class="st-opener-chips">${openerChips}</div>
-  </div>`;
+    helperHtml=`<div class="st-helper">
+      <div class="st-helper-label">Upcoming matches</div>
+      ${upcomingRows}
+      <div class="st-helper-label" style="margin-top:12px">Suggested openers — tap to use</div>
+      <div class="st-opener-chips">${openerChips}</div>
+    </div>`;
+  }
 
   // Post form
   const playerOpts=state.players.map(p=>`<option value="${p.id}"${p.id===smackPlayerId?' selected':''}>${esc(p.name)}</option>`).join('');
@@ -1638,13 +1723,19 @@ function renderSmackTalk(){
     </div>
   </div>`;
 
-  // Feed
-  const posts=state.smacktalk.filter(p=>p.match_id===sel.id);
+  // Paginated feed — all posts, 10 per page, most recent first
+  const allPosts=state.smacktalk;
+  const totalPosts=allPosts.length;
+  const pageSize=10;
+  const totalPages=Math.max(1,Math.ceil(totalPosts/pageSize));
+  const page=Math.min(smackOffset, totalPages-1);
+  const pagePosts=allPosts.slice(page*pageSize,(page+1)*pageSize);
+
   let feedHtml='';
-  if(!posts.length){
+  if(!totalPosts){
     feedHtml=`<div class="st-empty">No smack yet — be the first 👀</div>`;
   } else {
-    feedHtml=posts.map(post=>{
+    feedHtml=pagePosts.map(post=>{
       const author=state.players.find(p=>p.id===post.player_id)?.name||'Unknown';
       const d=new Date(post.created_at);
       const time=d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -1652,40 +1743,46 @@ function renderSmackTalk(){
         const rxrs=state.smacktalk_reactions.filter(r=>r.post_id===post.id&&r.emoji===e);
         const cnt=rxrs.length;
         const mine=smackPlayerId&&rxrs.find(r=>r.player_id===smackPlayerId);
-        return `<button class="st-react-btn${mine?' mine':''}" data-pid="${post.id}" data-emoji="${e}">
-          ${e}${cnt>0?`<span class="st-react-cnt">${cnt}</span>`:''}
-        </button>`;
+        return `<button class="st-react-btn${mine?' mine':''}" data-pid="${post.id}" data-emoji="${e}">${e}${cnt>0?`<span class="st-react-cnt">${cnt}</span>`:''}</button>`;
       }).join('');
       const delBtn=isAdmin?`<button class="st-del-btn" data-id="${post.id}" title="Delete">✕</button>`:'';
+      // If this post referenced a specific match, show a label
+      const matchRef=post.match_id?(()=>{
+        const mx=state.matches.find(x=>x.id===post.match_id);
+        return mx?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px">re: ${esc(mx.home_team)} vs ${esc(mx.away_team)}</div>`:'';
+      })():'';
       return `<div class="st-post">
         <div class="st-post-header">
           <span class="st-author">${esc(author)}</span>
-          <span style="display:flex;align-items:center;gap:2px">
-            <span class="st-time">${time}</span>${delBtn}
-          </span>
+          <span style="display:flex;align-items:center;gap:2px"><span class="st-time">${time}</span>${delBtn}</span>
         </div>
+        ${matchRef}
         <div class="st-msg">${esc(post.message)}</div>
         <div class="st-reactions">${rxBtns}</div>
       </div>`;
     }).join('');
   }
 
+  // Pagination controls
+  const hasOlder=(page+1)*pageSize<totalPosts;
+  const hasNewer=page>0;
+  const paginationHtml=(hasOlder||hasNewer)?`<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:8px">
+    ${hasNewer?`<button class="st-page-btn" data-stdir="newer">← Newer</button>`:'<span></span>'}
+    <span class="st-page-info">${page+1} / ${totalPages}</span>
+    ${hasOlder?`<button class="st-page-btn" data-stdir="older">Older →</button>`:'<span></span>'}
+  </div>`:'';
+
   const html=`<div class="card">
     <div class="section-title">💬 Smack Talk</div>
-    <p class="hint" style="margin-bottom:14px">Pick a match, steal a line, or say your piece.</p>
-    <div class="st-match-grid">${matchBtns}</div>
+    <p class="hint" style="margin-bottom:14px">All pool chatter in one feed — say your piece.</p>
     ${helperHtml}
     ${postForm}
     <div class="st-divider">The Board</div>
     <div class="st-feed">${feedHtml}</div>
+    ${paginationHtml}
   </div>`;
 
   $("#tab-smacktalk").innerHTML=html;
-
-  // Wire match buttons
-  $$("#tab-smacktalk .st-match-btn").forEach(btn=>btn.addEventListener("click",()=>{
-    selectedSmackMatchId=parseInt(btn.dataset.mid); renderSmackTalk();
-  }));
 
   // Wire opener chips
   $$("#tab-smacktalk .st-opener-chip").forEach(chip=>chip.addEventListener("click",()=>{
@@ -1697,7 +1794,7 @@ function renderSmackTalk(){
   const ta=$("#st-textarea");
   if(ta) ta.addEventListener("input",updateStCharCount);
 
-  // Wire player select (remember choice)
+  // Wire player select
   const ps=$("#st-player");
   if(ps) ps.addEventListener("change",()=>{ smackPlayerId=parseInt(ps.value)||null; });
 
@@ -1714,6 +1811,12 @@ function renderSmackTalk(){
   if(isAdmin) $$("#tab-smacktalk .st-del-btn").forEach(btn=>btn.addEventListener("click",()=>
     stDeletePost(btn.dataset.id)
   ));
+
+  // Wire pagination
+  $$("#tab-smacktalk [data-stdir]").forEach(btn=>btn.addEventListener("click",()=>{
+    smackOffset=btn.dataset.stdir==="older"?page+1:Math.max(0,page-1);
+    renderSmackTalk();
+  }));
 }
 
 function updateStCharCount(){
@@ -1733,10 +1836,11 @@ async function submitSmackTalk(){
   if(!msg){ toast("Write something first 😅"); return; }
   smackPlayerId=pid;
   btn.disabled=true; btn.textContent="Posting…";
-  const {error}=await sb.rpc("post_smacktalk",{p_player_id:pid,p_match_id:selectedSmackMatchId,p_message:msg});
+  const {error}=await sb.rpc("post_smacktalk",{p_player_id:pid,p_message:msg});
   btn.disabled=false; btn.textContent="Post 🔥";
   if(error){ toast("Post failed — "+error.message.slice(0,50)); return; }
   ta.value=''; updateStCharCount();
+  smackOffset=0; // jump back to newest after posting
   await loadAll(); renderSmackTalk();
 }
 
