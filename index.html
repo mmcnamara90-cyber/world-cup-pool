@@ -235,6 +235,58 @@
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:60}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 
+  /* ===== Bracket tab ===== */
+  .bkt-mode-row{display:flex;gap:8px;margin-bottom:14px}
+  .bkt-mode-btn{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:9px 12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s}
+  .bkt-mode-btn.active{background:var(--gold);color:#fff8ec;border-color:var(--gold)}
+
+  .bkt-identity{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
+  .bkt-identity label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+  .bkt-status{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--muted);text-align:center;line-height:1.5}
+  .bkt-status b{color:var(--text)}
+
+  .bkt-round-header{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:700;margin:18px 2px 8px;display:flex;align-items:center;gap:8px}
+  .bkt-round-header span{flex:1;height:1px;background:var(--line);display:block}
+
+  .bkt-match{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin-bottom:8px}
+  .bkt-match-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px}
+  .bkt-teams{display:flex;flex-direction:column;gap:6px}
+  .bkt-team-btn{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 13px;text-align:left;cursor:pointer;font-size:14px;font-weight:600;color:var(--text);transition:border-color .15s,background .15s;display:flex;align-items:center;justify-content:space-between;width:100%}
+  .bkt-team-btn:hover{border-color:var(--gold-dim)}
+  .bkt-team-btn.picked{background:rgba(200,147,49,.13);border-color:var(--gold);color:var(--gold)}
+  .bkt-team-btn.tbd{color:var(--muted);font-style:italic;cursor:default}
+  .bkt-team-btn.correct{background:rgba(47,125,112,.12);border-color:var(--good);color:var(--good)}
+  .bkt-team-btn.wrong{background:rgba(189,86,56,.08);border-color:var(--bad);color:var(--bad);opacity:.7}
+  .bkt-check{font-size:16px;flex-shrink:0}
+
+  .bkt-tiebreaker{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0 14px}
+  .bkt-tb-label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .bkt-tb-desc{font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.5}
+  .bkt-tb-row{display:flex;align-items:center;gap:10px}
+  .bkt-tb-input{width:72px;background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:10px 10px;text-align:center;font-size:18px;font-weight:700}
+  .bkt-tb-hint{font-size:12px;color:var(--muted)}
+
+  .bkt-submit{width:100%;margin-top:8px;margin-bottom:24px;padding:14px}
+  .bkt-submit:disabled{opacity:.5;cursor:default}
+
+  .bkt-my-score{background:var(--panel2);border:1px solid var(--gold-dim);border-radius:12px;padding:14px 16px;margin-bottom:14px;text-align:center}
+  .bkt-my-score .sc-num{font-size:34px;font-weight:800;color:var(--gold)}
+  .bkt-my-score .sc-label{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .bkt-lb{width:100%;border-collapse:collapse}
+  .bkt-lb th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:8px;border-bottom:1px solid var(--line);text-align:left}
+  .bkt-lb td{padding:10px 8px;border-bottom:1px solid var(--line);font-size:14px}
+  .bkt-lb tr:last-child td{border-bottom:none}
+
+  /* Bracket rules tips */
+  .bkt-tips{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;position:relative;min-height:68px}
+
+  /* Admin result entry */
+  .bkt-admin{background:var(--panel2);border:1px dashed var(--gold-dim);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .bkt-admin-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+  .bkt-admin select,.bkt-admin input{background:var(--navy2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;width:100%;margin-bottom:6px}
+
   /* ---- Mobile ---- */
   @media (max-width:600px){
     .wrap{padding:0 10px 80px}
@@ -304,16 +356,18 @@
     <nav class="tabs">
       <button data-tab="leaderboard" class="active">Leaderboard</button>
       <button data-tab="matches">Scores</button>
+      <button data-tab="bracket">Bracket</button>
       <button data-tab="recaps">Updates</button>
       <button data-tab="settings" id="settingsTab">Settings</button>
     </nav>
 
     <section id="tab-leaderboard"></section>
     <section id="tab-matches" class="hidden"></section>
+    <section id="tab-bracket" class="hidden"></section>
     <section id="tab-recaps" class="hidden"></section>
     <section id="tab-settings" class="hidden"></section>
 
-    <div class="foot">Group-stage scoring is live. Knockout bracket (Phase 2) coming after the group stage.</div>
+    <div class="foot">Group-stage scoring is live. Knockout bracket opens June 28.</div>
   </div>
 </div>
 
@@ -426,7 +480,7 @@ const CLUB_CONNECTIONS = new Set([
 ]);
 
 /* ====================== State ====================== */
-let state = { players:[], teams:[], matches:[], settings:{}, recaps:[], smacktalk:[], smacktalk_reactions:[], match_reaction_counts:[] };
+let state = { players:[], teams:[], matches:[], settings:{}, recaps:[], smacktalk:[], smacktalk_reactions:[], match_reaction_counts:[], bracket_picks:[], bracket_tiebreaker:[], bracket_results:[] };
 let currentTab = "leaderboard";
 let matchFilterGroup = "all";
 let isAdmin = false;
@@ -436,6 +490,94 @@ let tipIndex = 0;
 let tipTimerId = null;
 let smackOffset = 0;
 let smackPlayerId = null;
+
+// Bracket state
+let bktMode = "practice";      // "practice" | "real"
+let bktPlayerId = null;        // selected player for real bracket
+let bktPicks = {};             // {matchNum: teamName} — in-progress picks
+let bktTbGoals = null;         // tiebreaker goals guess
+let bktTipIndex = 0;
+let bktTipTimer = null;
+let bktSubmitted = false;      // whether current player has already submitted
+
+/* ===== Bracket data ===== */
+
+// Practice: silly teams assigned to the 16 R32 match slots (match numbers 73–88)
+const PRACTICE_TEAMS = {
+  73: ["🦄 Unicorns",    "🐉 Dragons"],
+  74: ["🐶 Puppies",     "🦊 Foxes"],
+  75: ["🌮 Tacos",       "🍕 Pizzas"],
+  76: ["🦋 Butterflies", "🐻 Bears"],
+  77: ["🚀 Rockets",     "🌈 Rainbows"],
+  78: ["🐸 Frogs",       "🦁 Lions"],
+  79: ["🍩 Donuts",      "🎩 Wizards"],
+  80: ["🐧 Penguins",    "🦩 Flamingos"],
+  81: ["🌵 Cacti",       "🐬 Dolphins"],
+  82: ["🦀 Crabs",       "🐼 Pandas"],
+  83: ["🌶️ Peppers",     "🍄 Mushrooms"],
+  84: ["🦜 Parrots",     "🐙 Octopi"],
+  85: ["🎸 Rockstars",   "🧁 Cupcakes"],
+  86: ["🦦 Otters",      "🐨 Koalas"],
+  87: ["🌊 Waves",       "⚡ Thunderbolts"],
+  88: ["🦎 Lizards",     "🍦 Scoops"],
+};
+
+// Full bracket progression: who feeds into each match
+// Format: [feedMatchA, feedMatchB] — null means it's an R32 slot (teams come from PRACTICE_TEAMS or bracket_results)
+const BRACKET_FEEDS = {
+  // R16
+  89: [74, 77],
+  90: [73, 75],
+  91: [76, 78],
+  92: [79, 80],
+  93: [83, 84],
+  94: [81, 82],
+  95: [86, 88],
+  96: [85, 87],
+  // QF
+  97: [89, 90],
+  98: [93, 94],
+  99: [91, 92],
+  100:[95, 96],
+  // SF
+  101:[97, 98],
+  102:[99, 100],
+  // 3rd place
+  103:[-101, -102],  // losers of 101, 102 (negative = loser)
+  // Final
+  104:[101, 102],
+};
+
+const BRACKET_ROUNDS = [
+  { label:"Round of 32", matches:[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88] },
+  { label:"Round of 16", matches:[89,90,91,92,93,94,95,96] },
+  { label:"Quarterfinals", matches:[97,98,99,100] },
+  { label:"Semifinals",   matches:[101,102] },
+  { label:"3rd Place",    matches:[103] },
+  { label:"🏆 Final",     matches:[104] },
+];
+
+const BRACKET_TIPS = [
+  "🏆 <b>Knockout rules:</b> Win or go home — every match must have a winner. Extra time and penalties if needed after 90 minutes.",
+  "🙅 <b>No team ownership:</b> In the knockout stage, teams don't belong to anyone. Pick whoever you think will win each match — regardless of who drafted them.",
+  "📋 <b>All-upfront picks:</b> Fill out your entire bracket at once, all the way from the Round of 32 to the Final.",
+  "🔢 <b>Scoring:</b> Every correct prediction is worth <b>3 pts</b>, whether it's the Round of 32 or the Championship. No round weighting.",
+  "🔒 <b>Deadline:</b> Picks must be submitted by <b>11:00 AM PT on Sunday, June 28</b> — 1 hour before the first match.",
+  "🎯 <b>Tiebreaker:</b> Predict the total number of <i>pre-shootout</i> goals in the Championship game. Used only if two players tie on total points.",
+  "🔄 <b>Fresh start:</b> Knockout standings are separate from the group stage. Everyone starts at zero.",
+];
+
+// Bracket match R32 labels (for context when displaying)
+const R32_LABELS = {
+  73:"Runner-up A vs Runner-up B",    74:"Winner E vs Best 3rd",
+  75:"Winner F vs Runner-up C",       76:"Winner C vs Runner-up F",
+  77:"Winner I vs Best 3rd",          78:"Runner-up E vs Runner-up I",
+  79:"Winner A vs Best 3rd",          80:"Winner L vs Best 3rd",
+  81:"Winner D vs Best 3rd",          82:"Winner G vs Best 3rd",
+  83:"Runner-up K vs Runner-up L",    84:"Winner H vs Runner-up J",
+  85:"Winner B vs Best 3rd",          86:"Winner J vs Runner-up H",
+  87:"Winner K vs Best 3rd",          88:"Runner-up D vs Runner-up G",
+};
 
 const POOL_TIPS = [
   "📊 <b>Scoring:</b> Win = 3 pts, Draw = 1 pt, Loss = 0 pts. Group stage only — knockout bracket scoring is coming!",
@@ -704,7 +846,7 @@ async function syncScores(){
 
 /* ====================== Data load + realtime ====================== */
 async function loadAll(){
-  const [pl,tm,mt,st,rc,sk,sr,mr] = await Promise.all([
+  const [pl,tm,mt,st,rc,sk,sr,mr,bp,bt,br] = await Promise.all([
     sb.from("players").select("*").order("sort_order"),
     sb.from("teams").select("*").order("grp").order("pos"),
     sb.from("matches").select("*").order("match_date",{nullsFirst:false}).order("id"),
@@ -713,6 +855,9 @@ async function loadAll(){
     sb.from("smacktalk").select("*").order("created_at",{ascending:false}),
     sb.from("smacktalk_reactions").select("*"),
     sb.from("match_reaction_counts").select("*"),
+    sb.from("bracket_picks").select("*"),
+    sb.from("bracket_tiebreaker").select("*"),
+    sb.from("bracket_results").select("*"),
   ]);
   if(pl.error||tm.error||mt.error||st.error){ console.error(pl.error||tm.error||mt.error||st.error); toast("Sync error — check connection"); }
   state.players               = pl.data||[];
@@ -722,6 +867,9 @@ async function loadAll(){
   state.smacktalk             = sk.data||[];
   state.smacktalk_reactions   = sr.data||[];
   state.match_reaction_counts = mr.data||[];
+  state.bracket_picks         = bp.data||[];
+  state.bracket_tiebreaker    = bt.data||[];
+  state.bracket_results       = br.data||[];
   state.settings = {};
   (st.data||[]).forEach(r=> state.settings[r.key]=r.value);
 }
@@ -737,7 +885,7 @@ function subscribeRealtime(){
 
 /* ====================== Rendering ====================== */
 function renderCurrent(){
-  ({leaderboard:renderLeaderboard, draft:renderDraft, matches:renderMatches, recaps:renderRecaps, settings:renderSettings}[currentTab])();
+  ({leaderboard:renderLeaderboard, draft:renderDraft, matches:renderMatches, bracket:renderBracket, recaps:renderRecaps, settings:renderSettings}[currentTab])();
 }
 
 /* ---- Tip rotation ---- */
@@ -1390,6 +1538,393 @@ function renderMatchToWatch(){
   }
 }
 
+/* ====================== Bracket ====================== */
+
+// Get both teams for a given match number, from picks cascaded through the bracket
+function bktGetTeams(matchNum, picks, mode){
+  // R32: teams come directly from data source
+  if(matchNum <= 88){
+    if(mode === "practice") return PRACTICE_TEAMS[matchNum] || ["TBD","TBD"];
+    // Real: from bracket_results
+    const res = state.bracket_results.find(r=>r.match_num===matchNum);
+    return res ? [res.team_a, res.team_b] : ["TBD","TBD"];
+  }
+  // R16+: derive from feeds
+  const feeds = BRACKET_FEEDS[matchNum];
+  if(!feeds) return ["TBD","TBD"];
+  return feeds.map(f=>{
+    if(f > 0){
+      // winner of match f
+      if(mode === "real"){
+        const res = state.bracket_results.find(r=>r.match_num===f);
+        if(res?.winner) return res.winner;
+      }
+      return picks[f] || "TBD";
+    } else {
+      // loser of match abs(f)
+      const absF = Math.abs(f);
+      if(mode === "real"){
+        const res = state.bracket_results.find(r=>r.match_num===absF);
+        if(res?.winner){
+          const [a,b] = bktGetTeams(absF, picks, mode);
+          return [a,b].find(t=>t!==res.winner) || "TBD";
+        }
+      }
+      // Can't derive loser from picks alone until result is known
+      return "TBD";
+    }
+  });
+}
+
+// Get the official result for a match (in real mode)
+function bktGetResult(matchNum){
+  if(bktMode !== "real") return null;
+  return state.bracket_results.find(r=>r.match_num===matchNum) || null;
+}
+
+// Compute knockout points for a player from state
+function computeBracketScore(playerId){
+  const myPicks = state.bracket_picks.filter(p=>p.player_id===playerId);
+  let pts = 0, correct = 0, total = myPicks.length;
+  myPicks.forEach(p=>{
+    if(p.is_correct === true){ pts += 3; correct++; }
+  });
+  const tb = state.bracket_tiebreaker.find(t=>t.player_id===playerId);
+  return {pts, correct, total, tbGoals: tb?.goals_prediction ?? null};
+}
+
+function renderBracket(){
+  const tab = $("#tab-bracket");
+  if(!tab) return;
+
+  // Build tips widget
+  const dotsHtml = BRACKET_TIPS.map((_,i)=>
+    `<span class="tip-dot${i===bktTipIndex?" active":""}" onclick="bktGotoTip(${i})"></span>`
+  ).join('');
+  const tipsHtml = `<div class="bkt-tips">
+    <div class="section-title">📋 Bracket Rules</div>
+    <div class="tip-text" id="bkt-tip-text">${BRACKET_TIPS[bktTipIndex]}</div>
+    <div class="tip-dots">${dotsHtml}</div>
+  </div>`;
+
+  // Mode toggle
+  const modeHtml = `<div class="bkt-mode-row">
+    <button class="bkt-mode-btn${bktMode==="practice"?" active":""}" onclick="setBktMode('practice')">🎮 Practice</button>
+    <button class="bkt-mode-btn${bktMode==="real"?" active":""}" onclick="setBktMode('real')">⚽ Real Bracket</button>
+  </div>`;
+
+  if(bktMode === "practice"){
+    tab.innerHTML = tipsHtml + modeHtml + buildPracticeHtml();
+  } else {
+    tab.innerHTML = tipsHtml + modeHtml + buildRealBracketHtml();
+  }
+
+  startBktTipRotation();
+}
+
+function buildPracticeHtml(){
+  const playerOpts = state.players.map(p=>
+    `<option value="${p.id}"${bktPlayerId===p.id?" selected":""}>${esc(p.name)}</option>`
+  ).join('');
+
+  const identityHtml = `<div class="bkt-identity">
+    <label>Who are you? (optional)</label>
+    <select class="field" onchange="bktPlayerId=parseInt(this.value)||null;renderBracket()">
+      <option value="">— Select your name —</option>
+      ${playerOpts}
+    </select>
+  </div>`;
+
+  const statusHtml = `<div class="bkt-status">
+    🎮 <b>Practice mode</b> — fill out a bracket with silly teams to get familiar with the format. No picks are saved.
+  </div>`;
+
+  return identityHtml + statusHtml + buildBracketPicksHtml("practice", bktPicks, null);
+}
+
+function buildRealBracketHtml(){
+  // Deadline
+  const deadlineHtml = `<div class="bkt-status">
+    🔒 <b>Picks due by 11:00 AM PT on Sunday, June 28</b> — 1 hour before the first match.<br>
+    Select your name, enter your password, and submit your full bracket.
+  </div>`;
+
+  const playerOpts = state.players.map(p=>
+    `<option value="${p.id}"${bktPlayerId===p.id?" selected":""}>${esc(p.name)}</option>`
+  ).join('');
+
+  const identityHtml = `<div class="bkt-identity">
+    <label>Your name</label>
+    <select class="field" id="bkt-player-sel" onchange="onBktPlayerChange(parseInt(this.value)||null)">
+      <option value="">— Select your name —</option>
+      ${playerOpts}
+    </select>
+    <label>Your bracket password</label>
+    <input type="password" class="field" id="bkt-pw" placeholder="Password" autocomplete="off" />
+  </div>`;
+
+  // Leaderboard (bracket scores)
+  const lbHtml = buildBracketLeaderboardHtml();
+
+  // Admin: enter results
+  let adminHtml = "";
+  if(isAdmin){
+    adminHtml = buildBracketAdminHtml();
+  }
+
+  // Current player's picks (or empty bracket to fill)
+  const playerPicksHtml = bktPlayerId ? buildMyBracketHtml() : "";
+
+  return deadlineHtml + identityHtml + lbHtml + adminHtml + playerPicksHtml;
+}
+
+function onBktPlayerChange(pid){
+  bktPlayerId = pid;
+  // Load existing picks from state into bktPicks
+  bktPicks = {};
+  bktTbGoals = null;
+  bktSubmitted = false;
+  if(pid){
+    const myPicks = state.bracket_picks.filter(p=>p.player_id===pid);
+    if(myPicks.length > 0){
+      bktSubmitted = true;
+      myPicks.forEach(p=>{ bktPicks[p.match_num] = p.picked_team; });
+      const tb = state.bracket_tiebreaker.find(t=>t.player_id===pid);
+      if(tb) bktTbGoals = tb.goals_prediction;
+    }
+  }
+  renderBracket();
+}
+
+function buildMyBracketHtml(){
+  const submitted = bktSubmitted;
+  const header = submitted
+    ? `<div class="bkt-status" style="border-color:var(--good);color:var(--good)">✅ <b>Bracket submitted!</b> You can update it anytime before the deadline.</div>`
+    : `<div class="bkt-status">👇 Pick your winners for each match, then submit your bracket.</div>`;
+
+  const picksHtml = buildBracketPicksHtml("real", bktPicks, null);
+  const tbHtml = buildTiebreakerHtml();
+
+  const allR32Picked = BRACKET_ROUNDS[0].matches.every(m=>bktPicks[m]);
+  const allPicked = BRACKET_ROUNDS.flatMap(r=>r.matches).every(m=>bktPicks[m]);
+  const submitLabel = submitted ? "Update My Bracket" : "Submit Bracket";
+  const submitDisabled = !allPicked ? " disabled" : "";
+  const submitHint = !allPicked
+    ? `<div class="warn" style="text-align:center;margin-bottom:8px">Pick all matches to enable submit</div>`
+    : "";
+
+  const submitBtn = `${submitHint}<button class="btn-gold bkt-submit"${submitDisabled} onclick="submitRealBracket()">${submitLabel}</button>`;
+
+  return header + picksHtml + tbHtml + submitBtn;
+}
+
+function buildBracketPicksHtml(mode, picks, results){
+  let html = "";
+  BRACKET_ROUNDS.forEach(round=>{
+    html += `<div class="bkt-round-header">${round.label}<span></span></div>`;
+    round.matches.forEach(mn=>{
+      const [teamA, teamB] = bktGetTeams(mn, picks, mode);
+      const picked = picks[mn];
+      const res = (mode==="real") ? bktGetResult(mn) : null;
+      const resultWinner = res?.winner || null;
+      const tbd = teamA==="TBD" || teamB==="TBD";
+
+      // Determine button states
+      const stateA = resultWinner
+        ? (teamA===resultWinner ? "correct" : (picked===teamA ? "wrong" : ""))
+        : (picked===teamA ? "picked" : (tbd&&!teamA.includes("TBD") ? "" : ""));
+      const stateB = resultWinner
+        ? (teamB===resultWinner ? "correct" : (picked===teamB ? "wrong" : ""))
+        : (picked===teamB ? "picked" : "");
+
+      const checkA = resultWinner && teamA===resultWinner ? "✅" : (resultWinner && picked===teamA && teamA!==resultWinner ? "❌" : "");
+      const checkB = resultWinner && teamB===resultWinner ? "✅" : (resultWinner && picked===teamB && teamB!==resultWinner ? "❌" : "");
+
+      const canPick = !resultWinner && !tbd;
+      const label = mn <= 88 && mode==="real" ? `<div class="bkt-match-label">Match ${mn} · ${R32_LABELS[mn]||""}</div>` : `<div class="bkt-match-label">Match ${mn}</div>`;
+
+      html += `<div class="bkt-match">
+        ${label}
+        <div class="bkt-teams">
+          <button class="bkt-team-btn${teamA==="TBD"?" tbd":""}${stateA?" "+stateA:""}"
+            ${canPick?`onclick="bktPick(${mn},'${teamA.replace(/'/g,"\\'")}')"`:"disabled"}
+          >${esc(teamA)}${checkA?`<span class="bkt-check">${checkA}</span>`:""}</button>
+          <button class="bkt-team-btn${teamB==="TBD"?" tbd":""}${stateB?" "+stateB:""}"
+            ${canPick?`onclick="bktPick(${mn},'${teamB.replace(/'/g,"\\'")}')"`:"disabled"}
+          >${esc(teamB)}${checkB?`<span class="bkt-check">${checkB}</span>`:""}</button>
+        </div>
+      </div>`;
+    });
+  });
+  return html;
+}
+
+function buildTiebreakerHtml(){
+  return `<div class="bkt-tiebreaker">
+    <div class="bkt-tb-label">🎯 Tiebreaker</div>
+    <div class="bkt-tb-desc">How many total goals will be scored in the <b>Championship game</b> before any penalty shootout?<br>Used only to break ties in the final standings.</div>
+    <div class="bkt-tb-row">
+      <input type="number" min="0" max="20" class="bkt-tb-input field" id="bkt-tb-input"
+        placeholder="0" value="${bktTbGoals!=null?bktTbGoals:''}"
+        oninput="bktTbGoals=parseInt(this.value)||0" />
+      <span class="bkt-tb-hint">goals (pre-shootout)</span>
+    </div>
+  </div>`;
+}
+
+function buildBracketLeaderboardHtml(){
+  const scoredPlayers = state.players.map(p=>{
+    const s = computeBracketScore(p.id);
+    const tb = state.bracket_tiebreaker.find(t=>t.player_id===p.id);
+    const hasSubmitted = state.bracket_picks.filter(x=>x.player_id===p.id).length > 0;
+    return {...s, player:p, hasSubmitted, tbGoals:tb?.goals_prediction??null};
+  }).filter(r=>r.hasSubmitted);
+
+  if(scoredPlayers.length === 0){
+    return `<div class="card"><div class="section-title">🏆 Bracket Standings</div><div style="color:var(--muted);font-size:14px;padding:8px 0">No brackets submitted yet.</div></div>`;
+  }
+
+  scoredPlayers.sort((a,b)=>b.pts-a.pts||b.correct-a.correct);
+  const rows = scoredPlayers.map((r,i)=>`
+    <tr>
+      <td class="rank">${i+1}</td>
+      <td class="pname">${esc(r.player.name)}</td>
+      <td style="text-align:center;font-size:13px;color:var(--muted)">${r.correct}/${r.total}</td>
+      <td style="font-weight:800;font-size:17px;text-align:right;color:var(--gold)">${r.pts}</td>
+    </tr>`).join('');
+
+  return `<div class="card" style="margin-bottom:14px">
+    <div class="section-title">🏆 Bracket Standings</div>
+    <table class="bkt-lb">
+      <thead><tr>
+        <th>#</th><th>Player</th><th style="text-align:center">Correct</th><th style="text-align:right">Pts</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function buildBracketAdminHtml(){
+  const matchOpts = [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104]
+    .map(n=>`<option value="${n}">Match ${n}</option>`).join('');
+
+  return `<div class="bkt-admin">
+    <div class="bkt-admin-title">⚙️ Commissioner: Enter Match Result</div>
+    <select id="bkt-admin-match" class="field">${matchOpts}</select>
+    <input id="bkt-admin-a" class="field" placeholder="Team A name" />
+    <input id="bkt-admin-b" class="field" placeholder="Team B name" />
+    <input id="bkt-admin-winner" class="field" placeholder="Winner (must match exactly)" />
+    <input id="bkt-admin-goals" class="field" type="number" placeholder="Final goals (Match 104 only)" />
+    <button class="btn-gold" style="margin-top:4px" onclick="submitBracketResult()">Save Result</button>
+  </div>`;
+}
+
+function bktPick(matchNum, team){
+  bktPicks[matchNum] = team;
+  // Clear all downstream picks that depended on a different winner from this match
+  clearDownstreamPicks(matchNum);
+  renderBracket();
+}
+
+function clearDownstreamPicks(changedMatch){
+  // Find all matches that depend on changedMatch (directly or indirectly)
+  function dependsOn(mn, target){
+    const feeds = BRACKET_FEEDS[mn];
+    if(!feeds) return false;
+    return feeds.some(f=>Math.abs(f)===target || dependsOn(Math.abs(f), target));
+  }
+  const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
+  allMatches.forEach(mn=>{
+    if(mn > 88 && dependsOn(mn, changedMatch)){
+      const [a,b] = bktGetTeams(mn, bktPicks, bktMode);
+      // If current pick is no longer a valid team, clear it
+      if(bktPicks[mn] && bktPicks[mn] !== a && bktPicks[mn] !== b){
+        delete bktPicks[mn];
+      }
+    }
+  });
+}
+
+function setBktMode(mode){
+  bktMode = mode;
+  bktPicks = {};
+  bktTbGoals = null;
+  bktSubmitted = false;
+  if(mode === "real") bktPlayerId = null;
+  renderBracket();
+}
+
+async function submitRealBracket(){
+  if(!bktPlayerId){ toast("Select your name first"); return; }
+  const pw = $("#bkt-pw")?.value?.trim();
+  if(!pw){ toast("Enter your password"); return; }
+
+  const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
+  const allPicked = allMatches.every(m=>bktPicks[m]);
+  if(!allPicked){ toast("Pick all matches before submitting"); return; }
+  if(bktTbGoals === null || isNaN(bktTbGoals)){ toast("Enter your tiebreaker goal prediction"); return; }
+
+  const picksArray = allMatches.map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
+  const {data, error} = await sb.rpc("save_bracket",{
+    p_player_id: bktPlayerId,
+    p_pw: pw,
+    p_picks: picksArray,
+    p_goals: bktTbGoals,
+  });
+  if(error){ console.error(error); toast("Wrong password or error — try again"); return; }
+  toast("Bracket submitted! 🎉");
+  bktSubmitted = true;
+  await loadAll();
+  renderBracket();
+}
+
+async function submitBracketResult(){
+  if(!isAdmin){ toast("Commissioner only"); return; }
+  const matchNum = parseInt($("#bkt-admin-match").value);
+  const teamA    = $("#bkt-admin-a").value.trim();
+  const teamB    = $("#bkt-admin-b").value.trim();
+  const winner   = $("#bkt-admin-winner").value.trim();
+  const goals    = parseInt($("#bkt-admin-goals").value)||null;
+  if(!teamA||!teamB||!winner){ toast("Fill in team A, team B, and winner"); return; }
+  if(winner!==teamA&&winner!==teamB){ toast("Winner must match Team A or Team B exactly"); return; }
+
+  const {error} = await sb.rpc("save_bracket_result",{
+    p_pw: adminPw,
+    p_match_num: matchNum,
+    p_team_a: teamA,
+    p_team_b: teamB,
+    p_winner: winner,
+    p_final_goals: goals,
+  });
+  if(error){ console.error(error); toast("Error saving result"); return; }
+  toast("Result saved ✅");
+  await loadAll();
+  renderBracket();
+}
+
+/* ---- Bracket tips rotation ---- */
+function startBktTipRotation(){
+  clearInterval(bktTipTimer);
+  bktTipTimer = setInterval(()=>{
+    bktTipIndex = (bktTipIndex+1) % BRACKET_TIPS.length;
+    const el = $("#bkt-tip-text");
+    if(!el){ clearInterval(bktTipTimer); return; }
+    el.classList.add("fade");
+    setTimeout(()=>{
+      if(!el) return;
+      el.innerHTML = BRACKET_TIPS[bktTipIndex];
+      $$(".tip-dot", el.closest(".bkt-tips")).forEach((d,i)=>d.classList.toggle("active",i===bktTipIndex));
+      el.classList.remove("fade");
+    }, 300);
+  }, 20000);
+}
+function bktGotoTip(i){
+  bktTipIndex = i;
+  const el = $("#bkt-tip-text");
+  if(el) el.innerHTML = BRACKET_TIPS[i];
+  $$(".tip-dot").forEach((d,j)=>d.classList.toggle("active",j===i));
+}
+
 /* ---- Matches / Scores ---- */
 function renderMatches(){
   const groups=[...new Set(state.teams.map(t=>t.grp))];
@@ -1617,7 +2152,7 @@ function flash(id){ const e=$("#"+id); if(!e)return; e.classList.add("show"); se
 function switchTab(tab){
   currentTab=tab;
   $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  ["leaderboard","matches","recaps","settings"].forEach(t=>{ const el=$("#tab-"+t); if(el) el.classList.toggle("hidden",t!==tab); });
+  ["leaderboard","matches","bracket","recaps","settings"].forEach(t=>{ const el=$("#tab-"+t); if(el) el.classList.toggle("hidden",t!==tab); });
   renderCurrent();
   window.scrollTo({top:0,behavior:"smooth"});
 }
