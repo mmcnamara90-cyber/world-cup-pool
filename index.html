@@ -542,8 +542,6 @@ const BRACKET_FEEDS = {
   // SF
   101:[97, 98],
   102:[99, 100],
-  // 3rd place
-  103:[-101, -102],  // losers of 101, 102 (negative = loser)
   // Final
   104:[101, 102],
 };
@@ -553,7 +551,6 @@ const BRACKET_ROUNDS = [
   { label:"Round of 16", matches:[89,90,91,92,93,94,95,96] },
   { label:"Quarterfinals", matches:[97,98,99,100] },
   { label:"Semifinals",   matches:[101,102] },
-  { label:"3rd Place",    matches:[103] },
   { label:"🏆 Final",     matches:[104] },
 ];
 
@@ -561,7 +558,7 @@ const BRACKET_TIPS = [
   "🏆 <b>Knockout rules:</b> Win or go home — every match must have a winner. Extra time and penalties if needed after 90 minutes.",
   "🙅 <b>No team ownership:</b> In the knockout stage, teams don't belong to anyone. Pick whoever you think will win each match — regardless of who drafted them.",
   "📋 <b>All-upfront picks:</b> Fill out your entire bracket at once, all the way from the Round of 32 to the Final.",
-  "🔢 <b>Scoring:</b> Every correct prediction is worth <b>3 pts</b>, whether it's the Round of 32 or the Championship. No round weighting.",
+  "🔢 <b>Scoring:</b> Every correct prediction is worth <b>3 pts</b>, whether it's the Round of 32 or the Championship. 31 total picks, 93 points possible.",
   "🔒 <b>Deadline:</b> Picks must be submitted by <b>11:00 AM PT on Sunday, June 28</b> — 1 hour before the first match.",
   "🎯 <b>Tiebreaker:</b> Predict the total number of <i>pre-shootout</i> goals in the Championship game. Used only if two players tie on total points.",
   "🔄 <b>Fresh start:</b> Knockout standings are separate from the group stage. Everyone starts at zero.",
@@ -1805,7 +1802,7 @@ function buildBracketLeaderboardHtml(){
 }
 
 function buildBracketAdminHtml(){
-  const matchOpts = [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104]
+  const matchOpts = [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]
     .map(n=>`<option value="${n}">Match ${n}</option>`).join('');
 
   return `<div class="bkt-admin">
