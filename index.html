@@ -532,9 +532,10 @@ function computeLeaderboard(){
   const rec = computeTeamStats();
   const rows = state.players.map(p=>{
     const owned = state.teams.filter(t=>t.owner_id===p.id);
-    let pts=0,w=0,d=0,l=0,gf=0;
-    owned.forEach(t=>{ const r=rec[t.name]; if(r){pts+=r.pts;w+=r.w;d+=r.d;l+=r.l;gf+=r.gf;} });
-    return {player:p, owned, pts, w, d, l, gf, count:owned.length};
+    let pts=0,w=0,d=0,l=0,gf=0,gamesPlayed=0;
+    owned.forEach(t=>{ const r=rec[t.name]; if(r){pts+=r.pts;w+=r.w;d+=r.d;l+=r.l;gf+=r.gf;gamesPlayed+=r.pld;} });
+    const ppg = gamesPlayed > 0 ? pts / gamesPlayed : 0;
+    return {player:p, owned, pts, w, d, l, gf, gamesPlayed, ppg, count:owned.length};
   });
   rows.sort((a,b)=> b.pts-a.pts || b.w-a.w || b.gf-a.gf || a.player.sort_order-b.player.sort_order);
   return {rows, rec};
@@ -616,6 +617,27 @@ function computeFunFacts(){
     if(topWins>0){
       const wp = state.players.find(p=>p.id===topWinId);
       if(wp) liveFacts.push(`🏅 <b>${esc(wp.name)}</b> has the most team wins — <b>${topWins} W</b> across their squad.`);
+    }
+
+    // Points-per-game efficiency (interesting when efficiency leader ≠ raw points leader)
+    if(played.length >= 2){
+      const {rows:lbRows} = computeLeaderboard();
+      const qual = lbRows.filter(r=>r.gamesPlayed>=2);
+      if(qual.length>=2){
+        const byPpg = [...qual].sort((a,b)=>b.ppg-a.ppg);
+        const effTop = byPpg[0];
+        const ptsTop = lbRows[0];
+        if(effTop.player.id !== ptsTop.player.id){
+          liveFacts.push(`📐 <b>${esc(effTop.player.name)}</b> leads the pool in points per game — <b>${effTop.ppg.toFixed(1)} pts/match</b> while <b>${esc(ptsTop.player.name)}</b> leads in total points. The standings could look different once schedules even out.`);
+        } else if(byPpg.length>=2){
+          const threat = byPpg[1];
+          const threatProj = Math.round(threat.ppg * 18);
+          const leaderProj = Math.round(effTop.ppg * 18);
+          if(leaderProj - threatProj <= 3){
+            liveFacts.push(`🚀 <b>${esc(threat.player.name)}</b> is projecting to <b>${threatProj} pts</b> at current pace — within striking distance of <b>${esc(ptsTop.player.name)}</b>'s projected ${leaderProj}.`);
+          }
+        }
+      }
     }
 
     // Highest-scoring single team in the tournament
