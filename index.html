@@ -943,43 +943,10 @@ function renderLeaderboard(){
     </div>`;
   }
 
-  // Upcoming Games widget (4 matches, anonymous reactions capped at 10)
-  const upcoming2 = state.matches
-    .filter(m=>m.home_score===null&&m.away_score===null&&m.kickoff_utc)
-    .sort((a,b)=>new Date(a.kickoff_utc)-new Date(b.kickoff_utc))
-    .slice(0,4);
-  if(upcoming2.length){
-    const ugCards = upcoming2.map(m=>{
-      const hOwner=stOwnerName(m.home_team), aOwner=stOwnerName(m.away_team);
-      const ownerLine=hOwner&&aOwner?`${esc(hOwner)} vs ${esc(aOwner)}`:hOwner?esc(hOwner):aOwner?esc(aOwner):'—';
-      const totalReacts = state.match_reaction_counts.filter(r=>r.match_id===m.id).reduce((s,r)=>s+r.count,0);
-      const capped = totalReacts>=10;
-      const reacts=['👀','🌶️','😴','🙅'].map(emoji=>{
-        const rc=state.match_reaction_counts.find(r=>r.match_id===m.id&&r.emoji===emoji);
-        const cnt=rc?.count||0;
-        return `<button class="mr-btn${capped?' disabled':''}" data-mid="${m.id}" data-emoji="${emoji}" ${capped?'title="Max 10 reactions reached"':''}>${emoji}${cnt>0?`<span class="mr-cnt">${cnt}</span>`:''}</button>`;
-      }).join('');
-      return `<div class="n4m-match">
-        <div class="n4m-kickoff">${esc(fmtKickoffPT(m.kickoff_utc))}</div>
-        <div class="n4m-teams">${esc(m.home_team)} vs ${esc(m.away_team)}</div>
-        <div class="n4m-owners">${ownerLine}</div>
-        <div class="n4m-reacts">${reacts}</div>
-      </div>`;
-    }).join('');
-    html += `<div class="card">
-      <div class="section-title">📅 Upcoming Games</div>
-      <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">👀 watching · 🌶️ spicy · 😴 don't care · 🙅 can't watch · max 10 reacts/match</p>
-      <div class="n4m-list">${ugCards}</div>
-    </div>`;
-  }
-
   $("#tab-leaderboard").innerHTML = html;
   $$("#tab-leaderboard .expand").forEach(tr=>tr.addEventListener("click",()=>{
     const d=$(`[data-det="${tr.dataset.pid}"]`); if(d) d.classList.toggle("hidden");
   }));
-  $$("#tab-leaderboard .mr-btn:not(.disabled)").forEach(btn=>btn.addEventListener("click",()=>
-    addMatchReaction(parseInt(btn.dataset.mid), btn.dataset.emoji)
-  ));
   // Embed Smack Talk beneath leaderboard content
   const stContainer=document.createElement("div");
   stContainer.id="tab-smacktalk";
@@ -2225,34 +2192,33 @@ function getAllSmackOpeners(upcomingMatches){
 }
 
 function renderSmackTalk(){
-  // Next 2 upcoming matches sorted by kickoff_utc
+  // 4 upcoming matches for the game cards
   const upcoming = state.matches
     .filter(m=>m.home_score===null&&m.away_score===null&&m.kickoff_utc)
     .sort((a,b)=>new Date(a.kickoff_utc)-new Date(b.kickoff_utc))
-    .slice(0,2);
+    .slice(0,4);
 
-  // Helper panel
-  let helperHtml='';
+  // Upcoming games cards (n4m styling, no reactions)
+  let upcomingHtml='';
   if(upcoming.length){
-    const {rows}=computeLeaderboard();
-    const upcomingRows=upcoming.map(m=>{
+    const cards=upcoming.map(m=>{
       const hOwner=stOwnerName(m.home_team), aOwner=stOwnerName(m.away_team);
+      const ownerLine=hOwner&&aOwner?`${esc(hOwner)} vs ${esc(aOwner)}`:hOwner?esc(hOwner):aOwner?esc(aOwner):'—';
       const hRank=TEAM_DATA[m.home_team]?.rank||50;
       const aRank=TEAM_DATA[m.away_team]?.rank||50;
-      const gap=Math.abs(hRank-aRank);
-      const ownerLine=hOwner&&aOwner?`${esc(hOwner)} vs ${esc(aOwner)}`:hOwner?esc(hOwner):aOwner?esc(aOwner):'—';
       const tags=[];
-      if(gap>=30) tags.push('🎯 upset watch');
+      if(Math.abs(hRank-aRank)>=30) tags.push('🎯 upset watch');
       if(RIVALRIES.has(`${m.home_team}|${m.away_team}`)||RIVALRIES.has(`${m.away_team}|${m.home_team}`)) tags.push('⚔️ rivalry');
-      const tagStr=tags.length?` · <span style="color:var(--muted)">${tags.join(' · ')}</span>`:'';
-      const kt=fmtKickoffPT(m.kickoff_utc);
-      return `<div class="st-context-row">⚽ <b>${esc(m.home_team)} vs ${esc(m.away_team)}</b> · ${ownerLine} · <span style="color:var(--muted)">${esc(kt)}</span>${tagStr}</div>`;
+      const tagStr=tags.length?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${tags.join(' · ')}</div>`:'';
+      return `<div class="n4m-match">
+        <div class="n4m-kickoff">${esc(fmtKickoffPT(m.kickoff_utc))}</div>
+        <div class="n4m-teams">${esc(m.home_team)} vs ${esc(m.away_team)}</div>
+        <div class="n4m-owners">${ownerLine}</div>
+        ${tagStr}
+      </div>`;
     }).join('');
-
-    helperHtml=`<div class="st-helper">
-      <div class="st-helper-label">Upcoming matches</div>
-      ${upcomingRows}
-    </div>`;
+    upcomingHtml=`<div class="section-title" style="margin-top:4px">📅 Upcoming Games</div>
+      <div class="n4m-list" style="margin-bottom:18px">${cards}</div>`;
   }
 
   // Post form
@@ -2293,7 +2259,6 @@ function renderSmackTalk(){
         return `<button class="st-react-btn${mine?' mine':''}" data-pid="${post.id}" data-emoji="${e}">${e}${cnt>0?`<span class="st-react-cnt">${cnt}</span>`:''}</button>`;
       }).join('');
       const delBtn=isAdmin?`<button class="st-del-btn" data-id="${post.id}" title="Delete">✕</button>`:'';
-      // If this post referenced a specific match, show a label
       const matchRef=post.match_id?(()=>{
         const mx=state.matches.find(x=>x.id===post.match_id);
         return mx?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px">re: ${esc(mx.home_team)} vs ${esc(mx.away_team)}</div>`:'';
@@ -2320,9 +2285,8 @@ function renderSmackTalk(){
   </div>`:'';
 
   const html=`<div class="card">
+    ${upcomingHtml}
     <div class="section-title">💬 Smack Talk</div>
-    <p class="hint" style="margin-bottom:14px">All pool chatter in one feed — say your piece.</p>
-    ${helperHtml}
     ${postForm}
     <div class="st-divider">The Board</div>
     <div class="st-feed">${feedHtml}</div>
