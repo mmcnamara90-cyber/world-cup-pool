@@ -908,10 +908,7 @@ function renderLeaderboard(){
   const {rows, rec} = computeLeaderboard();
   const played = state.matches.filter(m=>m.home_score!==null && m.away_score!==null).length;
 
-  // MTW container at the top
-  let html = `<div id="mtw-container"></div>`;
-
-  html += `<div class="card">
+  let html = `<div class="card">
     <h2>Leaderboard</h2>
     <p class="hint">${played} of 72 group-stage matches scored. Tap a player to see their teams.</p>
     <table class="lb"><thead><tr>
@@ -946,11 +943,11 @@ function renderLeaderboard(){
     </div>`;
   }
 
-  // Upcoming Games widget (2 matches, anonymous reactions capped at 10)
+  // Upcoming Games widget (4 matches, anonymous reactions capped at 10)
   const upcoming2 = state.matches
     .filter(m=>m.home_score===null&&m.away_score===null&&m.kickoff_utc)
     .sort((a,b)=>new Date(a.kickoff_utc)-new Date(b.kickoff_utc))
-    .slice(0,2);
+    .slice(0,4);
   if(upcoming2.length){
     const ugCards = upcoming2.map(m=>{
       const hOwner=stOwnerName(m.home_team), aOwner=stOwnerName(m.away_team);
@@ -977,7 +974,6 @@ function renderLeaderboard(){
   }
 
   $("#tab-leaderboard").innerHTML = html;
-  renderMatchToWatch();
   $$("#tab-leaderboard .expand").forEach(tr=>tr.addEventListener("click",()=>{
     const d=$(`[data-det="${tr.dataset.pid}"]`); if(d) d.classList.toggle("hidden");
   }));
@@ -2253,14 +2249,9 @@ function renderSmackTalk(){
       return `<div class="st-context-row">⚽ <b>${esc(m.home_team)} vs ${esc(m.away_team)}</b> · ${ownerLine} · <span style="color:var(--muted)">${esc(kt)}</span>${tagStr}</div>`;
     }).join('');
 
-    const openers=getAllSmackOpeners(upcoming);
-    const openerChips=openers.map(o=>`<button class="st-opener-chip" data-text="${esc(o)}">${esc(o)}</button>`).join('');
-
     helperHtml=`<div class="st-helper">
       <div class="st-helper-label">Upcoming matches</div>
       ${upcomingRows}
-      <div class="st-helper-label" style="margin-top:12px">Suggested openers — tap to use</div>
-      <div class="st-opener-chips">${openerChips}</div>
     </div>`;
   }
 
@@ -2339,12 +2330,6 @@ function renderSmackTalk(){
   </div>`;
 
   $("#tab-smacktalk").innerHTML=html;
-
-  // Wire opener chips
-  $$("#tab-smacktalk .st-opener-chip").forEach(chip=>chip.addEventListener("click",()=>{
-    const ta=$("#st-textarea"); if(!ta) return;
-    ta.value=chip.dataset.text; updateStCharCount(); ta.focus();
-  }));
 
   // Wire textarea
   const ta=$("#st-textarea");
