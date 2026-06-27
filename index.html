@@ -269,6 +269,10 @@
 
   .bkt-submit{width:100%;margin-top:8px;margin-bottom:24px;padding:14px}
   .bkt-submit:disabled{opacity:.5;cursor:default}
+  .bkt-pin-block{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
+  .bkt-pin-block .bkt-tb-label{margin-bottom:6px}
+  .bkt-pin-block .bkt-tb-desc{font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+  .bkt-pin-row{display:flex;gap:10px;align-items:center}
 
   .bkt-my-score{background:var(--panel2);border:1px solid var(--gold-dim);border-radius:12px;padding:14px 16px;margin-bottom:14px;text-align:center}
   .bkt-my-score .sc-num{font-size:34px;font-weight:800;color:var(--gold)}
@@ -331,7 +335,7 @@
 <body>
 
 <!-- ===== Password gate ===== -->
-<div id="gate">
+<div id="gate" class="hidden">
   <div class="gate-card">
     <div class="badge">World Cup 2026</div>
     <h1>The Pool</h1>
@@ -494,6 +498,7 @@ let smackPlayerId = null;
 // Bracket state
 let bktMode = "practice";      // "practice" | "real"
 let bktPlayerId = null;        // selected player for real bracket
+let bktPin = null;             // cached PIN for current player (from localStorage)
 let bktPicks = {};             // {matchNum: teamName} — in-progress picks
 let bktTbGoals = null;         // tiebreaker goals guess
 let bktTipIndex = 0;
@@ -1628,7 +1633,7 @@ function buildRealBracketHtml(){
   // Deadline
   const deadlineHtml = `<div class="bkt-status">
     🔒 <b>Picks due by 11:00 AM PT on Sunday, June 28</b> — 1 hour before the first match.<br>
-    Select your name, enter your password, and submit your full bracket.
+    Select your name, fill out your bracket, then create a PIN to submit.
   </div>`;
 
   const playerOpts = state.players.map(p=>
@@ -1641,8 +1646,6 @@ function buildRealBracketHtml(){
       <option value="">— Select your name —</option>
       ${playerOpts}
     </select>
-    <label>Your bracket password</label>
-    <input type="password" class="field" id="bkt-pw" placeholder="Password" autocomplete="off" />
   </div>`;
 
   // Leaderboard (bracket scores)
@@ -1662,10 +1665,10 @@ function buildRealBracketHtml(){
 
 function onBktPlayerChange(pid){
   bktPlayerId = pid;
-  // Load existing picks from state into bktPicks
   bktPicks = {};
   bktTbGoals = null;
   bktSubmitted = false;
+  bktPin = null;
   if(pid){
     const myPicks = state.bracket_picks.filter(p=>p.player_id===pid);
     if(myPicks.length > 0){
@@ -1674,6 +1677,7 @@ function onBktPlayerChange(pid){
       const tb = state.bracket_tiebreaker.find(t=>t.player_id===pid);
       if(tb) bktTbGoals = tb.goals_prediction;
     }
+    try{ bktPin = localStorage.getItem("wc_bkt_pin_"+pid) || null; }catch(e){}
   }
   renderBracket();
 }
@@ -1695,9 +1699,29 @@ function buildMyBracketHtml(){
     ? `<div class="warn" style="text-align:center;margin-bottom:8px">Pick all matches to enable submit</div>`
     : "";
 
+  const pinBlock = submitted
+    ? `<div class="bkt-pin-block">
+        <div class="bkt-tb-label">🔑 Your PIN</div>
+        <div class="bkt-tb-desc">Enter your PIN to update your picks.</div>
+        <div class="bkt-pin-row">
+          <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin"
+            placeholder="••••" value="${bktPin ? bktPin : ''}" autocomplete="off" />
+        </div>
+      </div>`
+    : `<div class="bkt-pin-block">
+        <div class="bkt-tb-label">🔐 Create a PIN</div>
+        <div class="bkt-tb-desc">Pick a PIN you'll remember — you'll need it to update your picks later.</div>
+        <div class="bkt-pin-row">
+          <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin"
+            placeholder="New PIN" autocomplete="off" />
+          <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin-confirm"
+            placeholder="Confirm" autocomplete="off" />
+        </div>
+      </div>`;
+
   const submitBtn = `${submitHint}<button class="btn-gold bkt-submit"${submitDisabled} onclick="submitRealBracket()">${submitLabel}</button>`;
 
-  return header + picksHtml + tbHtml + submitBtn;
+  return header + picksHtml + tbHtml + pinBlock + submitBtn;
 }
 
 function buildBracketPicksHtml(mode, picks, results){
@@ -1838,8 +1862,14 @@ function setBktMode(mode){
 
 async function submitRealBracket(){
   if(!bktPlayerId){ toast("Select your name first"); return; }
-  const pw = $("#bkt-pw")?.value?.trim();
-  if(!pw){ toast("Enter your password"); return; }
+
+  const pin = $("#bkt-pin")?.value?.trim();
+  if(!pin){ toast(bktSubmitted ? "Enter your PIN to update" : "Create a PIN first"); return; }
+  if(!bktSubmitted){
+    const pinConfirm = $("#bkt-pin-confirm")?.value?.trim();
+    if(pin !== pinConfirm){ toast("PINs don't match — try again"); return; }
+    if(pin.length < 4){ toast("PIN must be at least 4 characters"); return; }
+  }
 
   const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
   const allPicked = allMatches.every(m=>bktPicks[m]);
@@ -1849,11 +1879,14 @@ async function submitRealBracket(){
   const picksArray = allMatches.map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
   const {data, error} = await sb.rpc("save_bracket",{
     p_player_id: bktPlayerId,
-    p_pw: pw,
+    p_pw: pin,
     p_picks: picksArray,
     p_goals: bktTbGoals,
   });
-  if(error){ console.error(error); toast("Wrong password or error — try again"); return; }
+  if(error || data === false){ console.error(error); toast("Wrong PIN — try again"); return; }
+
+  try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
+  bktPin = pin;
   toast("Bracket submitted! 🎉");
   bktSubmitted = true;
   await loadAll();
@@ -2405,8 +2438,7 @@ async function init(){
     const {data}=await sb.rpc("verify_admin",{p_pw:savedAdmin});
     if(data){ isAdmin=true; adminPw=savedAdmin; }
   }
-  const saved = localStorage.getItem("wc_pw");
-  if(saved && saved===setVal("password","")) { unlock(); }
+  unlock(); // No site password — open to anyone with the link
   subscribeRealtime();
   // Auto-refresh: poll every 30s + re-fetch when tab becomes visible
   setInterval(()=>{ loadAll().then(renderCurrent); }, 30000);
@@ -2414,11 +2446,6 @@ async function init(){
     if(document.visibilityState==="visible") loadAll().then(renderCurrent);
   });
 
-  $("#gateBtn").addEventListener("click",async()=>{
-    const ok=await tryUnlock($("#gatePw").value);
-    if(!ok){ $("#gateErr").textContent="Incorrect password"; $("#gatePw").value=""; }
-  });
-  $("#gatePw").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#gateBtn").click(); });
   $$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
   $("#commishBtn").addEventListener("click",()=> isAdmin ? commishLogout() : commishLogin());
   applyMode();
