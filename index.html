@@ -493,8 +493,10 @@ let smackOffset = 0;
 let smackPlayerId = null;
 
 // Bracket state
+const BRACKET_DEADLINE = new Date("2026-06-28T19:00:00Z"); // 12:00 PM PT (PDT = UTC-7)
 let bktPlayerId = null;        // selected player for real bracket
 let bktPin = null;             // cached PIN for current player (from localStorage)
+let bktPinVerified = false;    // whether current player has passed the PIN gate
 let bktPicks = {};             // {matchNum: teamName} — in-progress picks
 let bktTbGoals = null;         // tiebreaker goals guess
 let bktTipIndex = 0;
@@ -1606,12 +1608,13 @@ function buildRealBracketHtml(){
   return deadlineHtml + identityHtml + lbHtml + adminHtml + playerPicksHtml;
 }
 
-function onBktPlayerChange(pid){
+async function onBktPlayerChange(pid){
   bktPlayerId = pid;
   bktPicks = {};
   bktTbGoals = null;
   bktSubmitted = false;
   bktPin = null;
+  bktPinVerified = false;
   if(pid){
     const myPicks = state.bracket_picks.filter(p=>p.player_id===pid);
     if(myPicks.length > 0){
@@ -1621,16 +1624,47 @@ function onBktPlayerChange(pid){
       if(tb) bktTbGoals = tb.goals_prediction;
     }
     try{ bktPin = localStorage.getItem("wc_bkt_pin_"+pid) || null; }catch(e){}
+    // Auto-verify if we have a cached PIN from a previous session on this device
+    if(bktPin && bktSubmitted && new Date() < BRACKET_DEADLINE){
+      const {data} = await sb.rpc("verify_bracket_pin", {p_player_id: pid, p_pw: bktPin});
+      if(data) bktPinVerified = true;
+    }
   }
   renderBracket();
 }
 
+function buildBracketPinGateHtml(){
+  return `<div class="bkt-pin-block" style="margin-top:8px">
+    <div class="bkt-tb-label">🔒 Bracket Hidden Until Deadline</div>
+    <div class="bkt-tb-desc">To prevent peeking, brackets are locked until 12:00 PM PT on Sunday. Enter your PIN to view and edit your picks.</div>
+    <div class="bkt-pin-row">
+      <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-verify-pin"
+        placeholder="Your PIN" autocomplete="off"
+        onkeydown="if(event.key==='Enter') verifyBracketPin()" />
+      <button class="btn-gold" onclick="verifyBracketPin()">Unlock</button>
+    </div>
+  </div>`;
+}
+
 function buildMyBracketHtml(){
+  const isPostDeadline = new Date() >= BRACKET_DEADLINE;
   const submitted = bktSubmitted;
   const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
   const pickedCount = allMatches.filter(m=>bktPicks[m]).length;
   const totalCount = allMatches.length;
 
+  // Pre-deadline: show PIN gate if this player has picks and hasn't verified yet
+  if(!isPostDeadline && submitted && !bktPinVerified){
+    return buildBracketPinGateHtml();
+  }
+
+  // Post-deadline: read-only view for everyone
+  if(isPostDeadline){
+    const header = `<div class="bkt-status" style="border-color:var(--gold);color:var(--gold)">🔓 <b>Brackets are now locked!</b> ${pickedCount} of ${totalCount} picks saved.</div>`;
+    return header + buildBracketPicksHtml("real", bktPicks, null);
+  }
+
+  // Pre-deadline, verified (or no picks yet): full edit view
   const header = submitted
     ? `<div class="bkt-status" style="border-color:var(--good);color:var(--good)">✅ <b>Bracket saved!</b> ${pickedCount} of ${totalCount} picks saved. You can update anytime before the deadline.</div>`
     : `<div class="bkt-status">👇 Pick your winners — save a partial bracket now and come back to finish before the deadline.</div>`;
@@ -1651,7 +1685,7 @@ function buildMyBracketHtml(){
       </div>`
     : `<div class="bkt-pin-block">
         <div class="bkt-tb-label">🔐 Create a PIN</div>
-        <div class="bkt-tb-desc">Pick a PIN you'll remember — you'll need it to update your picks later.</div>
+        <div class="bkt-tb-desc">Pick a PIN you'll remember — you'll need it to view and update your picks later.</div>
         <div class="bkt-pin-row">
           <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin"
             placeholder="New PIN" autocomplete="off" />
@@ -1793,6 +1827,18 @@ function clearDownstreamPicks(changedMatch){
   });
 }
 
+async function verifyBracketPin(){
+  if(!bktPlayerId){ toast("Select your name first"); return; }
+  const pin = $("#bkt-verify-pin")?.value?.trim();
+  if(!pin){ toast("Enter your PIN"); return; }
+  const {data, error} = await sb.rpc("verify_bracket_pin", {p_player_id: bktPlayerId, p_pw: pin});
+  if(error || !data){ toast("Incorrect PIN — try again"); return; }
+  bktPin = pin;
+  try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
+  bktPinVerified = true;
+  renderBracket();
+}
+
 async function submitRealBracket(){
   if(!bktPlayerId){ toast("Select your name first"); return; }
 
@@ -1819,6 +1865,7 @@ async function submitRealBracket(){
 
   try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
   bktPin = pin;
+  bktPinVerified = true;
   toast(`${picksArray.length} of ${allMatches.length} picks saved! 🎉`);
   bktSubmitted = true;
   await loadAll();
