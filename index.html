@@ -367,7 +367,7 @@
     <section id="tab-recaps" class="hidden"></section>
     <section id="tab-settings" class="hidden"></section>
 
-    <div class="foot">Group-stage scoring is live. Knockout bracket opens June 28.</div>
+    <div class="foot">Group-stage scoring is live. Knockout bracket is now open!</div>
   </div>
 </div>
 
@@ -523,6 +523,26 @@ const PRACTICE_TEAMS = {
 };
 
 // Full bracket progression: who feeds into each match
+// Real R32 teams (from official bracket; overridden by bracket_results rows if admin enters them)
+const R32_REAL_TEAMS = {
+  73: ["South Africa",   "Canada"],
+  74: ["Germany",        "Paraguay"],
+  75: ["Netherlands",    "Morocco"],
+  76: ["Brazil",         "Japan"],
+  77: ["France",         "Sweden"],
+  78: ["Ivory Coast",    "Norway"],
+  79: ["Mexico",         "TBD"],
+  80: ["TBD",            "TBD"],
+  81: ["Belgium",        "TBD"],
+  82: ["United States",  "Bosnia-Herzegovina"],
+  83: ["Spain",          "TBD"],
+  84: ["TBD",            "TBD"],
+  85: ["Switzerland",    "TBD"],
+  86: ["Australia",      "Egypt"],
+  87: ["TBD",            "TBD"],
+  88: ["Argentina",      "Cape Verde"],
+};
+
 // Format: [feedMatchA, feedMatchB] — null means it's an R32 slot (teams come from PRACTICE_TEAMS or bracket_results)
 const BRACKET_FEEDS = {
   // R16
@@ -577,11 +597,11 @@ const R32_LABELS = {
 };
 
 const POOL_TIPS = [
-  "📊 <b>Scoring:</b> Win = 3 pts, Draw = 1 pt, Loss = 0 pts. Group stage only — knockout bracket scoring is coming!",
+  "📊 <b>Scoring:</b> Win = 3 pts, Draw = 1 pt, Loss = 0 pts (group stage). Knockout bracket: 3 pts per correct pick, 31 picks total.",
   "🐍 <b>Snake draft:</b> We drafted in snake order — so whoever picked last in round 1 picked first in round 2, and so on.",
   "⚽ <b>6 teams each:</b> Every player owns 6 national teams. Your total points = sum of all your teams' results across the group stage.",
   "🏟️ <b>Group stage:</b> Each team plays 3 matches. Top 2 from each group advance to the knockout rounds.",
-  "🏆 <b>Knockout bracket coming:</b> After the group stage, we'll have a separate knockout pool — so your chances aren't over after the groups!",
+  "🏆 <b>Knockout bracket is live!</b> Head to the Bracket tab to make your picks before the 11:00 AM PT deadline on Sunday, June 28.",
   "🔗 <b>Tiebreaker:</b> If two players finish tied on points, the winner is whoever predicted pre-shootout goals in the Final most accurately.",
   "📡 <b>Live updates:</b> Scores sync automatically — no need to refresh to see new results.",
 ];
@@ -1505,9 +1525,11 @@ function bktGetTeams(matchNum, picks, mode){
   // R32: teams come directly from data source
   if(matchNum <= 88){
     if(mode === "practice") return PRACTICE_TEAMS[matchNum] || ["TBD","TBD"];
-    // Real: from bracket_results
+    // Real: bracket_results takes priority, fall back to hardcoded R32_REAL_TEAMS
     const res = state.bracket_results.find(r=>r.match_num===matchNum);
-    return res ? [res.team_a, res.team_b] : ["TBD","TBD"];
+    if(res) return [res.team_a, res.team_b];
+    const fallback = R32_REAL_TEAMS[matchNum];
+    return fallback ? fallback : ["TBD","TBD"];
   }
   // R16+: derive from feeds
   const feeds = BRACKET_FEEDS[matchNum];
