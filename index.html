@@ -1632,8 +1632,8 @@ function buildPracticeHtml(){
 function buildRealBracketHtml(){
   // Deadline
   const deadlineHtml = `<div class="bkt-status">
-    🔒 <b>Picks due by 11:00 AM PT on Sunday, June 28</b> — 1 hour before the first match.<br>
-    Select your name, fill out your bracket, then create a PIN to submit.
+    ⚠️ <b>Final picks must be saved by 11:59 AM PT on Sunday, June 28</b> — before the first knockout game kicks off.<br>
+    You can save a partial bracket now and come back to add more picks before the deadline.
   </div>`;
 
   const playerOpts = state.players.map(p=>
@@ -1684,25 +1684,23 @@ function onBktPlayerChange(pid){
 
 function buildMyBracketHtml(){
   const submitted = bktSubmitted;
+  const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
+  const pickedCount = allMatches.filter(m=>bktPicks[m]).length;
+  const totalCount = allMatches.length;
+
   const header = submitted
-    ? `<div class="bkt-status" style="border-color:var(--good);color:var(--good)">✅ <b>Bracket submitted!</b> You can update it anytime before the deadline.</div>`
-    : `<div class="bkt-status">👇 Pick your winners for each match, then submit your bracket.</div>`;
+    ? `<div class="bkt-status" style="border-color:var(--good);color:var(--good)">✅ <b>Bracket saved!</b> ${pickedCount} of ${totalCount} picks saved. You can update anytime before the deadline.</div>`
+    : `<div class="bkt-status">👇 Pick your winners — save a partial bracket now and come back to finish before the deadline.</div>`;
 
   const picksHtml = buildBracketPicksHtml("real", bktPicks, null);
   const tbHtml = buildTiebreakerHtml();
 
-  const allR32Picked = BRACKET_ROUNDS[0].matches.every(m=>bktPicks[m]);
-  const allPicked = BRACKET_ROUNDS.flatMap(r=>r.matches).every(m=>bktPicks[m]);
-  const submitLabel = submitted ? "Update My Bracket" : "Submit Bracket";
-  const submitDisabled = !allPicked ? " disabled" : "";
-  const submitHint = !allPicked
-    ? `<div class="warn" style="text-align:center;margin-bottom:8px">Pick all matches to enable submit</div>`
-    : "";
+  const submitLabel = submitted ? "Save Changes" : "Save Bracket";
 
   const pinBlock = submitted
     ? `<div class="bkt-pin-block">
         <div class="bkt-tb-label">🔑 Your PIN</div>
-        <div class="bkt-tb-desc">Enter your PIN to update your picks.</div>
+        <div class="bkt-tb-desc">Enter your PIN to save your picks.</div>
         <div class="bkt-pin-row">
           <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin"
             placeholder="••••" value="${bktPin ? bktPin : ''}" autocomplete="off" />
@@ -1719,7 +1717,8 @@ function buildMyBracketHtml(){
         </div>
       </div>`;
 
-  const submitBtn = `${submitHint}<button class="btn-gold bkt-submit"${submitDisabled} onclick="submitRealBracket()">${submitLabel}</button>`;
+  const progressHtml = `<div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:8px">${pickedCount} of ${totalCount} picks made</div>`;
+  const submitBtn = `${progressHtml}<button class="btn-gold bkt-submit" onclick="submitRealBracket()">${submitLabel}</button>`;
 
   return header + picksHtml + tbHtml + pinBlock + submitBtn;
 }
@@ -1864,7 +1863,7 @@ async function submitRealBracket(){
   if(!bktPlayerId){ toast("Select your name first"); return; }
 
   const pin = $("#bkt-pin")?.value?.trim();
-  if(!pin){ toast(bktSubmitted ? "Enter your PIN to update" : "Create a PIN first"); return; }
+  if(!pin){ toast(bktSubmitted ? "Enter your PIN to save" : "Create a PIN first"); return; }
   if(!bktSubmitted){
     const pinConfirm = $("#bkt-pin-confirm")?.value?.trim();
     if(pin !== pinConfirm){ toast("PINs don't match — try again"); return; }
@@ -1872,22 +1871,21 @@ async function submitRealBracket(){
   }
 
   const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
-  const allPicked = allMatches.every(m=>bktPicks[m]);
-  if(!allPicked){ toast("Pick all matches before submitting"); return; }
-  if(bktTbGoals === null || isNaN(bktTbGoals)){ toast("Enter your tiebreaker goal prediction"); return; }
+  const picksArray = allMatches.filter(mn=>bktPicks[mn]).map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
+  if(picksArray.length === 0){ toast("Make at least one pick before saving"); return; }
+  const goals = (bktTbGoals !== null && !isNaN(bktTbGoals)) ? bktTbGoals : null;
 
-  const picksArray = allMatches.map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
   const {data, error} = await sb.rpc("save_bracket",{
     p_player_id: bktPlayerId,
     p_pw: pin,
     p_picks: picksArray,
-    p_goals: bktTbGoals,
+    p_goals: goals,
   });
   if(error || data === false){ console.error(error); toast("Wrong PIN — try again"); return; }
 
   try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
   bktPin = pin;
-  toast("Bracket submitted! 🎉");
+  toast(`${picksArray.length} of ${allMatches.length} picks saved! 🎉`);
   bktSubmitted = true;
   await loadAll();
   renderBracket();
