@@ -236,9 +236,6 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 
   /* ===== Bracket tab ===== */
-  .bkt-mode-row{display:flex;gap:8px;margin-bottom:14px}
-  .bkt-mode-btn{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:9px 12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s}
-  .bkt-mode-btn.active{background:var(--gold);color:#fff8ec;border-color:var(--gold)}
 
   .bkt-identity{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
   .bkt-identity label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -496,7 +493,6 @@ let smackOffset = 0;
 let smackPlayerId = null;
 
 // Bracket state
-let bktMode = "practice";      // "practice" | "real"
 let bktPlayerId = null;        // selected player for real bracket
 let bktPin = null;             // cached PIN for current player (from localStorage)
 let bktPicks = {};             // {matchNum: teamName} — in-progress picks
@@ -507,27 +503,6 @@ let bktSubmitted = false;      // whether current player has already submitted
 
 /* ===== Bracket data ===== */
 
-// Practice: silly teams assigned to the 16 R32 match slots (match numbers 73–88)
-const PRACTICE_TEAMS = {
-  73: ["🦄 Unicorns",    "🐉 Dragons"],
-  74: ["🐶 Puppies",     "🦊 Foxes"],
-  75: ["🌮 Tacos",       "🍕 Pizzas"],
-  76: ["🦋 Butterflies", "🐻 Bears"],
-  77: ["🚀 Rockets",     "🌈 Rainbows"],
-  78: ["🐸 Frogs",       "🦁 Lions"],
-  79: ["🍩 Donuts",      "🎩 Wizards"],
-  80: ["🐧 Penguins",    "🦩 Flamingos"],
-  81: ["🌵 Cacti",       "🐬 Dolphins"],
-  82: ["🦀 Crabs",       "🐼 Pandas"],
-  83: ["🌶️ Peppers",     "🍄 Mushrooms"],
-  84: ["🦜 Parrots",     "🐙 Octopi"],
-  85: ["🎸 Rockstars",   "🧁 Cupcakes"],
-  86: ["🦦 Otters",      "🐨 Koalas"],
-  87: ["🌊 Waves",       "⚡ Thunderbolts"],
-  88: ["🦎 Lizards",     "🍦 Scoops"],
-};
-
-// Full bracket progression: who feeds into each match
 // Real R32 teams (from official bracket; overridden by bracket_results rows if admin enters them)
 const R32_REAL_TEAMS = {
   73: ["South Africa",   "Canada"],
@@ -548,7 +523,7 @@ const R32_REAL_TEAMS = {
   88: ["Argentina",      "Cape Verde"],
 };
 
-// Format: [feedMatchA, feedMatchB] — null means it's an R32 slot (teams come from PRACTICE_TEAMS or bracket_results)
+// Format: [feedMatchA, feedMatchB] — null means it's an R32 slot (teams come from R32_REAL_TEAMS or bracket_results)
 const BRACKET_FEEDS = {
   // R16
   89: [74, 77],
@@ -1529,8 +1504,7 @@ function renderMatchToWatch(){
 function bktGetTeams(matchNum, picks, mode){
   // R32: teams come directly from data source
   if(matchNum <= 88){
-    if(mode === "practice") return PRACTICE_TEAMS[matchNum] || ["TBD","TBD"];
-    // Real: bracket_results takes priority, fall back to hardcoded R32_REAL_TEAMS
+    // bracket_results takes priority, fall back to hardcoded R32_REAL_TEAMS
     const res = state.bracket_results.find(r=>r.match_num===matchNum);
     if(res) return [res.team_a, res.team_b];
     const fallback = R32_REAL_TEAMS[matchNum];
@@ -1563,9 +1537,8 @@ function bktGetTeams(matchNum, picks, mode){
   });
 }
 
-// Get the official result for a match (in real mode)
+// Get the official result for a match
 function bktGetResult(matchNum){
-  if(bktMode !== "real") return null;
   return state.bracket_results.find(r=>r.match_num===matchNum) || null;
 }
 
@@ -1594,39 +1567,9 @@ function renderBracket(){
     <div class="tip-dots">${dotsHtml}</div>
   </div>`;
 
-  // Mode toggle
-  const modeHtml = `<div class="bkt-mode-row">
-    <button class="bkt-mode-btn${bktMode==="practice"?" active":""}" onclick="setBktMode('practice')">🎮 Practice</button>
-    <button class="bkt-mode-btn${bktMode==="real"?" active":""}" onclick="setBktMode('real')">⚽ Real Bracket</button>
-  </div>`;
-
-  if(bktMode === "practice"){
-    tab.innerHTML = tipsHtml + modeHtml + buildPracticeHtml();
-  } else {
-    tab.innerHTML = tipsHtml + modeHtml + buildRealBracketHtml();
-  }
+  tab.innerHTML = tipsHtml + buildRealBracketHtml();
 
   startBktTipRotation();
-}
-
-function buildPracticeHtml(){
-  const playerOpts = state.players.map(p=>
-    `<option value="${p.id}"${bktPlayerId===p.id?" selected":""}>${esc(p.name)}</option>`
-  ).join('');
-
-  const identityHtml = `<div class="bkt-identity">
-    <label>Who are you? (optional)</label>
-    <select class="field" onchange="bktPlayerId=parseInt(this.value)||null;renderBracket()">
-      <option value="">— Select your name —</option>
-      ${playerOpts}
-    </select>
-  </div>`;
-
-  const statusHtml = `<div class="bkt-status">
-    🎮 <b>Practice mode</b> — fill out a bracket with silly teams to get familiar with the format. No picks are saved.
-  </div>`;
-
-  return identityHtml + statusHtml + buildBracketPicksHtml("practice", bktPicks, null);
 }
 
 function buildRealBracketHtml(){
@@ -1841,22 +1784,13 @@ function clearDownstreamPicks(changedMatch){
   const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
   allMatches.forEach(mn=>{
     if(mn > 88 && dependsOn(mn, changedMatch)){
-      const [a,b] = bktGetTeams(mn, bktPicks, bktMode);
+      const [a,b] = bktGetTeams(mn, bktPicks, "real");
       // If current pick is no longer a valid team, clear it
       if(bktPicks[mn] && bktPicks[mn] !== a && bktPicks[mn] !== b){
         delete bktPicks[mn];
       }
     }
   });
-}
-
-function setBktMode(mode){
-  bktMode = mode;
-  bktPicks = {};
-  bktTbGoals = null;
-  bktSubmitted = false;
-  if(mode === "real") bktPlayerId = null;
-  renderBracket();
 }
 
 async function submitRealBracket(){
