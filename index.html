@@ -528,24 +528,24 @@ const R32_REAL_TEAMS = {
 // Format: [feedMatchA, feedMatchB] — null means it's an R32 slot (teams come from R32_REAL_TEAMS or bracket_results)
 const BRACKET_FEEDS = {
   // R16
-  89: [74, 77],
-  90: [73, 75],
-  91: [76, 78],
-  92: [79, 80],
-  93: [83, 84],
-  94: [81, 82],
-  95: [86, 88],
-  96: [85, 87],
+  89: [77, 84],   // W2 France/Sweden vs W5 Portugal/Croatia
+  90: [74, 73],   // W1 Germany/Paraguay vs W3 South Africa/Canada
+  91: [75, 83],   // W4 Netherlands/Morocco vs W6 Spain/Austria
+  92: [82, 81],   // W7 USA/Bosnia vs W8 Belgium/Senegal
+  93: [79, 80],   // W11 Mexico/Ecuador vs W12 England/DR Congo
+  94: [76, 78],   // W9 Brazil/Japan vs W10 Ivory Coast/Norway
+  95: [86, 87],   // W14 Australia/Egypt vs W16 Colombia/Ghana
+  96: [88, 85],   // W13 Argentina/Cape Verde vs W15 Switzerland/Algeria
   // QF
-  97: [89, 90],
-  98: [93, 94],
-  99: [91, 92],
+  97: [90, 89],
+  98: [91, 92],
+  99: [93, 94],
   100:[95, 96],
   // SF
   101:[97, 98],
   102:[99, 100],
   // Final
-  104:[101, 102],
+  103:[101, 102],
 };
 
 const BRACKET_ROUNDS = [
@@ -553,7 +553,7 @@ const BRACKET_ROUNDS = [
   { label:"Round of 16", matches:[89,90,91,92,93,94,95,96] },
   { label:"Quarterfinals", matches:[97,98,99,100] },
   { label:"Semifinals",   matches:[101,102] },
-  { label:"🏆 Final",     matches:[104] },
+  { label:"🏆 Final",     matches:[103] },
 ];
 
 const BRACKET_TIPS = [
@@ -1787,7 +1787,7 @@ function buildBracketLeaderboardHtml(){
 }
 
 function buildBracketAdminHtml(){
-  const matchOpts = [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]
+  const matchOpts = [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103]
     .map(n=>`<option value="${n}">Match ${n}</option>`).join('');
 
   return `<div class="bkt-admin">
@@ -1796,7 +1796,7 @@ function buildBracketAdminHtml(){
     <input id="bkt-admin-a" class="field" placeholder="Team A name" />
     <input id="bkt-admin-b" class="field" placeholder="Team B name" />
     <input id="bkt-admin-winner" class="field" placeholder="Winner (must match exactly)" />
-    <input id="bkt-admin-goals" class="field" type="number" placeholder="Final goals (Match 104 only)" />
+    <input id="bkt-admin-goals" class="field" type="number" placeholder="Final goals (Match 103 only)" />
     <button class="btn-gold" style="margin-top:4px" onclick="submitBracketResult()">Save Result</button>
   </div>`;
 }
