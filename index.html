@@ -676,10 +676,12 @@ function computeLeaderboard(){
   const rec = computeTeamStats();
   const rows = state.players.map(p=>{
     const owned = state.teams.filter(t=>t.owner_id===p.id);
-    let pts=0,w=0,d=0,l=0,gf=0,gamesPlayed=0;
-    owned.forEach(t=>{ const r=rec[t.name]; if(r){pts+=r.pts;w+=r.w;d+=r.d;l+=r.l;gf+=r.gf;gamesPlayed+=r.pld;} });
-    const ppg = gamesPlayed > 0 ? pts / gamesPlayed : 0;
-    return {player:p, owned, pts, w, d, l, gf, gamesPlayed, ppg, count:owned.length};
+    let groupPts=0,w=0,d=0,l=0,gf=0,gamesPlayed=0;
+    owned.forEach(t=>{ const r=rec[t.name]; if(r){groupPts+=r.pts;w+=r.w;d+=r.d;l+=r.l;gf+=r.gf;gamesPlayed+=r.pld;} });
+    const ppg = gamesPlayed > 0 ? groupPts / gamesPlayed : 0;
+    const bktPts = computeBracketScore(p.id).pts;
+    const pts = groupPts + bktPts;
+    return {player:p, owned, pts, groupPts, bktPts, w, d, l, gf, gamesPlayed, ppg, count:owned.length};
   });
   rows.sort((a,b)=> b.pts-a.pts || b.w-a.w || b.gf-a.gf || a.player.sort_order-b.player.sort_order);
   return {rows, rec};
@@ -915,7 +917,7 @@ function renderLeaderboard(){
 
   let html = `<div class="card">
     <h2>Leaderboard</h2>
-    <p class="hint">${played} of 72 group-stage matches scored. Tap a player to see their teams.</p>
+    <p class="hint">${played} of 72 group-stage matches scored. Points include group stage + bracket picks (3 pts each). Tap a player to see their teams.</p>
     <table class="lb"><thead><tr>
       <th>#</th><th>Player</th><th>Teams</th><th>W-D-L</th><th style="text-align:right">Points</th>
     </tr></thead><tbody>`;
@@ -935,7 +937,7 @@ function renderLeaderboard(){
           .sort((a,b)=>b.p-a.p)
           .map(o=>`<div class="teamline"><span>${esc(o.t.name)} <span style="color:var(--muted)">(${o.t.grp})</span></span><b>${o.p} pt${o.p===1?'':'s'}</b></div>`).join("")
         : '<div class="teamline" style="color:var(--muted)">No teams drafted yet</div>'
-      }</div>
+      }${r.bktPts > 0 ? `<div class="teamline" style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><span>🏆 Bracket picks</span><b>${r.bktPts} pt${r.bktPts===1?'':'s'}</b></div>` : ''}</div>
     </td></tr>`;
   });
   html+=`</tbody></table></div>`;
