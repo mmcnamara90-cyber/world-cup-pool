@@ -49,8 +49,9 @@
   .scorebox .sc{display:inline-block;min-width:18px;text-align:center;font-weight:800;font-size:16px}
 
   /* Tabs */
-  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;padding:10px 0;background:var(--navy);margin-bottom:6px}
-  nav.tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:9px 10px;white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.2px;flex:1;text-align:center}
+  nav.tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;padding:10px 0;background:var(--navy);margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:9px 10px;white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.2px;flex:0 0 auto;text-align:center;min-width:0}
   nav.tabs button.active{background:var(--gold);color:#fff8ec;border-color:var(--gold)}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
