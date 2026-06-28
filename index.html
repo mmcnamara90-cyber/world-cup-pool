@@ -247,6 +247,8 @@
   .bkt-round-header span{flex:1;height:1px;background:var(--line);display:block}
 
   .bkt-match{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin-bottom:8px}
+  .bkt-match-early{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.45)}
+  .bkt-early-note{font-size:12px;color:#f59e0b;font-weight:600;margin:0 0 8px;text-align:center;line-height:1.4}
   .bkt-match-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px}
   .bkt-teams{display:flex;flex-direction:column;gap:6px}
   .bkt-team-btn{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 13px;text-align:left;cursor:pointer;font-size:14px;font-weight:600;color:var(--text);transition:border-color .15s,background .15s;display:flex;align-items:center;justify-content:space-between;width:100%}
@@ -493,7 +495,8 @@ let smackOffset = 0;
 let smackPlayerId = null;
 
 // Bracket state
-const BRACKET_DEADLINE = new Date("2026-06-28T19:00:00Z"); // 12:00 PM PT (PDT = UTC-7)
+const MATCH73_DEADLINE = new Date("2026-06-28T18:59:00Z"); // 11:59 AM PT June 28 — South Africa vs Canada
+const BRACKET_DEADLINE = new Date("2026-06-29T16:59:00Z"); // 9:59 AM PT June 29 — all other matches
 let bktPlayerId = null;        // selected player for real bracket
 let bktPin = null;             // cached PIN for current player (from localStorage)
 let bktPinVerified = false;    // whether current player has passed the PIN gate
@@ -1576,9 +1579,10 @@ function renderBracket(){
 
 function buildRealBracketHtml(){
   // Deadline
+  const m73NowLocked = new Date() >= MATCH73_DEADLINE;
   const deadlineHtml = `<div class="bkt-status">
-    ⚠️ <b>Final picks must be saved by 11:59 AM PT on Sunday, June 28</b> — before the first knockout game kicks off.<br>
-    You can save a partial bracket now and come back to add more picks before the deadline.
+    ⚡ <b>South Africa vs Canada</b> ${m73NowLocked ? "is now locked." : "locks at <b>11:59 AM PT today</b> — no pick means a random team advances (0 pts)."}<br>
+    All other matches lock at <b>9:59 AM PT on Monday, June 29</b>. You can save a partial bracket now and come back.
   </div>`;
 
   const playerOpts = state.players.map(p=>
@@ -1722,11 +1726,18 @@ function buildBracketPicksHtml(mode, picks, results){
       const checkA = resultWinner && teamA===resultWinner ? "✅" : (resultWinner && picked===teamA && teamA!==resultWinner ? "❌" : "");
       const checkB = resultWinner && teamB===resultWinner ? "✅" : (resultWinner && picked===teamB && teamB!==resultWinner ? "❌" : "");
 
-      const canPick = !resultWinner && !tbd;
+      const m73Locked = mn === 73 && new Date() >= MATCH73_DEADLINE;
+      const canPick = !resultWinner && !tbd && !m73Locked;
       const label = mn <= 88 && mode==="real" ? `<div class="bkt-match-label">Match ${mn} · ${R32_LABELS[mn]||""}</div>` : `<div class="bkt-match-label">Match ${mn}</div>`;
 
-      html += `<div class="bkt-match">
-        ${label}
+      const earlyNoteHtml = mn === 73 ? (m73Locked
+        ? `<div class="bkt-early-note">🔒 Locked at 11:59 AM PT${!picked ? " — random pick will be assigned (0 pts)" : ""}</div>`
+        : `<div class="bkt-early-note">⚡ Locks today at 11:59 AM PT — no pick = random assignment (0 pts)</div>`)
+        : "";
+      const matchExtraClass = mn === 73 ? " bkt-match-early" : "";
+
+      html += `<div class="bkt-match${matchExtraClass}">
+        ${label}${earlyNoteHtml}
         <div class="bkt-teams">
           <button class="bkt-team-btn${teamA==="TBD"?" tbd":""}${stateA?" "+stateA:""}"
             ${canPick?`onclick="bktPick(${mn},'${teamA.replace(/'/g,"\\'")}')"`:"disabled"}
