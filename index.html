@@ -293,6 +293,33 @@
   .bkt-admin-alert b{color:#ef4444}
   .bkt-comm-badge{font-size:11px;color:#f59e0b;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;padding:3px 8px;margin-top:4px;text-align:center;display:block}
 
+  /* ===== All Picks tab ===== */
+  .abkt-gate{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px 20px;text-align:center;margin-bottom:14px}
+  .abkt-gate p{color:var(--muted);font-size:14px;margin:0 0 16px;line-height:1.5}
+  .abkt-round-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .abkt-round-tab{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .abkt-round-tab.active{background:var(--gold);color:#fff8ec;border-color:var(--gold)}
+  .abkt-grid-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
+  .abkt-grid{border-collapse:collapse;min-width:480px;width:100%}
+  .abkt-grid th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);background:var(--navy2);white-space:nowrap;font-weight:700;text-align:center}
+  .abkt-grid th.abkt-match-col{text-align:left;min-width:130px;position:sticky;left:0;z-index:2;background:var(--navy2)}
+  .abkt-grid td{padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px;text-align:center;vertical-align:middle}
+  .abkt-grid tr:last-child td{border-bottom:none}
+  .abkt-match-cell{text-align:left !important;position:sticky;left:0;background:var(--panel);z-index:1;min-width:130px;padding-left:10px !important}
+  .abkt-grid tr:nth-child(even) .abkt-match-cell{background:var(--panel2)}
+  .abkt-grid tr:nth-child(even) td{background:rgba(0,0,0,.015)}
+  .abkt-teams{font-size:11px;color:var(--muted);font-weight:400;line-height:1.3}
+  .abkt-result{font-size:11px;color:var(--good);font-weight:700;margin-top:2px}
+  .abkt-cell{font-size:12px;font-weight:600}
+  .abkt-correct{background:rgba(47,125,112,.15) !important;color:var(--good)}
+  .abkt-wrong{background:rgba(189,86,56,.10) !important;color:var(--bad);opacity:.8}
+  .abkt-picked{background:rgba(200,147,49,.10) !important;color:#a07020}
+  .abkt-no-pick{color:var(--line)}
+
+  /* Lock In banner */
+  .bkt-lockin-banner{background:rgba(200,147,49,.08);border:1px solid rgba(200,147,49,.4);border-radius:12px;padding:14px 18px;margin-bottom:12px;font-size:14px;line-height:1.5;text-align:center}
+  .lockin-pin{font-size:26px;letter-spacing:6px;color:var(--gold);display:block;margin-top:6px;font-weight:800}
+
   /* ---- Mobile ---- */
   @media (max-width:600px){
     .wrap{padding:0 10px 80px}
@@ -363,6 +390,7 @@
       <button data-tab="leaderboard" class="active">Leaderboard</button>
       <button data-tab="matches">Scores</button>
       <button data-tab="bracket">Bracket</button>
+      <button data-tab="allbrackets">All Picks</button>
       <button data-tab="recaps">Updates</button>
       <button data-tab="settings" id="settingsTab">Settings</button>
     </nav>
@@ -370,6 +398,7 @@
     <section id="tab-leaderboard"></section>
     <section id="tab-matches" class="hidden"></section>
     <section id="tab-bracket" class="hidden"></section>
+    <section id="tab-allbrackets" class="hidden"></section>
     <section id="tab-recaps" class="hidden"></section>
     <section id="tab-settings" class="hidden"></section>
 
@@ -508,6 +537,11 @@ let bktTbGoals = null;         // tiebreaker goals guess
 let bktOverrideMatches = [];   // match numbers editable post-deadline due to commissioner overrides
 let bktSubmitted = false;      // whether current player has already submitted
 let bktNeedsPin = false;       // player has picks (e.g. random assignment) but never set a PIN
+
+// All Picks tab
+const ALL_PICKS_PIN = "3475";
+let viewAllUnlocked = false;
+let allBracketsRound = 0;
 
 /* ===== Bracket data ===== */
 
@@ -882,7 +916,7 @@ function subscribeRealtime(){
 
 /* ====================== Rendering ====================== */
 function renderCurrent(){
-  ({leaderboard:renderLeaderboard, draft:renderDraft, matches:renderMatches, bracket:renderBracket, recaps:renderRecaps, settings:renderSettings}[currentTab])();
+  ({leaderboard:renderLeaderboard, draft:renderDraft, matches:renderMatches, bracket:renderBracket, allbrackets:renderAllBrackets, recaps:renderRecaps, settings:renderSettings}[currentTab])();
 }
 
 /* ---- Tip rotation ---- */
@@ -1662,6 +1696,13 @@ function buildMyBracketHtml(){
   const pickedCount = allMatches.filter(m=>bktPicks[m]).length;
   const totalCount = allMatches.length;
 
+  const lockInBanner = (submitted && pickedCount === totalCount)
+    ? `<div class="bkt-lockin-banner">
+        <b>All ${totalCount} picks locked in!</b> Head to the <b>All Picks</b> tab to compare everyone's brackets — enter the shared PIN when prompted.
+        <span class="lockin-pin">${ALL_PICKS_PIN}</span>
+      </div>`
+    : "";
+
   // Pre-deadline: show PIN gate if this player has picks, has a PIN set, but hasn't verified yet
   if(!isPostDeadline && submitted && !bktPinVerified && !bktNeedsPin){
     return buildBracketPinGateHtml();
@@ -1689,11 +1730,11 @@ function buildMyBracketHtml(){
         </div>
       </div>`;
       const saveBtn = `<button class="btn-gold bkt-submit" onclick="submitOverridePicks()">Save My Picks</button>`;
-      return header + picksHtml + pinBlock + saveBtn;
+      return header + lockInBanner + picksHtml + pinBlock + saveBtn;
     }
     // No overrides: fully locked read-only
     const header = `<div class="bkt-status" style="border-color:var(--gold);color:var(--gold)">🔓 <b>Brackets are now locked!</b> ${pickedCount} of ${totalCount} picks saved.</div>`;
-    return header + buildBracketPicksHtml("real", bktPicks, null);
+    return header + lockInBanner + buildBracketPicksHtml("real", bktPicks, null);
   }
 
   // Pre-deadline, verified (or no picks yet): full edit view
@@ -1729,7 +1770,7 @@ function buildMyBracketHtml(){
   const progressHtml = `<div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:8px">${pickedCount} of ${totalCount} picks made</div>`;
   const submitBtn = `${progressHtml}<button class="btn-gold bkt-submit" onclick="submitRealBracket()">${submitLabel}</button>`;
 
-  return header + picksHtml + tbHtml + pinBlock + submitBtn;
+  return header + (bktPinVerified ? lockInBanner : "") + picksHtml + tbHtml + pinBlock + submitBtn;
 }
 
 function buildBracketPicksHtml(mode, picks, results){
@@ -2025,6 +2066,144 @@ async function commissionerOverridePick(){
 }
 
 
+/* ====================== All Picks tab ====================== */
+
+function renderAllBrackets(){
+  const tab = $("#tab-allbrackets");
+  if(!tab) return;
+  tab.innerHTML = buildAllBracketsHtml();
+
+  // Wire PIN gate
+  $("#va-pin")?.addEventListener("keydown", e=>{ if(e.key==="Enter") unlockAllBrackets(); });
+  $("#va-unlock-btn")?.addEventListener("click", unlockAllBrackets);
+
+  // Wire round tabs
+  BRACKET_ROUNDS.forEach((_,i)=>{
+    const btn = $(`#abkt-round-${i}`);
+    if(btn) btn.addEventListener("click",()=>{ allBracketsRound=i; renderAllBrackets(); });
+  });
+
+  // Wire lock button
+  $("#va-lock-btn")?.addEventListener("click",()=>{
+    viewAllUnlocked=false;
+    try{ localStorage.removeItem("wc_view_all"); }catch(e){}
+    renderAllBrackets();
+  });
+}
+
+function buildAllBracketsHtml(){
+  if(!viewAllUnlocked){
+    return `<div class="abkt-gate">
+      <div class="section-title">All Picks</div>
+      <p>Enter the shared bracket PIN to compare everyone's picks side by side.</p>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <input type="password" id="va-pin" class="field" placeholder="Shared PIN"
+          style="max-width:150px;text-align:center;letter-spacing:4px" autocomplete="off" inputmode="numeric" />
+        <button class="btn-gold" id="va-unlock-btn" style="max-width:130px">View Picks</button>
+      </div>
+    </div>`;
+  }
+
+  const lbHtml   = buildAllBracketsBoardHtml();
+  const lockBtn  = `<div style="text-align:right;margin-bottom:10px">
+    <button class="btn-ghost" id="va-lock-btn" style="font-size:12px;padding:7px 12px;border-radius:9px">🔒 Lock view</button>
+  </div>`;
+  const roundTabs = `<div class="abkt-round-tabs">
+    ${BRACKET_ROUNDS.map((r,i)=>`<button class="abkt-round-tab${i===allBracketsRound?' active':''}" id="abkt-round-${i}">${r.label}</button>`).join('')}
+  </div>`;
+  const gridHtml  = `<div class="card" style="padding:14px 12px">${buildRoundTableHtml(allBracketsRound)}</div>`;
+
+  return lbHtml + lockBtn + roundTabs + gridHtml;
+}
+
+function unlockAllBrackets(){
+  const pin = ($("#va-pin")?.value||"").trim();
+  if(pin !== ALL_PICKS_PIN){ toast("Incorrect PIN — try again"); return; }
+  viewAllUnlocked = true;
+  try{ localStorage.setItem("wc_view_all","yes"); }catch(e){}
+  renderAllBrackets();
+}
+
+function buildAllBracketsBoardHtml(){
+  const scoredPlayers = state.players.map(p=>{
+    const s = computeBracketScore(p.id);
+    const hasSubmitted = state.bracket_picks.some(x=>x.player_id===p.id);
+    return {...s, player:p, hasSubmitted};
+  }).filter(r=>r.hasSubmitted);
+
+  if(!scoredPlayers.length){
+    return `<div class="card"><div class="section-title">Bracket Standings</div><p class="hint" style="margin:0">No brackets submitted yet.</p></div>`;
+  }
+
+  scoredPlayers.sort((a,b)=>b.pts-a.pts||b.correct-a.correct);
+  const rows = scoredPlayers.map((r,i)=>`
+    <tr>
+      <td class="rank ${i===0?'r1':i===1?'r2':''}">${i===0?'👑':i===1?'🥈':i+1}</td>
+      <td class="pname">${esc(r.player.name)}</td>
+      <td style="text-align:center;font-size:13px;color:var(--muted)">${r.correct}/${r.total}</td>
+      <td style="font-weight:800;font-size:16px;text-align:right;color:var(--gold)">${r.pts}</td>
+    </tr>`).join('');
+
+  return `<div class="card" style="margin-bottom:12px">
+    <div class="section-title">Bracket Standings</div>
+    <table class="bkt-lb">
+      <thead><tr>
+        <th>#</th><th>Player</th><th style="text-align:center">Correct</th><th style="text-align:right">Pts</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function buildRoundTableHtml(roundIdx){
+  const round = BRACKET_ROUNDS[roundIdx];
+  // Only players who have submitted at least one pick
+  const players = state.players.filter(p=>state.bracket_picks.some(bp=>bp.player_id===p.id));
+
+  if(!players.length){
+    return `<p class="hint" style="margin:0">No picks submitted yet.</p>`;
+  }
+
+  const headerCols = players.map(p=>`<th>${esc(p.name.split('/')[0])}</th>`).join('');
+
+  let rows = '';
+  round.matches.forEach(mn=>{
+    const [teamA, teamB] = bktGetTeams(mn, {}, "real");
+    const res = bktGetResult(mn);
+    const teamsLine = (teamA==="TBD"&&teamB==="TBD")
+      ? `<div class="abkt-teams">TBD</div>`
+      : `<div class="abkt-teams">${esc(teamA)} vs ${esc(teamB)}</div>`;
+    const resultLine = res
+      ? `<div class="abkt-result">${esc(res.winner)}</div>`
+      : '';
+
+    const cells = players.map(p=>{
+      const pick = state.bracket_picks.find(bp=>bp.player_id===p.id && bp.match_num===mn);
+      if(!pick) return `<td class="abkt-cell abkt-no-pick">—</td>`;
+      const cls = pick.is_correct===true  ? 'abkt-correct'
+                : pick.is_correct===false ? 'abkt-wrong'
+                : 'abkt-picked';
+      const icon = pick.is_correct===true ? ' ✓' : pick.is_correct===false ? ' ✗' : '';
+      return `<td class="abkt-cell ${cls}">${esc(pick.picked_team)}${icon}</td>`;
+    }).join('');
+
+    rows += `<tr>
+      <td class="abkt-match-cell">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">M${mn}</div>
+        ${teamsLine}${resultLine}
+      </td>${cells}
+    </tr>`;
+  });
+
+  return `<div class="section-title">${round.label}</div>
+    <div class="abkt-grid-wrap">
+      <table class="abkt-grid">
+        <thead><tr><th class="abkt-match-col">Match</th>${headerCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
 /* ---- Matches / Scores ---- */
 function renderMatches(){
   const groups=[...new Set(state.teams.map(t=>t.grp))];
@@ -2252,7 +2431,7 @@ function flash(id){ const e=$("#"+id); if(!e)return; e.classList.add("show"); se
 function switchTab(tab){
   currentTab=tab;
   $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  ["leaderboard","matches","bracket","recaps","settings"].forEach(t=>{ const el=$("#tab-"+t); if(el) el.classList.toggle("hidden",t!==tab); });
+  ["leaderboard","matches","bracket","allbrackets","recaps","settings"].forEach(t=>{ const el=$("#tab-"+t); if(el) el.classList.toggle("hidden",t!==tab); });
   renderCurrent();
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -2518,6 +2697,7 @@ function unlock(){ $("#gate").classList.add("hidden"); $("#app").classList.remov
 
 async function init(){
   await loadAll();
+  try{ viewAllUnlocked = localStorage.getItem("wc_view_all")==="yes"; }catch(e){}
   let savedAdmin=null; try{ savedAdmin=sessionStorage.getItem("wc_admin"); }catch(e){}
   if(savedAdmin){
     const {data}=await sb.rpc("verify_admin",{p_pw:savedAdmin});
