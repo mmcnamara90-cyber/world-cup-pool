@@ -282,8 +282,8 @@
   .bkt-lb td{padding:10px 8px;border-bottom:1px solid var(--line);font-size:14px}
   .bkt-lb tr:last-child td{border-bottom:none}
 
-  /* Bracket rules tips */
-  .bkt-tips{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;position:relative;min-height:68px}
+  /* Override banner */
+  .bkt-override-banner{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:14px;line-height:1.5}
 
   /* Admin result entry */
   .bkt-admin{background:var(--panel2);border:1px dashed var(--gold-dim);border-radius:12px;padding:14px 16px;margin-bottom:14px}
@@ -505,8 +505,7 @@ let bktPin = null;             // cached PIN for current player (from localStora
 let bktPinVerified = false;    // whether current player has passed the PIN gate
 let bktPicks = {};             // {matchNum: teamName} — in-progress picks
 let bktTbGoals = null;         // tiebreaker goals guess
-let bktTipIndex = 0;
-let bktTipTimer = null;
+let bktOverrideMatches = [];   // match numbers editable post-deadline due to commissioner overrides
 let bktSubmitted = false;      // whether current player has already submitted
 
 /* ===== Bracket data ===== */
@@ -560,16 +559,6 @@ const BRACKET_ROUNDS = [
   { label:"Quarterfinals", matches:[97,98,99,100] },
   { label:"Semifinals",   matches:[101,102] },
   { label:"🏆 Final",     matches:[103] },
-];
-
-const BRACKET_TIPS = [
-  "🏆 <b>Knockout rules:</b> Win or go home — every match must have a winner. Extra time and penalties if needed after 90 minutes.",
-  "🙅 <b>No team ownership:</b> In the knockout stage, teams don't belong to anyone. Pick whoever you think will win each match — regardless of who drafted them.",
-  "📋 <b>All-upfront picks:</b> Fill out your entire bracket at once, all the way from the Round of 32 to the Final.",
-  "🔢 <b>Scoring:</b> Every correct prediction is worth <b>3 pts</b>, whether it's the Round of 32 or the Championship. 31 total picks, 93 points possible.",
-  "🔒 <b>Deadline:</b> Picks must be submitted by <b>11:00 AM PT on Sunday, June 28</b> — 1 hour before the first match.",
-  "🎯 <b>Tiebreaker:</b> Predict the total number of <i>pre-shootout</i> goals in the Championship game. Used only if two players tie on total points.",
-  "🔄 <b>Fresh start:</b> Knockout standings are separate from the group stage. Everyone starts at zero.",
 ];
 
 // Bracket match R32 labels (for context when displaying)
@@ -1567,19 +1556,7 @@ function renderBracket(){
   const tab = $("#tab-bracket");
   if(!tab) return;
 
-  // Build tips widget
-  const dotsHtml = BRACKET_TIPS.map((_,i)=>
-    `<span class="tip-dot${i===bktTipIndex?" active":""}" onclick="bktGotoTip(${i})"></span>`
-  ).join('');
-  const tipsHtml = `<div class="bkt-tips">
-    <div class="section-title">📋 Bracket Rules</div>
-    <div class="tip-text" id="bkt-tip-text">${BRACKET_TIPS[bktTipIndex]}</div>
-    <div class="tip-dots">${dotsHtml}</div>
-  </div>`;
-
-  tab.innerHTML = tipsHtml + buildRealBracketHtml();
-
-  startBktTipRotation();
+  tab.innerHTML = buildRealBracketHtml();
 }
 
 function buildRealBracketHtml(){
@@ -1611,10 +1588,15 @@ function buildRealBracketHtml(){
     adminHtml = buildBracketAdminHtml();
   }
 
+  // Commissioner override banner — shown to any player with overridden picks
+  const overrideBanner = bktOverrideMatches.length > 0
+    ? `<div class="bkt-override-banner">📋 <b>Some of your picks were updated by the commissioner</b> due to a bracket correction. You can edit those picks (highlighted in amber) and any downstream picks until each game begins — just enter your PIN and save.</div>`
+    : "";
+
   // Current player's picks (or empty bracket to fill)
   const playerPicksHtml = bktPlayerId ? buildMyBracketHtml() : "";
 
-  return deadlineHtml + identityHtml + lbHtml + adminHtml + playerPicksHtml;
+  return deadlineHtml + identityHtml + lbHtml + adminHtml + overrideBanner + playerPicksHtml;
 }
 
 async function onBktPlayerChange(pid){
@@ -1624,6 +1606,7 @@ async function onBktPlayerChange(pid){
   bktSubmitted = false;
   bktPin = null;
   bktPinVerified = false;
+  bktOverrideMatches = [];
   if(pid){
     const myPicks = state.bracket_picks.filter(p=>p.player_id===pid);
     if(myPicks.length > 0){
@@ -1631,10 +1614,20 @@ async function onBktPlayerChange(pid){
       myPicks.forEach(p=>{ bktPicks[p.match_num] = p.picked_team; });
       const tb = state.bracket_tiebreaker.find(t=>t.player_id===pid);
       if(tb) bktTbGoals = tb.goals_prediction;
+      // Compute matches editable post-deadline: directly overridden + their downstream
+      const directOverrides = myPicks.filter(p=>p.commissioner_at).map(p=>p.match_num);
+      if(directOverrides.length > 0){
+        function depOn(mn, target){ const f=BRACKET_FEEDS[mn]; return f&&f.some(x=>x===target||depOn(x,target)); }
+        const editable = new Set(directOverrides);
+        BRACKET_ROUNDS.flatMap(r=>r.matches).filter(mn=>mn>88).forEach(mn=>{
+          directOverrides.forEach(ov=>{ if(depOn(mn,ov)) editable.add(mn); });
+        });
+        bktOverrideMatches = [...editable];
+      }
     }
     try{ bktPin = localStorage.getItem("wc_bkt_pin_"+pid) || null; }catch(e){}
-    // Auto-verify if we have a cached PIN from a previous session on this device
-    if(bktPin && bktSubmitted && new Date() < BRACKET_DEADLINE){
+    // Auto-verify if cached PIN exists — needed pre-deadline (PIN gate) or post-deadline (override editing)
+    if(bktPin && bktSubmitted && (new Date() < BRACKET_DEADLINE || bktOverrideMatches.length > 0)){
       const {data} = await sb.rpc("verify_bracket_pin", {p_player_id: pid, p_pw: bktPin});
       if(data) bktPinVerified = true;
     }
@@ -1667,8 +1660,31 @@ function buildMyBracketHtml(){
     return buildBracketPinGateHtml();
   }
 
-  // Post-deadline: read-only view for everyone
+  // Post-deadline
   if(isPostDeadline){
+    const hasOverrides = bktOverrideMatches.length > 0;
+    const directOverrideCount = state.bracket_picks.filter(p=>p.player_id===bktPlayerId && p.commissioner_at).length;
+    if(hasOverrides && !bktPinVerified){
+      // Prompt for PIN so they can edit overridden picks
+      return `<div class="bkt-status" style="border-color:var(--gold)">📋 <b>${directOverrideCount} of your pick${directOverrideCount!==1?'s were':' was'} updated by the commissioner.</b> Enter your PIN to review and save your choices.</div>`
+        + buildBracketPinGateHtml();
+    }
+    if(hasOverrides && bktPinVerified){
+      // Show bracket with override-editable matches active + save button
+      const header = `<div class="bkt-status" style="border-color:var(--gold)">📋 <b>${directOverrideCount} pick${directOverrideCount!==1?'s were':' was'} updated by the commissioner.</b> Review the amber-highlighted matches, make your choice, and save before each game begins.</div>`;
+      const picksHtml = buildBracketPicksHtml("real", bktPicks, null);
+      const pinBlock = `<div class="bkt-pin-block">
+        <div class="bkt-tb-label">🔑 Your PIN</div>
+        <div class="bkt-tb-desc">Enter your PIN to save your picks.</div>
+        <div class="bkt-pin-row">
+          <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin-override"
+            placeholder="••••" value="${bktPin||''}" autocomplete="off" />
+        </div>
+      </div>`;
+      const saveBtn = `<button class="btn-gold bkt-submit" onclick="submitOverridePicks()">Save My Picks</button>`;
+      return header + picksHtml + pinBlock + saveBtn;
+    }
+    // No overrides: fully locked read-only
     const header = `<div class="bkt-status" style="border-color:var(--gold);color:var(--gold)">🔓 <b>Brackets are now locked!</b> ${pickedCount} of ${totalCount} picks saved.</div>`;
     return header + buildBracketPicksHtml("real", bktPicks, null);
   }
@@ -1732,14 +1748,15 @@ function buildBracketPicksHtml(mode, picks, results){
       const checkB = resultWinner && teamB===resultWinner ? "✅" : (resultWinner && picked===teamB && teamB!==resultWinner ? "❌" : "");
 
       const m73Locked = mn === 73 && new Date() >= MATCH73_DEADLINE;
-      const canPick = !resultWinner && !tbd && !m73Locked;
+      const isOverrideEditable = bktOverrideMatches.includes(mn);
+      const canPick = !resultWinner && !tbd && !m73Locked && (new Date() < BRACKET_DEADLINE || isOverrideEditable);
       const label = mn <= 88 && mode==="real" ? `<div class="bkt-match-label">Match ${mn} · ${R32_LABELS[mn]||""}</div>` : `<div class="bkt-match-label">Match ${mn}</div>`;
 
       const earlyNoteHtml = mn === 73 ? (m73Locked
         ? `<div class="bkt-early-note">🔒 Locked at 11:59 AM PT${!picked ? " — random pick will be assigned (0 pts)" : ""}</div>`
         : `<div class="bkt-early-note">⚡ Locks today at 11:59 AM PT — no pick = random assignment (0 pts)</div>`)
         : "";
-      const matchExtraClass = mn === 73 ? " bkt-match-early" : "";
+      const matchExtraClass = mn === 73 ? " bkt-match-early" : isOverrideEditable ? " bkt-match-early" : "";
 
       const pickMeta = isAdmin && bktPlayerId
         ? state.bracket_picks.find(p=>p.player_id===bktPlayerId && p.match_num===mn)
@@ -1958,6 +1975,26 @@ async function submitBracketResult(){
   renderBracket();
 }
 
+async function submitOverridePicks(){
+  if(!bktPlayerId){ toast("Select your name first"); return; }
+  const pin = $("#bkt-pin-override")?.value?.trim();
+  if(!pin){ toast("Enter your PIN to save"); return; }
+  const picksArray = bktOverrideMatches
+    .filter(mn=>bktPicks[mn])
+    .map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
+  if(picksArray.length === 0){ toast("Make at least one pick before saving"); return; }
+  const {data, error} = await sb.rpc("save_override_picks",{
+    p_player_id: bktPlayerId, p_pw: pin, p_picks: picksArray,
+  });
+  if(error || data === false){ console.error(error); toast("Wrong PIN — try again"); return; }
+  try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
+  bktPin = pin;
+  bktPinVerified = true;
+  toast(`Picks saved! 🎉`);
+  await loadAll();
+  renderBracket();
+}
+
 async function commissionerOverridePick(){
   if(!isAdmin){ toast("Commissioner only"); return; }
   const playerId = parseInt($("#co-player")?.value);
@@ -1979,28 +2016,6 @@ async function commissionerOverridePick(){
   renderBracket();
 }
 
-/* ---- Bracket tips rotation ---- */
-function startBktTipRotation(){
-  clearInterval(bktTipTimer);
-  bktTipTimer = setInterval(()=>{
-    bktTipIndex = (bktTipIndex+1) % BRACKET_TIPS.length;
-    const el = $("#bkt-tip-text");
-    if(!el){ clearInterval(bktTipTimer); return; }
-    el.classList.add("fade");
-    setTimeout(()=>{
-      if(!el) return;
-      el.innerHTML = BRACKET_TIPS[bktTipIndex];
-      $$(".tip-dot", el.closest(".bkt-tips")).forEach((d,i)=>d.classList.toggle("active",i===bktTipIndex));
-      el.classList.remove("fade");
-    }, 300);
-  }, 20000);
-}
-function bktGotoTip(i){
-  bktTipIndex = i;
-  const el = $("#bkt-tip-text");
-  if(el) el.innerHTML = BRACKET_TIPS[i];
-  $$(".tip-dot").forEach((d,j)=>d.classList.toggle("active",j===i));
-}
 
 /* ---- Matches / Scores ---- */
 function renderMatches(){
