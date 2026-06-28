@@ -507,6 +507,7 @@ let bktPicks = {};             // {matchNum: teamName} — in-progress picks
 let bktTbGoals = null;         // tiebreaker goals guess
 let bktOverrideMatches = [];   // match numbers editable post-deadline due to commissioner overrides
 let bktSubmitted = false;      // whether current player has already submitted
+let bktNeedsPin = false;       // player has picks (e.g. random assignment) but never set a PIN
 
 /* ===== Bracket data ===== */
 
@@ -1607,6 +1608,7 @@ async function onBktPlayerChange(pid){
   bktPin = null;
   bktPinVerified = false;
   bktOverrideMatches = [];
+  bktNeedsPin = false;
   if(pid){
     const myPicks = state.bracket_picks.filter(p=>p.player_id===pid);
     if(myPicks.length > 0){
@@ -1626,8 +1628,13 @@ async function onBktPlayerChange(pid){
       }
     }
     try{ bktPin = localStorage.getItem("wc_bkt_pin_"+pid) || null; }catch(e){}
+    if(bktSubmitted && !bktPin){
+      // Player has picks but no cached PIN — check if they ever set one (e.g. random-assigned player)
+      const {data: pinExists} = await sb.rpc("bracket_pin_is_set", {p_player_id: pid});
+      if(pinExists === false) bktNeedsPin = true;
+    }
     // Auto-verify if cached PIN exists — needed pre-deadline (PIN gate) or post-deadline (override editing)
-    if(bktPin && bktSubmitted && (new Date() < BRACKET_DEADLINE || bktOverrideMatches.length > 0)){
+    if(bktPin && bktSubmitted && !bktNeedsPin && (new Date() < BRACKET_DEADLINE || bktOverrideMatches.length > 0)){
       const {data} = await sb.rpc("verify_bracket_pin", {p_player_id: pid, p_pw: bktPin});
       if(data) bktPinVerified = true;
     }
@@ -1655,8 +1662,8 @@ function buildMyBracketHtml(){
   const pickedCount = allMatches.filter(m=>bktPicks[m]).length;
   const totalCount = allMatches.length;
 
-  // Pre-deadline: show PIN gate if this player has picks and hasn't verified yet
-  if(!isPostDeadline && submitted && !bktPinVerified){
+  // Pre-deadline: show PIN gate if this player has picks, has a PIN set, but hasn't verified yet
+  if(!isPostDeadline && submitted && !bktPinVerified && !bktNeedsPin){
     return buildBracketPinGateHtml();
   }
 
@@ -1697,9 +1704,9 @@ function buildMyBracketHtml(){
   const picksHtml = buildBracketPicksHtml("real", bktPicks, null);
   const tbHtml = buildTiebreakerHtml();
 
-  const submitLabel = submitted ? "Save Changes" : "Save Bracket";
+  const submitLabel = (submitted && !bktNeedsPin) ? "Save Changes" : "Save Bracket";
 
-  const pinBlock = submitted
+  const pinBlock = (submitted && !bktNeedsPin)
     ? `<div class="bkt-pin-block">
         <div class="bkt-tb-label">🔑 Your PIN</div>
         <div class="bkt-tb-desc">Enter your PIN to save your picks.</div>
@@ -1922,8 +1929,8 @@ async function submitRealBracket(){
   if(!bktPlayerId){ toast("Select your name first"); return; }
 
   const pin = $("#bkt-pin")?.value?.trim();
-  if(!pin){ toast(bktSubmitted ? "Enter your PIN to save" : "Create a PIN first"); return; }
-  if(!bktSubmitted){
+  if(!pin){ toast((bktSubmitted && !bktNeedsPin) ? "Enter your PIN to save" : "Create a PIN first"); return; }
+  if(!bktSubmitted || bktNeedsPin){
     const pinConfirm = $("#bkt-pin-confirm")?.value?.trim();
     if(pin !== pinConfirm){ toast("PINs don't match — try again"); return; }
     if(pin.length < 4){ toast("PIN must be at least 4 characters"); return; }
@@ -1945,6 +1952,7 @@ async function submitRealBracket(){
   try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
   bktPin = pin;
   bktPinVerified = true;
+  bktNeedsPin = false;
   toast(`${picksArray.length} of ${allMatches.length} picks saved! 🎉`);
   bktSubmitted = true;
   await loadAll();
