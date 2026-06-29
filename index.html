@@ -546,6 +546,32 @@ let smackPlayerId = null;
 // Bracket state
 const MATCH73_DEADLINE = new Date("2026-06-28T18:59:00Z"); // 11:59 AM PT June 28 — South Africa vs Canada
 const BRACKET_DEADLINE = new Date("2026-06-29T16:59:00Z"); // 9:59 AM PT June 29 — all other matches
+
+// Kickoff times (UTC) for all knockout matches
+const KNOCKOUT_KICKOFFS = {
+  // R32 — June 28–July 2
+  73:"2026-06-28T19:00:00Z", 74:"2026-06-28T22:00:00Z",
+  75:"2026-06-29T16:00:00Z", 76:"2026-06-29T19:00:00Z",
+  77:"2026-06-29T22:00:00Z", 78:"2026-06-30T01:00:00Z",
+  79:"2026-06-30T16:00:00Z", 80:"2026-06-30T19:00:00Z",
+  81:"2026-06-30T22:00:00Z", 82:"2026-07-01T01:00:00Z",
+  83:"2026-07-01T16:00:00Z", 84:"2026-07-01T19:00:00Z",
+  85:"2026-07-01T22:00:00Z", 86:"2026-07-02T01:00:00Z",
+  87:"2026-07-02T19:00:00Z", 88:"2026-07-02T22:00:00Z",
+  // R16 — July 4–7
+  89:"2026-07-04T19:00:00Z", 90:"2026-07-04T22:00:00Z",
+  91:"2026-07-05T19:00:00Z", 92:"2026-07-05T22:00:00Z",
+  93:"2026-07-06T19:00:00Z", 94:"2026-07-06T22:00:00Z",
+  95:"2026-07-07T19:00:00Z", 96:"2026-07-07T22:00:00Z",
+  // QF — July 9–10
+   97:"2026-07-09T19:00:00Z",  98:"2026-07-09T22:00:00Z",
+   99:"2026-07-10T19:00:00Z", 100:"2026-07-10T22:00:00Z",
+  // SF — July 14–15
+  101:"2026-07-14T22:00:00Z", 102:"2026-07-15T22:00:00Z",
+  // Final — July 19
+  103:"2026-07-19T22:00:00Z",
+};
+
 let bktPlayerId = null;        // selected player for real bracket
 let bktPin = null;             // cached PIN for current player (from localStorage)
 let bktPinVerified = false;    // whether current player has passed the PIN gate
@@ -1030,8 +1056,10 @@ function buildKnockoutUpcomingHtml(){
     const aLabel = teamA==="TBD" ? '<span style="color:var(--muted);font-style:italic">TBD</span>' : esc(teamA);
     const bLabel = teamB==="TBD" ? '<span style="color:var(--muted);font-style:italic">TBD</span>' : esc(teamB);
 
+    const kickoff = KNOCKOUT_KICKOFFS[mn] ? fmtKickoffPT(KNOCKOUT_KICKOFFS[mn]) : null;
+
     return `<div class="ko-match">
-      <div class="ko-round">${roundLabel(mn)} · Match ${mn}</div>
+      <div class="ko-round">${roundLabel(mn)} · Match ${mn}${kickoff ? ` · ${kickoff}` : ''}</div>
       <div class="ko-matchup">
         <div class="ko-side">
           <div class="ko-team">${aLabel}</div>
