@@ -283,6 +283,10 @@
   .bkt-lb td{padding:10px 8px;border-bottom:1px solid var(--line);font-size:14px}
   .bkt-lb tr:last-child td{border-bottom:none}
 
+  /* Bumpy bracket notice */
+  .bkt-notice{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.45);border-radius:12px;padding:13px 16px;margin-bottom:14px;font-size:14px;line-height:1.55;color:var(--text)}
+  .bkt-notice b{color:#7c3aed}
+
   /* Override banner */
   .bkt-override-banner{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:14px;line-height:1.5}
 
@@ -1596,11 +1600,8 @@ function renderBracket(){
 }
 
 function buildRealBracketHtml(){
-  // Deadline
-  const m73NowLocked = new Date() >= MATCH73_DEADLINE;
-  const deadlineHtml = `<div class="bkt-status">
-    ⚡ <b>South Africa vs Canada</b> ${m73NowLocked ? "is now locked." : "locks at <b>11:59 AM PT today</b> — no pick means a random team advances (0 pts)."}<br>
-    All other matches lock at <b>9:59 AM PT on Monday, June 29</b>. You can save a partial bracket now and come back.
+  const noticeHtml = `<div class="bkt-notice">
+    📣 <b>Building this bracket has been bumpy!</b> Games will now lock before they begin and any downstream effects will remain, but you can continue to update Round of 32 games since things are wonky.
   </div>`;
 
   const playerOpts = state.players.map(p=>
@@ -1632,7 +1633,7 @@ function buildRealBracketHtml(){
   // Current player's picks (or empty bracket to fill)
   const playerPicksHtml = bktPlayerId ? buildMyBracketHtml() : "";
 
-  return deadlineHtml + identityHtml + lbHtml + adminHtml + overrideBanner + playerPicksHtml;
+  return noticeHtml + identityHtml + lbHtml + adminHtml + overrideBanner + playerPicksHtml;
 }
 
 async function onBktPlayerChange(pid){
