@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tournament Scoreboard</title>
+<style>
+:root {
+  --navy: #0B1F3A;
+  --navy-mid: #112240;
+  --navy-light: #1A2F4A;
+  --navy-card: #132035;
+  --silver: #8B97A8;
+  --silver-light: #C4CDD6;
+  --white: #F0F4F8;
+  --black: #07090D;
+  --lavender: #9B8EC4;
+  --lavender-dim: #7B6EA4;
+  --lavender-light: #C4B8E0;
+  --rose: #D4556B;
+  --rose-light: #EE8FA0;
+  --text: #E2E8F0;
+  --text-dim: #7A8FA8;
+  --border: #1E3352;
+  --border-light: #2A3F5C;
+  --success: #3CB87A;
+  --success-dim: #2A9060;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{background:var(--navy);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+.hidden{display:none!important}
+button{font-family:inherit;cursor:pointer;border:none}
+
+/* ===== SETUP ===== */
+#setup{min-height:100vh;padding:0 16px 48px;max-width:600px;margin:0 auto}
+
+.setup-hero{text-align:center;padding:36px 0 28px}
+.setup-hero .eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--lavender);font-weight:700;margin-bottom:10px}
+.setup-hero h1{font-size:34px;font-weight:900;line-height:1.1;background:linear-gradient(140deg,var(--white) 20%,var(--lavender-light) 70%,var(--rose-light) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.setup-hero p{color:var(--text-dim);font-size:14px;margin-top:10px;line-height:1.5}
+
+.s-card{background:var(--navy-card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px}
+.s-label{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--lavender);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.s-label .tag{background:var(--lavender);color:var(--navy);border-radius:6px;padding:2px 8px;font-size:9px;letter-spacing:1px}
+
+.team-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.team-idx{width:26px;height:26px;border-radius:50%;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--silver);flex-shrink:0}
+input[type=text],input[type=number],input[type=password]{background:var(--navy-light);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 13px;font-size:15px;font-family:inherit;outline:none;width:100%;transition:border-color .18s}
+input:focus{border-color:var(--lavender)}
+input::placeholder{color:var(--text-dim)}
+.rm-btn{background:none;border:none;color:var(--text-dim);font-size:20px;line-height:1;padding:2px 4px;border-radius:6px;cursor:pointer;flex-shrink:0;transition:color .15s}
+.rm-btn:hover{color:var(--rose)}
+
+.add-btn{background:none;border:1px dashed var(--border-light);color:var(--text-dim);border-radius:10px;padding:10px;width:100%;font-size:13px;font-weight:600;transition:all .2s;margin-top:2px}
+.add-btn:hover{border-color:var(--lavender);color:var(--lavender)}
+
+.fmt-row{display:flex;gap:8px;margin-bottom:14px}
+.fmt-btn{flex:1;background:var(--navy-light);border:1px solid var(--border);color:var(--text-dim);border-radius:10px;padding:10px;font-size:14px;font-weight:600;transition:all .18s;text-align:center}
+.fmt-btn.sel{background:var(--lavender);border-color:var(--lavender);color:var(--navy)}
+
+.cfg-row{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.cfg-row label{flex:1;font-size:13px;color:var(--text-dim)}
+.cfg-row input{width:72px;text-align:center;padding:9px 8px}
+
+.pin-row{display:flex;align-items:center;gap:10px}
+.pin-row label{flex:1;font-size:13px;color:var(--text-dim)}
+.pin-row input{width:100px;text-align:center;letter-spacing:5px;font-size:20px;font-weight:800}
+
+.btn-start{background:linear-gradient(135deg,var(--lavender) 0%,var(--rose) 100%);color:#fff;border:none;border-radius:14px;padding:16px;width:100%;font-size:16px;font-weight:800;letter-spacing:.4px;margin-top:6px;transition:opacity .2s,transform .1s}
+.btn-start:hover{opacity:.9}
+.btn-start:active{transform:scale(.98)}
+.btn-start:disabled{opacity:.4;cursor:default}
+.setup-note{text-align:center;color:var(--text-dim);font-size:12px;margin-top:12px}
+
+/* ===== APP SHELL ===== */
+#app{min-height:100vh;display:flex;flex-direction:column}
+
+.app-bar{background:var(--navy-card);border-bottom:1px solid var(--border);padding:0 16px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}
+.app-title{font-size:15px;font-weight:800;letter-spacing:.3px}
+.app-title em{color:var(--lavender);font-style:normal}
+.coach-tog{background:none;border:1px solid var(--border-light);color:var(--text-dim);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;transition:all .2s}
+.coach-tog.on{background:var(--rose);border-color:var(--rose);color:#fff}
+
+.tab-bar{background:var(--navy-card);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-item{flex:1;min-width:72px;background:none;border:none;color:var(--text-dim);padding:13px 12px;font-size:13px;font-weight:600;border-bottom:2px solid transparent;transition:all .18s;white-space:nowrap}
+.tab-item.on{color:var(--lavender);border-bottom-color:var(--lavender)}
+
+.tab-pane{flex:1;padding:16px;max-width:860px;width:100%;margin:0 auto}
+
+/* ===== GAME CARDS ===== */
+.court-head{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.court-head .cn{color:var(--lavender)}
+.court-head .cf{color:var(--text-dim)}
+.court-head .ct{margin-left:auto;font-size:11px;color:var(--silver);font-weight:600;background:var(--navy-light);border:1px solid var(--border);padding:3px 10px;border-radius:20px}
+
+.games-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:540px){.games-grid{grid-template-columns:1fr}}
+
+.gcard{background:var(--navy-card);border:1px solid var(--border);border-radius:18px;padding:16px;display:flex;flex-direction:column}
+.gcard.live{border-color:var(--lavender);box-shadow:0 0 0 1px rgba(155,142,196,.15)}
+.gcard.court2live{border-color:var(--lavender)}
+.gcard.court3live{border-color:var(--rose)}
+.gcard.done{border-color:var(--success);opacity:.8}
+.gcard.idle{opacity:.55}
+
+.gcard-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:700;margin-bottom:12px}
+.gcard-label .live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--lavender);margin-left:6px;vertical-align:middle;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.score-team{display:flex;align-items:center;gap:6px;padding:4px 0}
+.tn{flex:1;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tn.w{color:var(--success)}
+.snum{font-size:32px;font-weight:900;min-width:46px;text-align:center;line-height:1;letter-spacing:-1px}
+.snum.hi{color:var(--rose)}
+.snum.win{color:var(--success)}
+.sc-btns{display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.sc-btn{background:var(--navy-light);border:1px solid var(--border);color:var(--text);border-radius:7px;width:30px;height:26px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1}
+.sc-btn.p:hover{background:var(--lavender);border-color:var(--lavender);color:var(--navy)}
+.sc-btn.m:hover{background:var(--rose);border-color:var(--rose);color:#fff}
+
+.vs-sep{text-align:center;font-size:10px;letter-spacing:1px;color:var(--text-dim);padding:2px 0;font-weight:700}
+
+.end-btn{background:var(--navy-light);border:1px solid var(--border-light);color:var(--text);border-radius:10px;padding:9px;width:100%;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-top:12px;transition:all .2s}
+.end-btn:hover{background:var(--success);border-color:var(--success-dim);color:var(--navy)}
+.end-btn.early{border-color:var(--rose);color:var(--rose-light)}
+.end-btn.early:hover{background:var(--rose);color:#fff}
+
+.idle-placeholder{text-align:center;padding:24px 0;color:var(--text-dim);font-size:13px}
+
+/* Queue / Sitting */
+.queue-box{background:var(--navy-card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.queue-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:700;margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--navy-light);border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-size:13px;font-weight:600}
+.chip.nxt{border-color:var(--lavender);color:var(--lavender)}
+.chip.q3{border-color:var(--rose);color:var(--rose-light)}
+
+/* Movement rules */
+.move-card{background:var(--navy-light);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.move-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--text-dim);margin-bottom:10px}
+.move-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--text-dim)}
+.arr-up{color:var(--success);font-size:15px;font-weight:700}
+.arr-dn{color:var(--rose);font-size:15px;font-weight:700}
+.arr-eq{color:var(--lavender);font-size:15px;font-weight:700}
+
+/* ===== STANDINGS ===== */
+.s-table{background:var(--navy-card);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px}
+.s-thead{padding:14px 16px 10px;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--lavender);font-weight:700;border-bottom:1px solid var(--border)}
+.s-cols{display:grid;grid-template-columns:32px 1fr 44px 44px 44px 52px;padding:8px 16px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);font-weight:700;border-bottom:1px solid var(--border)}
+.s-row{display:grid;grid-template-columns:32px 1fr 44px 44px 44px 52px;padding:12px 16px;border-bottom:1px solid rgba(30,51,82,.6);align-items:center;font-size:14px;transition:background .15s}
+.s-row:last-child{border-bottom:none}
+.s-row:hover{background:var(--navy-light)}
+.rk{font-size:13px;font-weight:800;color:var(--text-dim)}
+.rk.t{color:var(--rose)}
+.tnm{font-weight:700}
+.st{text-align:center;font-weight:600}
+.st.w{color:var(--success)}
+.st.l{color:var(--rose-light)}
+.st.d{font-size:12px}
+@media(max-width:480px){
+  .s-cols,.s-row{grid-template-columns:26px 1fr 36px 36px 36px 44px;padding:10px 12px;font-size:12px}
+  .s-cols{font-size:9px}
+}
+
+/* ===== COACH TAB ===== */
+.coach-panel{background:var(--navy-card);border:1px solid var(--rose);border-radius:18px;padding:20px;margin-bottom:14px}
+.coach-panel.sec{border-color:var(--border)}
+.cp-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.cp-badge{background:var(--rose);color:#fff;font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:700;padding:3px 10px;border-radius:20px}
+.cp-badge.lav{background:var(--lavender);color:var(--navy)}
+.cp-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.cp-row:last-child{border-bottom:none}
+.cp-row label{flex:1;font-size:14px;color:var(--text-dim)}
+.cp-row input{width:80px;text-align:center;padding:8px}
+.act-btn{background:var(--navy-light);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;transition:all .2s}
+.act-btn:hover{border-color:var(--lavender);color:var(--lavender)}
+.act-btn.danger:hover{border-color:var(--rose);background:var(--rose);color:#fff}
+
+/* ===== MODAL ===== */
+.mo-overlay{position:fixed;inset:0;background:rgba(7,9,13,.88);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+.mo-box{background:var(--navy-card);border:1px solid var(--border-light);border-radius:22px;padding:26px;max-width:420px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+.mo-box h2{font-size:20px;font-weight:800;margin-bottom:8px}
+.mo-box .mo-body{color:var(--text-dim);font-size:14px;line-height:1.6;margin-bottom:20px}
+.mo-box .mo-body strong{color:var(--text)}
+.mo-acts{display:flex;gap:10px}
+.btn-cxl{flex:1;background:var(--navy-light);border:1px solid var(--border);color:var(--text);border-radius:11px;padding:13px;font-size:14px;font-weight:600}
+.btn-ok{flex:2;background:var(--lavender);border:none;color:var(--navy);border-radius:11px;padding:13px;font-size:14px;font-weight:800}
+.btn-ok.rose{background:var(--rose);color:#fff}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--navy-card);border:1px solid var(--border-light);color:var(--text);padding:11px 20px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .22s;z-index:100;white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== PIN gate ===== */
+.pin-gate{background:var(--navy-card);border:1px solid var(--border);border-radius:18px;padding:36px 24px;text-align:center;margin:24px 0}
+.pin-gate h2{font-size:20px;font-weight:800;margin-bottom:8px}
+.pin-gate p{color:var(--text-dim);font-size:14px;margin-bottom:20px}
+.pin-gate input{max-width:140px;margin:0 auto 16px;display:block;text-align:center;letter-spacing:8px;font-size:28px;font-weight:900}
+
+/* History section */
+.hist-head{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:700;margin-bottom:10px;margin-top:16px}
+.hist-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(30,51,82,.4);font-size:13px}
+.hist-row:last-child{border-bottom:none}
+.hist-w{color:var(--success);font-weight:700;flex:1}
+.hist-l{color:var(--text-dim);flex:1}
+.hist-sc{font-weight:800;color:var(--silver-light);font-size:14px;min-width:52px;text-align:center}
+
+/* Court setup notice */
+.setup-notice{background:var(--navy-light);border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:13px;color:var(--text-dim);margin-bottom:14px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-hero">
+    <div class="eyebrow">Tournament Day</div>
+    <h1>Scoreboard Setup</h1>
+    <p>Name your teams, set your courts, and let's play</p>
+  </div>
+
+  <!-- Court 1 -->
+  <div class="s-card">
+    <div class="s-label">Main Court <span class="tag">3v3</span></div>
+    <div id="c1-teams"></div>
+    <div class="cfg-row">
+      <label>Win score</label>
+      <input type="number" id="c1-target" value="15" min="1" max="99">
+    </div>
+  </div>
+
+  <!-- Courts 2 & 3 -->
+  <div class="s-card">
+    <div class="s-label">Courts 2 & 3 <span class="tag">King of Court</span></div>
+    <div class="fmt-row">
+      <button class="fmt-btn sel" id="fmt-4v4" onclick="setFmt('4v4')">4 v 4</button>
+      <button class="fmt-btn" id="fmt-5v5" onclick="setFmt('5v5')">5 v 5</button>
+    </div>
+    <div id="c23-teams"></div>
+    <button class="add-btn" onclick="addC23Team()">+ Add team</button>
+    <div class="cfg-row">
+      <label>Win score</label>
+      <input type="number" id="c23-target" value="11" min="1" max="99">
+    </div>
+  </div>
+
+  <!-- Coach PIN -->
+  <div class="s-card">
+    <div class="s-label">Coach Mode</div>
+    <div class="pin-row">
+      <label>4-digit PIN for coach access</label>
+      <input type="password" id="setup-pin" value="1234" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+    </div>
+  </div>
+
+  <button class="btn-start" onclick="startTournament()">Start Tournament</button>
+  <p class="setup-note">Data is saved locally in this browser</p>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="app-bar">
+    <div class="app-title">Tournament <em>Scoreboard</em></div>
+    <button class="coach-tog" id="coach-btn" onclick="toggleCoach()">Coach</button>
+  </div>
+  <nav class="tab-bar">
+    <button class="tab-item on" data-tab="court1" onclick="goTab('court1',this)">Main Court</button>
+    <button class="tab-item" data-tab="courts23" onclick="goTab('courts23',this)">Courts 2 & 3</button>
+    <button class="tab-item" data-tab="standings" onclick="goTab('standings',this)">Standings</button>
+    <button class="tab-item" data-tab="coach" onclick="goTab('coach',this)">Coach</button>
+  </nav>
+  <div class="tab-pane">
+    <div id="tab-court1"></div>
+    <div id="tab-courts23" class="hidden"></div>
+    <div id="tab-standings" class="hidden"></div>
+    <div id="tab-coach" class="hidden"></div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="mo-overlay hidden" id="mo-ov" onclick="mxClose(event)">
+  <div class="mo-box" id="mo-box" onclick="event.stopPropagation()"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ================================================================
+// STATE
+// ================================================================
+let S = {
+  phase: 'setup',
+  coachOn: false,
+  coachPin: '1234',
+  activeTab: 'court1',
+
+  c1: {
+    target: 15,
+    teams: [],        // {id,name,wins,losses,pf,pa}
+    games: [
+      {id:'g1',tA:null,tB:null,sA:0,sB:0,on:false},
+      {id:'g2',tA:null,tB:null,sA:0,sB:0,on:false},
+    ],
+    sitting: [],      // team ids
+    hist: [],
+    playoff: {
+      active: false,
+      seeds: [],      // team ids in seed order [1st…6th]
+      games: {
+        qfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        qfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        consolation:  {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        sfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        sfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        championship: {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      },
+    },
+  },
+
+  c23: {
+    target: 11,
+    fmt: '4v4',
+    teams: [],
+    c2: {tA:null,tB:null,sA:0,sB:0,on:false},
+    c3: {tA:null,tB:null,sA:0,sB:0,on:false},
+    promoted: [],     // c3 winners waiting for c2
+    demoted: [],      // c2 losers waiting for c3
+    queue: [],        // general waiting list
+    hist: [],
+  },
+};
+
+// setup scratch
+let setupC1 = ['','','','','',''];
+let setupC23 = ['','','','','',''];
+let setupFmt = '4v4';
+
+// ================================================================
+// SETUP
+// ================================================================
+function init() {
+  const raw = localStorage.getItem('tourn_v2');
+  if (raw) {
+    try {
+      const p = JSON.parse(raw);
+      if (p && p.phase === 'game') { S = p; showApp(); render(); return; }
+    } catch(e) {}
+  }
+  renderSetup();
+}
+
+function renderSetup() {
+  render_c1_inputs();
+  render_c23_inputs();
+}
+
+function render_c1_inputs() {
+  document.getElementById('c1-teams').innerHTML = setupC1.map((v,i) => `
+    <div class="team-row">
+      <div class="team-idx">${i+1}</div>
+      <input type="text" placeholder="Team ${i+1}" value="${xe(v)}" maxlength="22"
+        oninput="setupC1[${i}]=this.value">
+    </div>`).join('');
+}
+
+function render_c23_inputs() {
+  document.getElementById('c23-teams').innerHTML = setupC23.map((v,i) => `
+    <div class="team-row">
+      <div class="team-idx">${i+1}</div>
+      <input type="text" placeholder="Team ${i+1}" value="${xe(v)}" maxlength="22"
+        oninput="setupC23[${i}]=this.value">
+      ${setupC23.length > 2 ? `<button class="rm-btn" onclick="remC23(${i})">×</button>` : ''}
+    </div>`).join('');
+}
+
+function addC23Team() {
+  setupC23.push('');
+  render_c23_inputs();
+  setTimeout(() => {
+    const ins = document.querySelectorAll('#c23-teams input');
+    if (ins.length) ins[ins.length-1].focus();
+  }, 40);
+}
+
+function remC23(i) {
+  setupC23.splice(i, 1);
+  render_c23_inputs();
+}
+
+function setFmt(f) {
+  setupFmt = f;
+  document.getElementById('fmt-4v4').classList.toggle('sel', f === '4v4');
+  document.getElementById('fmt-5v5').classList.toggle('sel', f === '5v5');
+}
+
+function startTournament() {
+  const c1n = setupC1.map(n => n.trim()).filter(Boolean);
+  if (c1n.length < 2) { toast('Add at least 2 team names for Court 1'); return; }
+
+  const c23n = setupC23.map(n => n.trim()).filter(Boolean);
+  if (c23n.length < 2) { toast('Add at least 2 team names for Courts 2/3'); return; }
+
+  const pin = document.getElementById('setup-pin').value.trim();
+  const c1t = parseInt(document.getElementById('c1-target').value) || 15;
+  const c23t = parseInt(document.getElementById('c23-target').value) || 11;
+
+  const mk = (name, id) => ({id, name, wins:0, losses:0, pf:0, pa:0});
+
+  S.c1.teams = c1n.map((n,i) => mk(n, `c1-${i}`));
+  S.c1.target = c1t;
+  S.c1.sitting = [...S.c1.teams.map(t => t.id)];
+  S.c1.playoff = {
+    active: false, seeds: [],
+    games: {
+      qfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      qfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      consolation:  {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      sfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      sfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      championship: {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+    },
+  };
+
+  S.c23.teams = c23n.map((n,i) => mk(n, `c23-${i}`));
+  S.c23.target = c23t;
+  S.c23.fmt = setupFmt;
+  S.c23.queue = [...S.c23.teams.map(t => t.id)];
+
+  S.coachPin = pin || '1234';
+  S.phase = 'game';
+
+  // Auto-fill court 1 games
+  for (const g of S.c1.games) {
+    if (S.c1.sitting.length >= 2) launchC1Game(g);
+  }
+
+  // Auto-fill courts 2 & 3
+  if (S.c23.queue.length >= 2) launchC23('c2');
+  if (S.c23.queue.length >= 2) launchC23('c3');
+
+  save();
+  showApp();
+  render();
+}
+
+function launchC1Game(g) {
+  if (S.c1.sitting.length < 2) return;
+  g.tA = S.c1.sitting.shift();
+  g.tB = S.c1.sitting.shift();
+  g.sA = 0; g.sB = 0; g.on = true;
+}
+
+function launchC23(court) {
+  const g = S.c23[court];
+  // Try demoted first for c3, otherwise queue
+  let src;
+  if (court === 'c3' && S.c23.demoted.length > 0) {
+    src = S.c23.demoted;
+  } else {
+    src = S.c23.queue;
+  }
+  if (src.length < 2) {
+    // Try mixing
+    const all = [...S.c23.demoted, ...S.c23.queue];
+    if (all.length < 2) return;
+    g.tA = all[0]; g.tB = all[1];
+    // Remove from respective arrays
+    removeFromQueues(g.tA); removeFromQueues(g.tB);
+  } else {
+    g.tA = src.shift();
+    g.tB = src.shift();
+  }
+  g.sA = 0; g.sB = 0; g.on = true;
+}
+
+function removeFromQueues(id) {
+  S.c23.demoted = S.c23.demoted.filter(x => x !== id);
+  S.c23.queue = S.c23.queue.filter(x => x !== id);
+  S.c23.promoted = S.c23.promoted.filter(x => x !== id);
+}
+
+function showApp() {
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+}
+
+// ================================================================
+// TAB ROUTING
+// ================================================================
+function goTab(tab, btn) {
+  S.activeTab = tab;
+  document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  ['court1','courts23','standings','coach'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  render();
+}
+
+function render() {
+  switch(S.activeTab) {
+    case 'court1':    rCourt1();    break;
+    case 'courts23':  rCourts23();  break;
+    case 'standings': rStandings(); break;
+    case 'coach':     rCoach();     break;
+  }
+  document.getElementById('coach-btn').classList.toggle('on', S.coachOn);
+  document.getElementById('coach-btn').textContent = S.coachOn ? 'Exit Coach' : 'Coach';
+}
+
+// ================================================================
+// COURT 1 RENDER
+// ================================================================
+function rCourt1() {
+  const el = document.getElementById('tab-court1');
+  if (S.c1.playoff?.active) { rPlayoff(el); return; }
+
+  const {target, games, teams, sitting, hist} = S.c1;
+
+  const gcards = games.map((g, idx) => {
+    const tA = g.tA ? teams.find(t => t.id === g.tA) : null;
+    const tB = g.tB ? teams.find(t => t.id === g.tB) : null;
+
+    if (!g.on || !tA || !tB) {
+      return `<div class="gcard idle">
+        <div class="gcard-label">Game ${idx+1}</div>
+        <div class="idle-placeholder">No game assigned</div>
+        ${S.coachOn && sitting.length >= 2 ?
+          `<button class="end-btn" onclick="coachLaunchC1('${g.id}')">Start Game</button>` : ''}
+      </div>`;
+    }
+
+    const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
+    const reached = g.sA >= target || g.sB >= target;
+
+    return `<div class="gcard live">
+      <div class="gcard-label">Game ${idx+1}<span class="live-dot"></span></div>
+      <div class="score-team">
+        <div class="tn">${xe(tA.name)}</div>
+        ${S.coachOn ? `<div class="sc-btns">
+          <button class="sc-btn p" onclick="adj('c1','${g.id}','A',1)">+</button>
+          <button class="sc-btn m" onclick="adj('c1','${g.id}','A',-1)">−</button>
+        </div>` : ''}
+        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+      </div>
+      <div class="vs-sep">— vs —</div>
+      <div class="score-team">
+        <div class="tn">${xe(tB.name)}</div>
+        ${S.coachOn ? `<div class="sc-btns">
+          <button class="sc-btn p" onclick="adj('c1','${g.id}','B',1)">+</button>
+          <button class="sc-btn m" onclick="adj('c1','${g.id}','B',-1)">−</button>
+        </div>` : ''}
+        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+      </div>
+      <button class="end-btn ${reached ? '' : 'early'}" onclick="endC1('${g.id}')">
+        ${reached
+          ? `End Game · ${g.sA >= target ? xe(tA.name) : xe(tB.name)} wins!`
+          : 'End Game Early'}
+      </button>
+    </div>`;
+  }).join('');
+
+  const sitHtml = sitting.length > 0 ? `
+    <div class="queue-box">
+      <div class="queue-lbl">Sitting out — next up</div>
+      <div class="chips">
+        ${sitting.map((id,i) => {
+          const t = teams.find(t => t.id === id);
+          return t ? `<div class="chip ${i < 2 ? 'nxt' : ''}">${xe(t.name)}</div>` : '';
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  const histHtml = hist.length ? `
+    <div class="hist-head">Recent Results</div>
+    ${hist.slice(-6).reverse().map(h => {
+      const w = teams.find(t => t.id === h.wId);
+      const l = teams.find(t => t.id === h.lId);
+      return `<div class="hist-row">
+        <div class="hist-w">${xe(w?.name ?? '?')}</div>
+        <div class="hist-sc">${h.wS} – ${h.lS}</div>
+        <div class="hist-l">${xe(l?.name ?? '?')}</div>
+      </div>`;
+    }).join('')}` : '';
+
+  const startBtn = S.coachOn && teams.length >= 6 ? `
+    <button class="btn-start" style="margin-top:16px" onclick="startPlayoffs()">
+      Start Playoffs →
+    </button>` : '';
+
+  el.innerHTML = `
+    <div class="court-head">
+      <span class="cn">Main Court</span>
+      <span class="cf">3v3 · Round Robin</span>
+      <span class="ct">First to ${target}</span>
+    </div>
+    <div class="games-grid">${gcards}</div>
+    ${sitHtml}
+    ${histHtml}
+    ${startBtn}
+  `;
+}
+
+// ================================================================
+// PLAYOFF RENDER
+// ================================================================
+function rPlayoff(el) {
+  const {target, teams, playoff, hist} = S.c1;
+  const {seeds, games} = playoff;
+
+  const seedName = (idx) => {
+    const id = seeds[idx];
+    return id ? xe(teams.find(t => t.id === id)?.name ?? '?') : '?';
+  };
+
+  const pgCard = (key, label, badge, badgeCls) => {
+    const g = games[key];
+    const tA = g.tA ? teams.find(t => t.id === g.tA) : null;
+    const tB = g.tB ? teams.find(t => t.id === g.tB) : null;
+
+    if (g.done) {
+      const w = teams.find(t => t.id === g.wId);
+      const l = teams.find(t => t.id === g.lId);
+      return `<div class="gcard done" style="margin-bottom:12px">
+        <div class="gcard-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>${label}</span>
+          <span style="background:var(--success);color:var(--navy);font-size:9px;padding:2px 8px;border-radius:10px;font-weight:800">FINAL</span>
+        </div>
+        <div class="score-team"><div class="tn w">${xe(w?.name ?? '?')}</div><div class="snum win">${g.sA >= g.sB ? g.sA : g.sB}</div></div>
+        <div class="vs-sep">— vs —</div>
+        <div class="score-team"><div class="tn">${xe(l?.name ?? '?')}</div><div class="snum">${g.sA >= g.sB ? g.sB : g.sA}</div></div>
+      </div>`;
+    }
+
+    if (!g.on || !tA || !tB) {
+      const waitMsg = (!tA || !tB) ? 'Waiting for results…' : 'Not started';
+      return `<div class="gcard idle" style="margin-bottom:12px">
+        <div class="gcard-label">${label}</div>
+        <div class="idle-placeholder">${waitMsg}</div>
+        ${S.coachOn && tA && tB ? `<button class="end-btn" onclick="startPoGame('${key}')">Start Game</button>` : ''}
+      </div>`;
+    }
+
+    const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
+    const reached = g.sA >= target || g.sB >= target;
+    const borderCls = badgeCls === 'rose' ? 'court3live' : 'live';
+
+    return `<div class="gcard ${borderCls}" style="margin-bottom:12px">
+      <div class="gcard-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>${label}<span class="live-dot"></span></span>
+        <span style="background:var(--${badgeCls === 'rose' ? 'rose' : 'lavender'});color:var(--navy);font-size:9px;padding:2px 8px;border-radius:10px;font-weight:800">${badge}</span>
+      </div>
+      <div class="score-team">
+        <div class="tn">${xe(tA.name)}</div>
+        ${S.coachOn ? `<div class="sc-btns">
+          <button class="sc-btn p" onclick="adj('c1','${key}','A',1)">+</button>
+          <button class="sc-btn m" onclick="adj('c1','${key}','A',-1)">−</button>
+        </div>` : ''}
+        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+      </div>
+      <div class="vs-sep">— vs —</div>
+      <div class="score-team">
+        <div class="tn">${xe(tB.name)}</div>
+        ${S.coachOn ? `<div class="sc-btns">
+          <button class="sc-btn p" onclick="adj('c1','${key}','B',1)">+</button>
+          <button class="sc-btn m" onclick="adj('c1','${key}','B',-1)">−</button>
+        </div>` : ''}
+        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+      </div>
+      <button class="end-btn ${reached ? '' : 'early'}" onclick="endPlayoffGame('${key}')">
+        ${reached
+          ? `End Game · ${g.sA >= target ? xe(tA.name) : xe(tB.name)} wins!`
+          : 'End Game Early'}
+      </button>
+    </div>`;
+  };
+
+  const bracket = `
+    <div class="move-card" style="margin-bottom:14px">
+      <div class="move-lbl">Bracket · Seeds</div>
+      <div class="move-row" style="font-size:12px">
+        <span style="color:var(--lavender);font-weight:800;min-width:22px">#1</span> ${seedName(0)} — BYE to Semis
+      </div>
+      <div class="move-row" style="font-size:12px">
+        <span style="color:var(--lavender);font-weight:800;min-width:22px">#2</span> ${seedName(1)} — BYE to Semis
+      </div>
+      <div class="move-row" style="font-size:12px">
+        <span style="color:var(--silver);font-weight:800;min-width:22px">#3</span> ${seedName(2)} vs #6 ${seedName(5)}
+      </div>
+      <div class="move-row" style="font-size:12px">
+        <span style="color:var(--silver);font-weight:800;min-width:22px">#4</span> ${seedName(3)} vs #5 ${seedName(4)}
+      </div>
+    </div>`;
+
+  el.innerHTML = `
+    <div class="court-head">
+      <span class="cn">Main Court</span>
+      <span class="cf">3v3 · Playoffs</span>
+      <span class="ct">First to ${target}</span>
+    </div>
+    ${bracket}
+    <div class="hist-head" style="margin-bottom:10px">Quarterfinals</div>
+    ${pgCard('qfA', '#3 vs #6', 'QF', 'lav')}
+    ${pgCard('qfB', '#4 vs #5', 'QF', 'lav')}
+    <div class="hist-head" style="margin-bottom:10px">Semifinals</div>
+    ${pgCard('sfA', '#2 vs QF-A Winner', 'SF', 'lav')}
+    ${pgCard('sfB', '#1 vs QF-B Winner', 'SF', 'lav')}
+    <div class="hist-head" style="margin-bottom:10px">Finals</div>
+    <div class="games-grid">
+      <div>${pgCard('championship', '🏆 Championship', 'FINAL', 'lav')}</div>
+      <div>${pgCard('consolation', 'Consolation', '5th/6th', 'rose')}</div>
+    </div>
+  `;
+}
+
+// ================================================================
+// PLAYOFF LOGIC
+// ================================================================
+function startPlayoffs() {
+  if (S.c1.teams.length < 6) { toast('Need 6 teams for playoffs'); return; }
+
+  const sorted = [...S.c1.teams].sort((a,b) =>
+    b.wins - a.wins || a.losses - b.losses || (b.pf - b.pa) - (a.pf - a.pa)
+  );
+
+  S.c1.playoff.seeds = sorted.map(t => t.id);
+  const [s1, s2, s3, s4, s5, s6] = S.c1.playoff.seeds;
+
+  // Quarters: 3v6 and 4v5
+  S.c1.playoff.games.qfA = {tA:s3, tB:s6, sA:0, sB:0, on:true,  done:false, wId:null, lId:null};
+  S.c1.playoff.games.qfB = {tA:s4, tB:s5, sA:0, sB:0, on:true,  done:false, wId:null, lId:null};
+  // Semis: seeds 1 & 2 have byes, wait for QF winners
+  S.c1.playoff.games.sfA = {tA:s2, tB:null, sA:0, sB:0, on:false, done:false, wId:null, lId:null};
+  S.c1.playoff.games.sfB = {tA:s1, tB:null, sA:0, sB:0, on:false, done:false, wId:null, lId:null};
+  // Consolation and Championship start empty
+  S.c1.playoff.games.consolation  = {tA:null, tB:null, sA:0, sB:0, on:false, done:false, wId:null, lId:null};
+  S.c1.playoff.games.championship = {tA:null, tB:null, sA:0, sB:0, on:false, done:false, wId:null, lId:null};
+
+  // Freeze round robin
+  S.c1.games.forEach(g => { g.on = false; });
+  S.c1.sitting = [];
+  S.c1.playoff.active = true;
+
+  save(); render();
+  toast('Playoffs started!');
+}
+
+function startPoGame(key) {
+  const g = S.c1.playoff.games[key];
+  if (!g || !g.tA || !g.tB || g.on || g.done) return;
+  g.on = true;
+  save(); render();
+}
+
+function endPlayoffGame(key) {
+  const po = S.c1.playoff;
+  const g = po.games[key];
+  if (!g || !g.on || !g.tA || !g.tB) return;
+
+  const teams = S.c1.teams;
+  const tA = teams.find(t => t.id === g.tA);
+  const tB = teams.find(t => t.id === g.tB);
+
+  const aWins = g.sA >= g.sB;
+  const wId = aWins ? g.tA : g.tB;
+  const lId = aWins ? g.tB : g.tA;
+  const wS  = aWins ? g.sA : g.sB;
+  const lS  = aWins ? g.sB : g.sA;
+  const wNm = (aWins ? tA : tB)?.name ?? '?';
+  const lNm = (aWins ? tB : tA)?.name ?? '?';
+
+  const labels = {qfA:'QF (3v6)', qfB:'QF (4v5)', sfA:'Semifinal', sfB:'Semifinal', championship:'Championship', consolation:'Consolation'};
+  let moveMsg = '';
+  if (key === 'qfA') moveMsg = `${xe(wNm)} advances to SF vs Seed #2.<br>${xe(lNm)} plays consolation.`;
+  else if (key === 'qfB') moveMsg = `${xe(wNm)} advances to SF vs Seed #1.<br>${xe(lNm)} plays consolation.`;
+  else if (key === 'sfA' || key === 'sfB') moveMsg = `${xe(wNm)} advances to the Championship!`;
+  else if (key === 'championship') moveMsg = `🏆 ${xe(wNm)} wins the tournament!`;
+  else if (key === 'consolation') moveMsg = `${xe(wNm)} finishes 5th.`;
+
+  modal({
+    title: `${labels[key]} Result`,
+    body: `<strong>${xe(wNm)}</strong> wins ${wS}–${lS} over ${xe(lNm)}.<br><br>${moveMsg}`,
+    ok: 'Confirm',
+    onOk: () => {
+      const w = teams.find(t => t.id === wId);
+      const l = teams.find(t => t.id === lId);
+      if (w) { w.wins++; w.pf += wS; w.pa += lS; }
+      if (l) { l.losses++; l.pf += lS; l.pa += wS; }
+      S.c1.hist.push({wId, lId, wS, lS, ts:Date.now(), playoff:key});
+
+      g.done = true; g.on = false; g.wId = wId; g.lId = lId;
+      g.sA = aWins ? wS : lS; g.sB = aWins ? lS : wS;
+
+      if (key === 'qfA') {
+        po.games.sfA.tB = wId;
+        if (po.games.sfA.tA && po.games.sfA.tB) po.games.sfA.on = true;
+        po.games.consolation.tA = lId;
+        if (po.games.consolation.tA && po.games.consolation.tB) po.games.consolation.on = true;
+      } else if (key === 'qfB') {
+        po.games.sfB.tB = wId;
+        if (po.games.sfB.tA && po.games.sfB.tB) po.games.sfB.on = true;
+        po.games.consolation.tB = lId;
+        if (po.games.consolation.tA && po.games.consolation.tB) po.games.consolation.on = true;
+      } else if (key === 'sfA') {
+        po.games.championship.tA = wId;
+        if (po.games.championship.tA && po.games.championship.tB) po.games.championship.on = true;
+      } else if (key === 'sfB') {
+        po.games.championship.tB = wId;
+        if (po.games.championship.tA && po.games.championship.tB) po.games.championship.on = true;
+      }
+
+      save(); render();
+      toast(key === 'championship' ? `🏆 ${wNm} wins!` : `${wNm} wins!`);
+    }
+  });
+}
+
+// ================================================================
+// COURTS 2/3 RENDER
+// ================================================================
+function rCourts23() {
+  const el = document.getElementById('tab-courts23');
+  const {target, fmt, teams, c2, c3, promoted, demoted, queue, hist} = S.c23;
+
+  const rGame = (g, num) => {
+    const tA = g.tA ? teams.find(t => t.id === g.tA) : null;
+    const tB = g.tB ? teams.find(t => t.id === g.tB) : null;
+    const cls = num === 2 ? 'court2live' : 'court3live';
+    const icon = num === 2 ? '🏆' : '⚡';
+    const label = num === 2 ? 'Championship' : 'Challenger';
+
+    if (!g.on || !tA || !tB) {
+      return `<div class="gcard idle" style="margin-bottom:12px">
+        <div class="gcard-label">Court ${num} · ${icon} ${label}</div>
+        <div class="idle-placeholder">Waiting for teams</div>
+        ${S.coachOn ? `<button class="end-btn" onclick="coachLaunchC23('c${num}')">Start Game</button>` : ''}
+      </div>`;
+    }
+
+    const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
+    const reached = g.sA >= target || g.sB >= target;
+
+    return `<div class="gcard ${g.on ? cls : 'done'}" style="margin-bottom:12px">
+      <div class="gcard-label">Court ${num} · ${icon} ${label}<span class="live-dot"></span></div>
+      <div class="score-team">
+        <div class="tn">${xe(tA.name)}</div>
+        ${S.coachOn ? `<div class="sc-btns">
+          <button class="sc-btn p" onclick="adj('c23','c${num}','A',1)">+</button>
+          <button class="sc-btn m" onclick="adj('c23','c${num}','A',-1)">−</button>
+        </div>` : ''}
+        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+      </div>
+      <div class="vs-sep">— vs —</div>
+      <div class="score-team">
+        <div class="tn">${xe(tB.name)}</div>
+        ${S.coachOn ? `<div class="sc-btns">
+          <button class="sc-btn p" onclick="adj('c23','c${num}','B',1)">+</button>
+          <button class="sc-btn m" onclick="adj('c23','c${num}','B',-1)">−</button>
+        </div>` : ''}
+        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+      </div>
+      <button class="end-btn ${reached ? '' : 'early'}" onclick="endC23('c${num}')">
+        ${reached
+          ? `End Game · ${g.sA >= target ? xe(tA.name) : xe(tB.name)} wins!`
+          : 'End Game Early'}
+      </button>
+    </div>`;
+  };
+
+  const allWaiting = [...promoted, ...demoted, ...queue];
+  const waitHtml = allWaiting.length ? `
+    <div class="queue-box">
+      <div class="queue-lbl">Queue</div>
+      <div class="chips">
+        ${promoted.map(id => { const t = teams.find(x => x.id === id); return t ? `<div class="chip nxt" title="Promoted from Court 3">${xe(t.name)} ↑</div>` : ''; }).join('')}
+        ${demoted.map(id => { const t = teams.find(x => x.id === id); return t ? `<div class="chip q3" title="Dropped from Court 2">${xe(t.name)} ↓</div>` : ''; }).join('')}
+        ${queue.map(id => { const t = teams.find(x => x.id === id); return t ? `<div class="chip">${xe(t.name)}</div>` : ''; }).join('')}
+      </div>
+    </div>` : '';
+
+  const histHtml = hist.length ? `
+    <div class="hist-head">Recent Results</div>
+    ${hist.slice(-8).reverse().map(h => {
+      const w = teams.find(t => t.id === h.wId);
+      const l = teams.find(t => t.id === h.lId);
+      return `<div class="hist-row">
+        <span style="font-size:11px;color:var(--text-dim);margin-right:4px">C${h.court}</span>
+        <div class="hist-w">${xe(w?.name ?? '?')}</div>
+        <div class="hist-sc">${h.wS} – ${h.lS}</div>
+        <div class="hist-l">${xe(l?.name ?? '?')}</div>
+      </div>`;
+    }).join('')}` : '';
+
+  el.innerHTML = `
+    <div class="court-head">
+      <span class="cn">Courts 2 & 3</span>
+      <span class="cf">${fmt} · King of Court</span>
+      <span class="ct">First to ${target}</span>
+    </div>
+    ${rGame(c2, 2)}
+    ${rGame(c3, 3)}
+    ${waitHtml}
+    <div class="move-card">
+      <div class="move-lbl">Movement</div>
+      <div class="move-row"><span class="arr-eq">↔</span> Win on Court 2 → Stay & defend</div>
+      <div class="move-row"><span class="arr-dn">↓</span> Lose on Court 2 → Drop to Court 3</div>
+      <div class="move-row"><span class="arr-up">↑</span> Win on Court 3 → Promoted to Court 2</div>
+      <div class="move-row"><span class="arr-dn">↓</span> Lose on Court 3 → Back of queue</div>
+    </div>
+    ${histHtml}
+  `;
+}
+
+// ================================================================
+// SCORE ADJUST
+// ================================================================
+function adj(section, ref, side, d) {
+  let g;
+  if (section === 'c1') {
+    g = S.c1.games.find(x => x.id === ref) ?? S.c1.playoff?.games[ref];
+  } else {
+    g = S.c23[ref];
+  }
+  if (!g || !g.on) return;
+  if (side === 'A') g.sA = Math.max(0, g.sA + d);
+  else              g.sB = Math.max(0, g.sB + d);
+  save(); render();
+}
+
+// ================================================================
+// END GAME — COURT 1
+// ================================================================
+function endC1(gid) {
+  const g = S.c1.games.find(x => x.id === gid);
+  if (!g || !g.on) return;
+  const tA = S.c1.teams.find(t => t.id === g.tA);
+  const tB = S.c1.teams.find(t => t.id === g.tB);
+
+  const aWins = g.sA >= g.sB;
+  const wId = aWins ? g.tA : g.tB;
+  const lId = aWins ? g.tB : g.tA;
+  const wS  = aWins ? g.sA : g.sB;
+  const lS  = aWins ? g.sB : g.sA;
+  const wNm = (aWins ? tA : tB)?.name ?? '?';
+  const lNm = (aWins ? tB : tA)?.name ?? '?';
+
+  const nextId = S.c1.sitting[0];
+  const nextTeam = nextId ? S.c1.teams.find(t => t.id === nextId) : null;
+
+  modal({
+    title: 'Game Over',
+    body: `<strong>${xe(wNm)}</strong> wins ${wS}–${lS} over ${xe(lNm)}.<br><br>
+           ${xe(wNm)} stays. ${xe(lNm)} rotates out.
+           ${nextTeam ? `<br>${xe(nextTeam.name)} comes in next.` : ''}`,
+    ok: 'Confirm & Rotate',
+    onOk: () => {
+      const w = S.c1.teams.find(t => t.id === wId);
+      const l = S.c1.teams.find(t => t.id === lId);
+      if (w) { w.wins++; w.pf += wS; w.pa += lS; }
+      if (l) { l.losses++; l.pf += lS; l.pa += wS; }
+      S.c1.hist.push({wId, lId, wS, lS, ts: Date.now()});
+
+      // Rotate: loser to sitting, next sitting team to this game
+      const next = S.c1.sitting.shift();
+      S.c1.sitting.push(lId);
+
+      if (next) {
+        g.tA = wId; g.tB = next;
+        g.sA = 0;  g.sB = 0;
+        g.on = true;
+      } else {
+        g.on = false;
+        S.c1.sitting.push(wId);
+      }
+
+      save(); render();
+      toast(`${wNm} wins!`);
+    }
+  });
+}
+
+// ================================================================
+// END GAME — COURTS 2/3
+// ================================================================
+function endC23(court) {
+  const g = S.c23[court];
+  if (!g || !g.on) return;
+  const num = court === 'c2' ? 2 : 3;
+  const teams = S.c23.teams;
+  const tA = teams.find(t => t.id === g.tA);
+  const tB = teams.find(t => t.id === g.tB);
+
+  const aWins = g.sA >= g.sB;
+  const wId = aWins ? g.tA : g.tB;
+  const lId = aWins ? g.tB : g.tA;
+  const wS  = aWins ? g.sA : g.sB;
+  const lS  = aWins ? g.sB : g.sA;
+  const wNm = (aWins ? tA : tB)?.name ?? '?';
+  const lNm = (aWins ? tB : tA)?.name ?? '?';
+
+  let moveMsg;
+  if (num === 2) {
+    moveMsg = `<strong style="color:var(--success)">${xe(wNm)}</strong> defends Court 2.<br>
+               <strong style="color:var(--rose)">${xe(lNm)}</strong> drops to Court 3.`;
+  } else {
+    moveMsg = `<strong style="color:var(--success)">${xe(wNm)}</strong> is promoted to Court 2!<br>
+               <strong style="color:var(--rose)">${xe(lNm)}</strong> goes to the back of the queue.`;
+  }
+
+  modal({
+    title: `Court ${num} Result`,
+    body: `${xe(wNm)} wins ${wS}–${lS}.<br><br>${moveMsg}`,
+    ok: 'Confirm',
+    onOk: () => {
+      const w = teams.find(t => t.id === wId);
+      const l = teams.find(t => t.id === lId);
+      if (w) { w.wins++; w.pf += wS; w.pa += lS; }
+      if (l) { l.losses++; l.pf += lS; l.pa += wS; }
+      S.c23.hist.push({court: num, wId, lId, wS, lS, ts: Date.now()});
+
+      if (num === 2) {
+        // winner stays, loser demoted
+        S.c23.demoted.push(lId);
+
+        // Find challenger for court 2
+        let challenger = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? S.c23.demoted.shift() ?? null;
+        if (challenger) {
+          // If challenger was already in demoted (from above push), handle edge case
+          if (challenger === lId) {
+            // Shouldn't happen since we just pushed lId and then shifted, but just in case
+            challenger = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
+          }
+          // Start new court 2 game
+          const c2 = S.c23.c2;
+          c2.tA = wId; c2.tB = challenger;
+          c2.sA = 0; c2.sB = 0; c2.on = true;
+        } else {
+          const c2 = S.c23.c2;
+          c2.tA = wId; c2.tB = null;
+          c2.sA = 0; c2.sB = 0; c2.on = false;
+        }
+
+        // Refresh court 3 if idle
+        if (!S.c23.c3.on || !S.c23.c3.tA) {
+          tryFillC3();
+        }
+
+      } else {
+        // Court 3: winner promoted, loser to queue
+        S.c23.queue.push(lId);
+        S.c23.promoted.push(wId);
+
+        // Start new court 3 game
+        tryFillC3();
+
+        // If court 2 is waiting for a challenger, pull promoted winner
+        const c2 = S.c23.c2;
+        if (!c2.on && c2.tA) {
+          const ch = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
+          if (ch) { c2.tB = ch; c2.sA = 0; c2.sB = 0; c2.on = true; }
+        } else if (!c2.tA && !c2.tB) {
+          // court 2 completely idle
+          const a = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
+          const b = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
+          if (a && b) { c2.tA = a; c2.tB = b; c2.sA = 0; c2.sB = 0; c2.on = true; }
+        }
+      }
+
+      save(); render();
+      toast(`${wNm} wins on Court ${num}!`);
+    }
+  });
+}
+
+function tryFillC3() {
+  const c3 = S.c23.c3;
+  // Get two teams: prefer demoted, then queue
+  const available = [...S.c23.demoted, ...S.c23.queue];
+  if (available.length < 2) { c3.on = false; return; }
+
+  let ta, tb;
+  if (S.c23.demoted.length >= 2) {
+    ta = S.c23.demoted.shift(); tb = S.c23.demoted.shift();
+  } else if (S.c23.demoted.length === 1) {
+    ta = S.c23.demoted.shift(); tb = S.c23.queue.shift();
+  } else {
+    ta = S.c23.queue.shift(); tb = S.c23.queue.shift();
+  }
+  if (!tb) { c3.on = false; return; }
+  c3.tA = ta; c3.tB = tb; c3.sA = 0; c3.sB = 0; c3.on = true;
+}
+
+// ================================================================
+// STANDINGS
+// ================================================================
+function rStandings() {
+  const el = document.getElementById('tab-standings');
+
+  const tbl = (teams, title) => {
+    const sorted = [...teams].sort((a,b) => b.wins-a.wins || a.losses-b.losses || (b.pf-b.pa)-(a.pf-a.pa));
+    return `<div class="s-table">
+      <div class="s-thead">${title}</div>
+      <div class="s-cols"><div>#</div><div>Team</div><div>W</div><div>L</div><div>PF</div><div>+/−</div></div>
+      ${sorted.map((t,i) => {
+        const diff = t.pf - t.pa;
+        return `<div class="s-row">
+          <div class="rk ${i<3?'t':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+          <div class="tnm">${xe(t.name)}</div>
+          <div class="st w">${t.wins}</div>
+          <div class="st l">${t.losses}</div>
+          <div class="st">${t.pf}</div>
+          <div class="st d" style="color:${diff>=0?'var(--success)':'var(--rose)'}">${diff>0?'+':''}${diff}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+
+  const g1 = S.c1.hist.length, g23 = S.c23.hist.length;
+  el.innerHTML = `
+    ${tbl(S.c1.teams, 'Main Court · 3v3')}
+    ${tbl(S.c23.teams, 'Courts 2 & 3 · King of Court')}
+    <p style="text-align:center;color:var(--text-dim);font-size:12px;margin-top:4px">${g1+g23} games completed</p>
+  `;
+}
+
+// ================================================================
+// COACH MODE
+// ================================================================
+function toggleCoach() {
+  if (S.coachOn) {
+    S.coachOn = false;
+    save(); render(); return;
+  }
+  modal({
+    title: 'Coach Mode',
+    body: `<input type="password" id="ci" placeholder="PIN" inputmode="numeric" maxlength="4"
+      style="text-align:center;letter-spacing:8px;font-size:26px;font-weight:900;margin-top:6px"
+      onkeydown="if(event.key==='Enter') confirmMo()">`,
+    ok: 'Enter',
+    onOk: () => {
+      const v = document.getElementById('ci')?.value;
+      if (v === S.coachPin) { S.coachOn = true; save(); render(); toast('Coach mode active'); }
+      else toast('Incorrect PIN');
+    },
+    onShow: () => setTimeout(() => document.getElementById('ci')?.focus(), 80)
+  });
+}
+
+function rCoach() {
+  const el = document.getElementById('tab-coach');
+  if (!S.coachOn) {
+    el.innerHTML = `<div class="pin-gate">
+      <h2>Coach Mode</h2>
+      <p>Tap the Coach button in the header to authenticate.</p>
+      <button class="btn-start" style="max-width:200px;margin:0 auto" onclick="toggleCoach()">Enter Coach Mode</button>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="coach-panel">
+      <div class="cp-head"><span class="cp-badge">Active</span><span style="font-size:13px;color:var(--text-dim)">Coach Mode On</span></div>
+      <div class="cp-row">
+        <label>Main Court win score</label>
+        <input type="number" value="${S.c1.target}" min="1" max="99"
+          onchange="S.c1.target=parseInt(this.value)||15;save();render()">
+      </div>
+      <div class="cp-row">
+        <label>Courts 2/3 win score</label>
+        <input type="number" value="${S.c23.target}" min="1" max="99"
+          onchange="S.c23.target=parseInt(this.value)||11;save();render()">
+      </div>
+      <div class="cp-row">
+        <label>Change coach PIN</label>
+        <input type="password" value="${S.coachPin}" maxlength="4" inputmode="numeric"
+          onchange="S.coachPin=this.value||'1234';save();toast('PIN updated')">
+      </div>
+    </div>
+
+    ${!S.c1.playoff?.active && S.c1.teams.length >= 6 ? `
+    <div class="coach-panel" style="border-color:var(--rose)">
+      <div class="cp-head"><span class="cp-badge">Playoffs</span><span style="font-size:13px;color:var(--text-dim)">Main Court</span></div>
+      <div class="cp-row">
+        <label>Start playoff bracket (seeds by current standings)</label>
+        <button class="act-btn" onclick="startPlayoffs()" style="border-color:var(--rose);color:var(--rose-light)">Start</button>
+      </div>
+    </div>` : S.c1.playoff?.active ? `
+    <div class="coach-panel sec">
+      <div class="cp-head"><span class="cp-badge lav">Playoffs Active</span></div>
+      <div class="cp-row"><label style="font-size:13px">Bracket is live on the Main Court tab.</label></div>
+    </div>` : ''}
+
+    <div class="coach-panel sec">
+      <div class="cp-head"><span class="cp-badge lav">Main Court Teams</span></div>
+      ${S.c1.teams.map(t => `
+        <div class="cp-row">
+          <label><strong>${xe(t.name)}</strong> &nbsp;${t.wins}W / ${t.losses}L</label>
+          <button class="act-btn" onclick="renameTeam('c1','${t.id}')">Rename</button>
+        </div>`).join('')}
+    </div>
+
+    <div class="coach-panel sec">
+      <div class="cp-head"><span class="cp-badge lav">Courts 2/3 Teams</span></div>
+      ${S.c23.teams.map(t => `
+        <div class="cp-row">
+          <label><strong>${xe(t.name)}</strong> &nbsp;${t.wins}W / ${t.losses}L</label>
+          <button class="act-btn" onclick="renameTeam('c23','${t.id}')">Rename</button>
+        </div>`).join('')}
+    </div>
+
+    <div class="coach-panel sec">
+      <div class="cp-head"><span class="cp-badge" style="background:var(--navy-light);color:var(--text-dim);border:1px solid var(--border)">Court 2/3 Queue</span></div>
+      <div class="cp-row">
+        <label style="font-size:13px">Promoted (↑ c3 winners): ${S.c23.promoted.map(id => xe(S.c23.teams.find(t=>t.id===id)?.name??'?')).join(', ') || 'none'}</label>
+      </div>
+      <div class="cp-row">
+        <label style="font-size:13px">Demoted (↓ c2 losers): ${S.c23.demoted.map(id => xe(S.c23.teams.find(t=>t.id===id)?.name??'?')).join(', ') || 'none'}</label>
+      </div>
+      <div class="cp-row">
+        <label style="font-size:13px">General queue: ${S.c23.queue.map(id => xe(S.c23.teams.find(t=>t.id===id)?.name??'?')).join(', ') || 'none'}</label>
+      </div>
+    </div>
+
+    <div class="coach-panel sec">
+      <div class="cp-head"><span class="cp-badge" style="background:#4A1A22">Danger Zone</span></div>
+      <div class="cp-row">
+        <label>Reset all W/L stats (keep teams)</label>
+        <button class="act-btn danger" onclick="resetStats()">Reset</button>
+      </div>
+      <div class="cp-row">
+        <label>Return to setup (full reset)</label>
+        <button class="act-btn danger" onclick="fullReset()">Full Reset</button>
+      </div>
+    </div>
+  `;
+}
+
+function renameTeam(sec, id) {
+  const teams = sec === 'c1' ? S.c1.teams : S.c23.teams;
+  const t = teams.find(x => x.id === id);
+  if (!t) return;
+  modal({
+    title: 'Rename Team',
+    body: `<input type="text" id="ri" value="${xe(t.name)}" maxlength="22" style="margin-top:6px"
+      onkeydown="if(event.key==='Enter') confirmMo()">`,
+    ok: 'Save',
+    onOk: () => {
+      const v = document.getElementById('ri')?.value?.trim();
+      if (v) { t.name = v; save(); render(); toast('Team renamed'); }
+    },
+    onShow: () => setTimeout(() => { const i = document.getElementById('ri'); if(i){i.focus();i.select();} }, 80)
+  });
+}
+
+function coachLaunchC1(gid) {
+  const g = S.c1.games.find(x => x.id === gid);
+  if (!g) return;
+  if (S.c1.sitting.length < 2) { toast('Not enough sitting teams'); return; }
+  launchC1Game(g);
+  save(); render();
+}
+
+function coachLaunchC23(court) {
+  launchC23(court);
+  save(); render();
+}
+
+function resetStats() {
+  modal({
+    title: 'Reset Scores?',
+    body: 'Clears all W/L records and game history. Team names are kept.',
+    ok: 'Reset',
+    okCls: 'rose',
+    onOk: () => {
+      [...S.c1.teams, ...S.c23.teams].forEach(t => { t.wins=0;t.losses=0;t.pf=0;t.pa=0; });
+      S.c1.hist = []; S.c23.hist = [];
+      save(); render(); toast('Stats reset');
+    }
+  });
+}
+
+function fullReset() {
+  modal({
+    title: 'Full Reset?',
+    body: 'Deletes all data and returns to setup. Cannot be undone.',
+    ok: 'Reset Everything',
+    okCls: 'rose',
+    onOk: () => { localStorage.removeItem('tourn_v2'); location.reload(); }
+  });
+}
+
+// ================================================================
+// MODAL
+// ================================================================
+let _moCb = null, _moShow = null;
+
+function modal({title, body, ok, okCls, onOk, onShow}) {
+  _moCb = onOk; _moShow = onShow;
+  document.getElementById('mo-box').innerHTML = `
+    <h2>${xe(title)}</h2>
+    <div class="mo-body">${body}</div>
+    <div class="mo-acts">
+      <button class="btn-cxl" onclick="mxClose()">Cancel</button>
+      <button class="btn-ok ${okCls||''}" onclick="confirmMo()">${xe(ok||'OK')}</button>
+    </div>`;
+  document.getElementById('mo-ov').classList.remove('hidden');
+  if (onShow) onShow();
+}
+
+function mxClose(e) {
+  if (e && e.target !== document.getElementById('mo-ov')) return;
+  document.getElementById('mo-ov').classList.add('hidden');
+  _moCb = null;
+}
+
+function confirmMo() {
+  document.getElementById('mo-ov').classList.add('hidden');
+  if (_moCb) { const cb = _moCb; _moCb = null; cb(); }
+}
+
+// ================================================================
+// SAVE / UTILS
+// ================================================================
+function save() { localStorage.setItem('tourn_v2', JSON.stringify(S)); }
+
+function xe(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let _tt;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ================================================================
+// BOOT
+// ================================================================
+init();
+</script>
+</body>
+</html>
