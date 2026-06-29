@@ -225,7 +225,7 @@ input::placeholder{color:var(--text-dim)}
 
   <!-- Court 1 -->
   <div class="s-card">
-    <div class="s-label">Court 1 <span class="tag">3v3</span></div>
+    <div class="s-label">Main Court <span class="tag">3v3</span></div>
     <div id="c1-teams"></div>
     <div class="cfg-row">
       <label>Win score</label>
@@ -268,8 +268,8 @@ input::placeholder{color:var(--text-dim)}
     <button class="coach-tog" id="coach-btn" onclick="toggleCoach()">Coach</button>
   </div>
   <nav class="tab-bar">
-    <button class="tab-item on" data-tab="court1" onclick="goTab('court1',this)">Court 1</button>
-    <button class="tab-item" data-tab="courts23" onclick="goTab('courts23',this)">Courts 2/3</button>
+    <button class="tab-item on" data-tab="court1" onclick="goTab('court1',this)">Main Court</button>
+    <button class="tab-item" data-tab="courts23" onclick="goTab('courts23',this)">Courts 2 & 3</button>
     <button class="tab-item" data-tab="standings" onclick="goTab('standings',this)">Standings</button>
     <button class="tab-item" data-tab="coach" onclick="goTab('coach',this)">Coach</button>
   </nav>
@@ -564,7 +564,7 @@ function rCourt1() {
 
   el.innerHTML = `
     <div class="court-head">
-      <span class="cn">Court 1</span>
+      <span class="cn">Main Court</span>
       <span class="cf">3v3</span>
       <span class="ct">First to ${target}</span>
     </div>
@@ -876,7 +876,7 @@ function rStandings() {
 
   const g1 = S.c1.hist.length, g23 = S.c23.hist.length;
   el.innerHTML = `
-    ${tbl(S.c1.teams, 'Court 1 · 3v3')}
+    ${tbl(S.c1.teams, 'Main Court · 3v3')}
     ${tbl(S.c23.teams, 'Courts 2 & 3 · King of Court')}
     <p style="text-align:center;color:var(--text-dim);font-size:12px;margin-top:4px">${g1+g23} games completed</p>
   `;
@@ -920,7 +920,7 @@ function rCoach() {
     <div class="coach-panel">
       <div class="cp-head"><span class="cp-badge">Active</span><span style="font-size:13px;color:var(--text-dim)">Coach Mode On</span></div>
       <div class="cp-row">
-        <label>Court 1 win score</label>
+        <label>Main Court win score</label>
         <input type="number" value="${S.c1.target}" min="1" max="99"
           onchange="S.c1.target=parseInt(this.value)||15;save();render()">
       </div>
@@ -937,7 +937,7 @@ function rCoach() {
     </div>
 
     <div class="coach-panel sec">
-      <div class="cp-head"><span class="cp-badge lav">Court 1 Teams</span></div>
+      <div class="cp-head"><span class="cp-badge lav">Main Court Teams</span></div>
       ${S.c1.teams.map(t => `
         <div class="cp-row">
           <label><strong>${xe(t.name)}</strong> &nbsp;${t.wins}W / ${t.losses}L</label>
