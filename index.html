@@ -1777,6 +1777,11 @@ async function onBktPlayerChange(pid){
 }
 
 function buildBracketPinGateHtml(){
+  const player = state.players.find(p=>p.id===bktPlayerId);
+  const isEmily = player?.name?.toLowerCase().includes('emily');
+  const sillyGooseBtn = isEmily
+    ? `<button class="btn-ghost" style="width:100%;margin-top:12px;font-size:13px" onclick="sillyGooseReset()">🪿 I'm a silly goose — reset my PIN</button>`
+    : "";
   return `<div class="bkt-pin-block" style="margin-top:8px">
     <div class="bkt-tb-label">🔑 Enter Your PIN</div>
     <div class="bkt-tb-desc">Enter your PIN to view your picks. Once all 31 picks are locked in, you'll get the PIN to see everyone's brackets on the <b>All Picks</b> tab.</div>
@@ -1786,7 +1791,20 @@ function buildBracketPinGateHtml(){
         onkeydown="if(event.key==='Enter') verifyBracketPin()" />
       <button class="btn-gold" onclick="verifyBracketPin()">Lock In</button>
     </div>
+    ${sillyGooseBtn}
   </div>`;
+}
+
+async function sillyGooseReset(){
+  if(!bktPlayerId){ toast("Select your name first"); return; }
+  const {data, error} = await sb.rpc("reset_bracket_pin", {p_player_id: bktPlayerId});
+  if(error || !data){ toast("Couldn't reset PIN — try again 🪿"); return; }
+  try{ localStorage.removeItem("wc_bkt_pin_"+bktPlayerId); }catch(e){}
+  bktPin = null;
+  bktNeedsPin = true;
+  bktPinVerified = false;
+  toast("PIN cleared! Create a new one below 🪿");
+  renderBracket();
 }
 
 // Returns true if a knockout match's kickoff time has passed (picks are locked)
