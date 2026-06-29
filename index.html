@@ -1877,8 +1877,6 @@ function buildMyBracketHtml(){
         <div class="bkt-pin-row">
           <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin"
             placeholder="New PIN" autocomplete="off" />
-          <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin-confirm"
-            placeholder="Confirm" autocomplete="off" />
         </div>
       </div>`;
 
@@ -2086,8 +2084,6 @@ async function submitRealBracket(){
   const pin = $("#bkt-pin")?.value?.trim();
   if(!pin){ toast((bktSubmitted && !bktNeedsPin) ? "Enter your PIN to save" : "Create a PIN first"); return; }
   if(!bktSubmitted || bktNeedsPin){
-    const pinConfirm = $("#bkt-pin-confirm")?.value?.trim();
-    if(pin !== pinConfirm){ toast("PINs don't match — try again"); return; }
     if(pin.length < 4){ toast("PIN must be at least 4 characters"); return; }
   }
 
