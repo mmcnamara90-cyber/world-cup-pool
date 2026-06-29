@@ -1820,6 +1820,7 @@ function buildMyBracketHtml(){
   const totalCount = allMatches.length;
   const hasOverrides = bktOverrideMatches.length > 0;
   const directOverrideCount = state.bracket_picks.filter(p=>p.player_id===bktPlayerId && p.commissioner_at).length;
+  const isEmily = !!state.players.find(p=>p.id===bktPlayerId)?.name?.toLowerCase().includes('emily');
 
   const lockInBanner = (submitted && pickedCount === totalCount)
     ? `<div class="bkt-lockin-banner">
@@ -1829,12 +1830,13 @@ function buildMyBracketHtml(){
     : "";
 
   // PIN gate: player has existing picks + PIN but hasn't verified this session
-  if(submitted && !bktPinVerified && !bktNeedsPin && !hasOverrides){
+  // Emily is exempt — she saves without a PIN
+  if(!isEmily && submitted && !bktPinVerified && !bktNeedsPin && !hasOverrides){
     return buildBracketPinGateHtml();
   }
 
   // Override PIN gate: commissioner changed a pick, player needs to verify to review
-  if(hasOverrides && !bktPinVerified){
+  if(!isEmily && hasOverrides && !bktPinVerified){
     return `<div class="bkt-status" style="border-color:var(--gold)">📋 <b>${directOverrideCount} of your pick${directOverrideCount!==1?'s were':' was'} updated by the commissioner.</b> Enter your PIN to review and save your choices.</div>`
       + buildBracketPinGateHtml();
   }
@@ -1858,27 +1860,29 @@ function buildMyBracketHtml(){
 
   const picksHtml = buildBracketPicksHtml("real", bktPicks, null);
   const tbHtml = buildTiebreakerHtml();
-  const submitLabel = (submitted && !bktNeedsPin) ? "Save Changes" : "Save Bracket";
+  const submitLabel = (submitted && !bktNeedsPin && !isEmily) ? "Save Changes" : "Save Bracket";
   const pinId = hasOverrides ? "bkt-pin-override" : "bkt-pin";
-  const saveAction = hasOverrides ? "submitOverridePicks()" : "submitRealBracket()";
+  const saveAction = isEmily ? "submitEmilyBracket()" : (hasOverrides ? "submitOverridePicks()" : "submitRealBracket()");
 
-  const pinBlock = (submitted && !bktNeedsPin)
-    ? `<div class="bkt-pin-block">
-        <div class="bkt-tb-label">🔑 Your PIN</div>
-        <div class="bkt-tb-desc">Enter your PIN to save your picks.</div>
-        <div class="bkt-pin-row">
-          <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="${pinId}"
-            placeholder="••••" value="${bktPin||''}" autocomplete="off" />
-        </div>
-      </div>`
-    : `<div class="bkt-pin-block">
-        <div class="bkt-tb-label">🔐 Create a PIN</div>
-        <div class="bkt-tb-desc">Pick a PIN you'll remember — you'll need it to view and update your picks later.</div>
-        <div class="bkt-pin-row">
-          <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin"
-            placeholder="New PIN" autocomplete="off" />
-        </div>
-      </div>`;
+  const pinBlock = isEmily
+    ? ""
+    : (submitted && !bktNeedsPin)
+      ? `<div class="bkt-pin-block">
+          <div class="bkt-tb-label">🔑 Your PIN</div>
+          <div class="bkt-tb-desc">Enter your PIN to save your picks.</div>
+          <div class="bkt-pin-row">
+            <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="${pinId}"
+              placeholder="••••" value="${bktPin||''}" autocomplete="off" />
+          </div>
+        </div>`
+      : `<div class="bkt-pin-block">
+          <div class="bkt-tb-label">🔐 Create a PIN</div>
+          <div class="bkt-tb-desc">Pick a PIN you'll remember — you'll need it to view and update your picks later.</div>
+          <div class="bkt-pin-row">
+            <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin"
+              placeholder="New PIN" autocomplete="off" />
+          </div>
+        </div>`;
 
   const progressHtml = `<div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:8px">${pickedCount} of ${totalCount} picks made</div>`;
   const submitBtn = `${progressHtml}<button class="btn-gold bkt-submit" onclick="${saveAction}">${submitLabel}</button>`;
@@ -2102,6 +2106,28 @@ async function submitRealBracket(){
 
   try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
   bktPin = pin;
+  bktPinVerified = true;
+  bktNeedsPin = false;
+  toast(`${picksArray.length} of ${allMatches.length} picks saved! 🎉`);
+  bktSubmitted = true;
+  await loadAll();
+  renderBracket();
+}
+
+async function submitEmilyBracket(){
+  if(!bktPlayerId){ toast("Select your name first"); return; }
+  const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
+  const picksArray = allMatches.filter(mn=>bktPicks[mn]).map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
+  if(picksArray.length === 0){ toast("Make at least one pick before saving"); return; }
+  const goals = (bktTbGoals !== null && !isNaN(bktTbGoals)) ? bktTbGoals : null;
+
+  const {data, error} = await sb.rpc("save_bracket_no_pin",{
+    p_player_id: bktPlayerId,
+    p_picks: picksArray,
+    p_goals: goals,
+  });
+  if(error || data === false){ console.error(error); toast("Couldn't save — try again"); return; }
+
   bktPinVerified = true;
   bktNeedsPin = false;
   toast(`${picksArray.length} of ${allMatches.length} picks saved! 🎉`);
