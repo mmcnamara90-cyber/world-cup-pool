@@ -195,7 +195,7 @@
   .mr-btn.disabled{opacity:.45;cursor:default}
   .mr-cnt{font-size:12px;color:var(--muted);font-weight:600}
 
-  /* Pool Tips */
+  /* Pool Tips (kept for Scores tab) */
   .tips-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px;position:relative;min-height:72px}
   .tips-card .section-title{margin-bottom:10px}
   .tip-text{font-size:14px;line-height:1.55;color:var(--text);min-height:42px;transition:opacity .3s}
@@ -203,6 +203,18 @@
   .tip-dots{display:flex;gap:6px;margin-top:12px;justify-content:center}
   .tip-dot{width:7px;height:7px;border-radius:50%;background:var(--line);cursor:pointer;transition:background .2s}
   .tip-dot.active{background:var(--gold)}
+
+  /* Knockout Upcoming Games widget */
+  .ko-upcoming{background:rgba(34,197,94,.09) !important;border-color:rgba(34,197,94,.38) !important}
+  .ko-match{padding:12px 0;border-bottom:1px solid rgba(34,197,94,.18)}
+  .ko-match:last-child{border-bottom:none;padding-bottom:0}
+  .ko-round{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#16a34a;font-weight:700;margin-bottom:6px}
+  .ko-matchup{display:flex;align-items:flex-start;gap:10px}
+  .ko-side{flex:1;min-width:0}
+  .ko-away{text-align:right}
+  .ko-team{font-size:15px;font-weight:700;color:var(--text)}
+  .ko-pickers{font-size:12px;color:#16a34a;margin-top:3px;line-height:1.4}
+  .ko-vs{font-size:13px;color:var(--muted);font-weight:600;flex-shrink:0;padding-top:2px}
 
   /* Auto-Draft Advisor */
   .btn-pop{background:#1aad9e;color:#fff;padding:13px 20px;letter-spacing:.4px;font-size:15px;font-weight:700;border-radius:11px;border:none;cursor:pointer;white-space:nowrap}
@@ -974,23 +986,70 @@ function renderLeaderboard(){
   });
   html+=`</tbody></table></div>`;
 
-  // Fun facts — 3 max, live-first
-  const facts = computeFunFacts();
-  if(facts.length){
-    html+=`<div class="card"><div class="section-title">Fun Facts</div>
-      ${facts.map(f=>`<div class="fact-row">${f}</div>`).join("")}
-    </div>`;
-  }
+  html += buildKnockoutUpcomingHtml();
 
   $("#tab-leaderboard").innerHTML = html;
   $$("#tab-leaderboard .expand").forEach(tr=>tr.addEventListener("click",()=>{
     const d=$(`[data-det="${tr.dataset.pid}"]`); if(d) d.classList.toggle("hidden");
   }));
-  // Embed Smack Talk beneath leaderboard content
-  const stContainer=document.createElement("div");
-  stContainer.id="tab-smacktalk";
-  $("#tab-leaderboard").appendChild(stContainer);
-  renderSmackTalk();
+}
+
+function buildKnockoutUpcomingHtml(){
+  const allKnockoutMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
+  const playedNums = new Set(state.bracket_results.map(r=>r.match_num));
+
+  // Next 4 unplayed matches whose teams are at least partially known
+  const upcoming = allKnockoutMatches
+    .filter(mn=>!playedNums.has(mn))
+    .slice(0,4);
+
+  if(!upcoming.length){
+    return `<div class="card ko-upcoming"><div class="section-title">Knockout Schedule</div><p class="hint" style="margin:0">All matches complete!</p></div>`;
+  }
+
+  function roundLabel(mn){
+    if(mn<=88) return "Round of 32";
+    if(mn<=96) return "Round of 16";
+    if(mn<=100) return "Quarterfinal";
+    if(mn<=102) return "Semifinal";
+    return "Final";
+  }
+
+  const cards = upcoming.map(mn=>{
+    const [teamA, teamB] = bktGetTeams(mn, {}, "real");
+    const tbd = teamA==="TBD" && teamB==="TBD";
+
+    // Which pool players picked each team in this match
+    const pickedA = tbd ? [] : state.bracket_picks
+      .filter(p=>p.match_num===mn && p.picked_team===teamA)
+      .map(p=>state.players.find(pl=>pl.id===p.player_id)?.name).filter(Boolean);
+    const pickedB = tbd ? [] : state.bracket_picks
+      .filter(p=>p.match_num===mn && p.picked_team===teamB)
+      .map(p=>state.players.find(pl=>pl.id===p.player_id)?.name).filter(Boolean);
+
+    const aLabel = teamA==="TBD" ? '<span style="color:var(--muted);font-style:italic">TBD</span>' : esc(teamA);
+    const bLabel = teamB==="TBD" ? '<span style="color:var(--muted);font-style:italic">TBD</span>' : esc(teamB);
+
+    return `<div class="ko-match">
+      <div class="ko-round">${roundLabel(mn)} · Match ${mn}</div>
+      <div class="ko-matchup">
+        <div class="ko-side">
+          <div class="ko-team">${aLabel}</div>
+          ${pickedA.length ? `<div class="ko-pickers">${pickedA.map(esc).join(', ')}</div>` : ''}
+        </div>
+        <div class="ko-vs">vs</div>
+        <div class="ko-side ko-away">
+          <div class="ko-team">${bLabel}</div>
+          ${pickedB.length ? `<div class="ko-pickers">${pickedB.map(esc).join(', ')}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="card ko-upcoming">
+    <div class="section-title">⚽ Upcoming Knockout Games</div>
+    ${cards}
+  </div>`;
 }
 
 async function addMatchReaction(matchId, emoji){
