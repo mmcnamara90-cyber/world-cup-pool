@@ -1679,13 +1679,13 @@ async function onBktPlayerChange(pid){
 
 function buildBracketPinGateHtml(){
   return `<div class="bkt-pin-block" style="margin-top:8px">
-    <div class="bkt-tb-label">🔒 Bracket Hidden Until Deadline</div>
-    <div class="bkt-tb-desc">To prevent peeking, brackets are locked until 12:00 PM PT on Sunday. Enter your PIN to view and edit your picks.</div>
+    <div class="bkt-tb-label">🔑 Enter Your PIN</div>
+    <div class="bkt-tb-desc">Enter your PIN to view your picks. Once all 31 picks are locked in, you'll get the PIN to see everyone's brackets on the <b>All Picks</b> tab.</div>
     <div class="bkt-pin-row">
       <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-verify-pin"
         placeholder="Your PIN" autocomplete="off"
         onkeydown="if(event.key==='Enter') verifyBracketPin()" />
-      <button class="btn-gold" onclick="verifyBracketPin()">Unlock</button>
+      <button class="btn-gold" onclick="verifyBracketPin()">Lock In</button>
     </div>
   </div>`;
 }
