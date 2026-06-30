@@ -1034,8 +1034,10 @@ function buildKnockoutUpcomingHtml(){
   const playedNums = new Set(state.bracket_results.map(r=>r.match_num));
 
   // Next 4 unplayed matches sorted by kickoff time
+  // Exclude matches whose kickoff has already passed (result may not be entered yet)
+  const now = new Date();
   const upcoming = allKnockoutMatches
-    .filter(mn=>!playedNums.has(mn))
+    .filter(mn=>!playedNums.has(mn) && (!KNOCKOUT_KICKOFFS[mn] || now < new Date(KNOCKOUT_KICKOFFS[mn])))
     .sort((a,b)=>new Date(KNOCKOUT_KICKOFFS[a]||0)-new Date(KNOCKOUT_KICKOFFS[b]||0))
     .slice(0,4);
 
