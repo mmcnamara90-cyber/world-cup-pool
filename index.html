@@ -1698,10 +1698,6 @@ function renderBracket(){
 }
 
 function buildRealBracketHtml(){
-  const noticeHtml = `<div class="bkt-notice">
-    📣 <b>Building this bracket has been bumpy!</b> Games will now lock before they begin and any downstream effects will remain, but you can continue to update Round of 32 games since things are wonky.
-  </div>`;
-
   const playerOpts = state.players.map(p=>
     `<option value="${p.id}"${bktPlayerId===p.id?" selected":""}>${esc(p.name)}</option>`
   ).join('');
@@ -1731,7 +1727,7 @@ function buildRealBracketHtml(){
   // Current player's picks (or empty bracket to fill)
   const playerPicksHtml = bktPlayerId ? buildMyBracketHtml() : "";
 
-  return noticeHtml + identityHtml + lbHtml + adminHtml + overrideBanner + playerPicksHtml;
+  return identityHtml + lbHtml + adminHtml + overrideBanner + playerPicksHtml;
 }
 
 async function onBktPlayerChange(pid){
@@ -1825,8 +1821,7 @@ function buildMyBracketHtml(){
 
   const lockInBanner = (submitted && pickedCount === totalCount)
     ? `<div class="bkt-lockin-banner">
-        <b>All ${totalCount} picks locked in!</b> Head to the <b>All Picks</b> tab to compare everyone's brackets — enter the shared PIN when prompted.
-        <span class="lockin-pin">${ALL_PICKS_PIN}</span>
+        <b>All ${totalCount} picks locked in!</b> Head to the <b>All Picks</b> tab to compare everyone's brackets.
       </div>`
     : "";
 
@@ -2220,56 +2215,23 @@ function renderAllBrackets(){
   if(!tab) return;
   tab.innerHTML = buildAllBracketsHtml();
 
-  // Wire PIN gate
-  $("#va-pin")?.addEventListener("keydown", e=>{ if(e.key==="Enter") unlockAllBrackets(); });
-  $("#va-unlock-btn")?.addEventListener("click", unlockAllBrackets);
-
   // Wire round tabs
   BRACKET_ROUNDS.forEach((_,i)=>{
     const btn = $(`#abkt-round-${i}`);
     if(btn) btn.addEventListener("click",()=>{ allBracketsRound=i; renderAllBrackets(); });
   });
-
-  // Wire lock button
-  $("#va-lock-btn")?.addEventListener("click",()=>{
-    viewAllUnlocked=false;
-    try{ localStorage.removeItem("wc_view_all"); }catch(e){}
-    renderAllBrackets();
-  });
 }
 
 function buildAllBracketsHtml(){
-  if(!viewAllUnlocked){
-    return `<div class="abkt-gate">
-      <div class="section-title">All Picks</div>
-      <p>Enter the shared bracket PIN to compare everyone's picks side by side.</p>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <input type="password" id="va-pin" class="field" placeholder="Shared PIN"
-          style="max-width:150px;text-align:center;letter-spacing:4px" autocomplete="off" inputmode="numeric" />
-        <button class="btn-gold" id="va-unlock-btn" style="max-width:130px">View Picks</button>
-      </div>
-    </div>`;
-  }
-
   const lbHtml   = buildAllBracketsBoardHtml();
-  const lockBtn  = `<div style="text-align:right;margin-bottom:10px">
-    <button class="btn-ghost" id="va-lock-btn" style="font-size:12px;padding:7px 12px;border-radius:9px">🔒 Lock view</button>
-  </div>`;
   const roundTabs = `<div class="abkt-round-tabs">
     ${BRACKET_ROUNDS.map((r,i)=>`<button class="abkt-round-tab${i===allBracketsRound?' active':''}" id="abkt-round-${i}">${r.label}</button>`).join('')}
   </div>`;
   const gridHtml  = `<div class="card" style="padding:14px 12px">${buildRoundTableHtml(allBracketsRound)}</div>`;
 
-  return lbHtml + lockBtn + roundTabs + gridHtml;
+  return lbHtml + roundTabs + gridHtml;
 }
 
-function unlockAllBrackets(){
-  const pin = ($("#va-pin")?.value||"").trim();
-  if(pin !== ALL_PICKS_PIN){ toast("Incorrect PIN — try again"); return; }
-  viewAllUnlocked = true;
-  try{ localStorage.setItem("wc_view_all","yes"); }catch(e){}
-  renderAllBrackets();
-}
 
 function buildAllBracketsBoardHtml(){
   const scoredPlayers = state.players.map(p=>{
