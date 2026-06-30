@@ -1820,7 +1820,8 @@ function buildMyBracketHtml(){
   const totalCount = allMatches.length;
   const hasOverrides = bktOverrideMatches.length > 0;
   const directOverrideCount = state.bracket_picks.filter(p=>p.player_id===bktPlayerId && p.commissioner_at).length;
-  const isEmily = !!state.players.find(p=>p.id===bktPlayerId)?.name?.toLowerCase().includes('emily');
+  const playerName = state.players.find(p=>p.id===bktPlayerId)?.name?.toLowerCase() || "";
+  const isPinFree = playerName.includes('emily') || playerName.includes('jess');
 
   const lockInBanner = (submitted && pickedCount === totalCount)
     ? `<div class="bkt-lockin-banner">
@@ -1830,13 +1831,13 @@ function buildMyBracketHtml(){
     : "";
 
   // PIN gate: player has existing picks + PIN but hasn't verified this session
-  // Emily is exempt — she saves without a PIN
-  if(!isEmily && submitted && !bktPinVerified && !bktNeedsPin && !hasOverrides){
+  // Emily and Jess are exempt — they save without a PIN
+  if(!isPinFree && submitted && !bktPinVerified && !bktNeedsPin && !hasOverrides){
     return buildBracketPinGateHtml();
   }
 
   // Override PIN gate: commissioner changed a pick, player needs to verify to review
-  if(!isEmily && hasOverrides && !bktPinVerified){
+  if(!isPinFree && hasOverrides && !bktPinVerified){
     return `<div class="bkt-status" style="border-color:var(--gold)">📋 <b>${directOverrideCount} of your pick${directOverrideCount!==1?'s were':' was'} updated by the commissioner.</b> Enter your PIN to review and save your choices.</div>`
       + buildBracketPinGateHtml();
   }
@@ -1860,11 +1861,11 @@ function buildMyBracketHtml(){
 
   const picksHtml = buildBracketPicksHtml("real", bktPicks, null);
   const tbHtml = buildTiebreakerHtml();
-  const submitLabel = (submitted && !bktNeedsPin && !isEmily) ? "Save Changes" : "Save Bracket";
+  const submitLabel = (submitted && !bktNeedsPin && !isPinFree) ? "Save Changes" : "Save Bracket";
   const pinId = hasOverrides ? "bkt-pin-override" : "bkt-pin";
-  const saveAction = isEmily ? "submitEmilyBracket()" : (hasOverrides ? "submitOverridePicks()" : "submitRealBracket()");
+  const saveAction = isPinFree ? "submitNoPinBracket()" : (hasOverrides ? "submitOverridePicks()" : "submitRealBracket()");
 
-  const pinBlock = isEmily
+  const pinBlock = isPinFree
     ? ""
     : (submitted && !bktNeedsPin)
       ? `<div class="bkt-pin-block">
@@ -2114,7 +2115,7 @@ async function submitRealBracket(){
   renderBracket();
 }
 
-async function submitEmilyBracket(){
+async function submitNoPinBracket(){
   if(!bktPlayerId){ toast("Select your name first"); return; }
   const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
   const picksArray = allMatches.filter(mn=>bktPicks[mn]).map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
