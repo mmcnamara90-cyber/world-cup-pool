@@ -406,7 +406,6 @@
 
     <nav class="tabs">
       <button data-tab="leaderboard" class="active">Leaderboard</button>
-      <button data-tab="matches">Scores</button>
       <button data-tab="bracket">Bracket</button>
       <button data-tab="allbrackets">All Picks</button>
       <button data-tab="recaps">Updates</button>
@@ -536,6 +535,7 @@ const CLUB_CONNECTIONS = new Set([
 let state = { players:[], teams:[], matches:[], settings:{}, recaps:[], smacktalk:[], smacktalk_reactions:[], match_reaction_counts:[], bracket_picks:[], bracket_tiebreaker:[], bracket_results:[] };
 let currentTab = "leaderboard";
 let matchFilterGroup = "all";
+let scoresArchiveMode = false;
 let isAdmin = false;
 let adminPw = null;
 let mtwEditorOpen = false;
@@ -2322,8 +2322,9 @@ function renderMatches(){
   const lastSync = state.settings["last_sync"];
   const syncNote = lastSync ? ` · Auto-synced ${formatLastSync()}` : '';
 
+  const canEdit = isAdmin && !scoresArchiveMode;
   let html=`<div class="card"><h2>Match Scores</h2>
-    <p class="hint">${isAdmin ? 'Enter final scores (pre-shootout). Standings update instantly for everyone.' : `Live results — only the commissioner can enter scores.${syncNote}`}</p>
+    <p class="hint">${canEdit ? 'Enter final scores (pre-shootout). Standings update instantly for everyone.' : `Group stage results — archived for reference.${syncNote}`}</p>
     <div class="filters">
       <select id="grpFilter"><option value="all">All groups</option>${groups.map(g=>`<option value="${g}" ${matchFilterGroup===g?'selected':''}>Group ${g}</option>`).join("")}</select>
     </div></div>`;
@@ -2345,7 +2346,7 @@ function renderMatches(){
           <span class="tm ${hWin?'winner':''}">${esc(m.home_team)}</span>
           <span class="own ${ho?'':'none'}">${ho?esc(ho):'unassigned'}</span>
         </div>
-        <div class="scorebox">${ isAdmin
+        <div class="scorebox">${ canEdit
           ? `<input type="number" min="0" inputmode="numeric" data-mid="${m.id}" data-side="home" value="${hs===null?'':hs}"><span>–</span><input type="number" min="0" inputmode="numeric" data-mid="${m.id}" data-side="away" value="${as_===null?'':as_}">`
           : `<span class="sc">${hs===null?'·':hs}</span><span>–</span><span class="sc">${as_===null?'·':as_}</span>` }
         </div>
@@ -2369,12 +2370,14 @@ function renderMatches(){
   }));
   startTipRotation();
   $("#grpFilter").addEventListener("change",e=>{ matchFilterGroup=e.target.value; renderMatches(); });
-  $$('#tab-matches input[data-mid]').forEach(inp=>{
-    inp.addEventListener("change", onScoreChange);
-    inp.addEventListener("keydown", e=>{
-      if(e.key==="Enter"){ e.preventDefault(); inp.blur(); }
+  if(canEdit){
+    $$('#tab-matches input[data-mid]').forEach(inp=>{
+      inp.addEventListener("change", onScoreChange);
+      inp.addEventListener("keydown", e=>{
+        if(e.key==="Enter"){ e.preventDefault(); inp.blur(); }
+      });
     });
-  });
+  }
 }
 
 async function onScoreChange(e){
@@ -2446,7 +2449,14 @@ async function postRecap(){
 /* ---- Settings ---- */
 function renderSettings(){
   // Teams section — visible to everyone
-  let html=`<div id="tab-teams"></div>`;
+  let html=`<div id="tab-teams"></div>
+  <div class="card">
+    <h2>Group Stage Scores</h2>
+    <p class="hint">The group stage is over. View the final match results here.</p>
+    <div class="btn-line">
+      <button class="btn-ghost" onclick="scoresArchiveMode=true;switchTab('matches')">📊 View Group Stage Scores</button>
+    </div>
+  </div>`;
 
   // Admin-only sections
   if(isAdmin){
@@ -2540,6 +2550,7 @@ function flash(id){ const e=$("#"+id); if(!e)return; e.classList.add("show"); se
 
 /* ====================== Tabs ====================== */
 function switchTab(tab){
+  if(currentTab==="matches" && tab!=="matches") scoresArchiveMode = false;
   currentTab=tab;
   $$("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   ["leaderboard","matches","bracket","allbrackets","recaps","settings"].forEach(t=>{ const el=$("#tab-"+t); if(el) el.classList.toggle("hidden",t!==tab); });
