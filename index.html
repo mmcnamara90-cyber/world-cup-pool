@@ -408,7 +408,6 @@
       <button data-tab="leaderboard" class="active">Leaderboard</button>
       <button data-tab="bracket">Bracket</button>
       <button data-tab="allbrackets">All Picks</button>
-      <button data-tab="recaps">Updates</button>
       <button data-tab="settings" id="settingsTab">Settings</button>
     </nav>
 
@@ -2455,6 +2454,13 @@ function renderSettings(){
     <p class="hint">The group stage is over. View the final match results here.</p>
     <div class="btn-line">
       <button class="btn-ghost" onclick="scoresArchiveMode=true;switchTab('matches')">📊 View Group Stage Scores</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Updates</h2>
+    <p class="hint">Group stage recaps and pool updates.</p>
+    <div class="btn-line">
+      <button class="btn-ghost" onclick="switchTab('recaps')">📰 View Updates</button>
     </div>
   </div>`;
 
