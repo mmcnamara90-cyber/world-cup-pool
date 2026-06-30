@@ -1961,34 +1961,44 @@ function buildTiebreakerHtml(){
 }
 
 function buildBracketLeaderboardHtml(){
+  const {rows: lbRows} = computeLeaderboard();
+  const groupPtsMap = {};
+  lbRows.forEach(r=>{ groupPtsMap[r.player.id] = r.groupPts; });
+
   const scoredPlayers = state.players.map(p=>{
     const s = computeBracketScore(p.id);
     const tb = state.bracket_tiebreaker.find(t=>t.player_id===p.id);
     const hasSubmitted = state.bracket_picks.filter(x=>x.player_id===p.id).length > 0;
-    return {...s, player:p, hasSubmitted, tbGoals:tb?.goals_prediction??null};
+    const groupPts = groupPtsMap[p.id] || 0;
+    const totalPts = groupPts + s.pts;
+    return {...s, player:p, hasSubmitted, tbGoals:tb?.goals_prediction??null, groupPts, totalPts};
   }).filter(r=>r.hasSubmitted);
 
   if(scoredPlayers.length === 0){
     return `<div class="card"><div class="section-title">🏆 Bracket Standings</div><div style="color:var(--muted);font-size:14px;padding:8px 0">No brackets submitted yet.</div></div>`;
   }
 
-  scoredPlayers.sort((a,b)=>b.pts-a.pts||b.correct-a.correct);
+  scoredPlayers.sort((a,b)=>b.totalPts-a.totalPts||b.correct-a.correct);
   const rows = scoredPlayers.map((r,i)=>`
     <tr>
       <td class="rank">${i+1}</td>
       <td class="pname">${esc(r.player.name)}</td>
       <td style="text-align:center;font-size:13px;color:var(--muted)">${r.correct}/${r.total}</td>
-      <td style="font-weight:800;font-size:17px;text-align:right;color:var(--gold)">${r.pts}</td>
+      <td style="text-align:right">
+        <div style="font-weight:800;font-size:17px;color:var(--gold)">${r.totalPts}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px">${r.groupPts} gs + ${r.pts} bkt</div>
+      </td>
     </tr>`).join('');
 
   return `<div class="card" style="margin-bottom:14px">
     <div class="section-title">🏆 Bracket Standings</div>
     <table class="bkt-lb">
       <thead><tr>
-        <th>#</th><th>Player</th><th style="text-align:center">Correct</th><th style="text-align:right">Pts</th>
+        <th>#</th><th>Player</th><th style="text-align:center">Correct</th><th style="text-align:right">Total Pts</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px">Total = group stage + bracket picks (3 pts each)</div>
   </div>`;
 }
 
