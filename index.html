@@ -282,10 +282,6 @@
 
   .bkt-submit{width:100%;margin-top:8px;margin-bottom:24px;padding:14px}
   .bkt-submit:disabled{opacity:.5;cursor:default}
-  .bkt-pin-block{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
-  .bkt-pin-block .bkt-tb-label{margin-bottom:6px}
-  .bkt-pin-block .bkt-tb-desc{font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5}
-  .bkt-pin-row{display:flex;gap:10px;align-items:center}
 
   .bkt-my-score{background:var(--panel2);border:1px solid var(--gold-dim);border-radius:12px;padding:14px 16px;margin-bottom:14px;text-align:center}
   .bkt-my-score .sc-num{font-size:34px;font-weight:800;color:var(--gold)}
@@ -336,7 +332,6 @@
 
   /* Lock In banner */
   .bkt-lockin-banner{background:rgba(200,147,49,.08);border:1px solid rgba(200,147,49,.4);border-radius:12px;padding:14px 18px;margin-bottom:12px;font-size:14px;line-height:1.5;text-align:center}
-  .lockin-pin{font-size:26px;letter-spacing:6px;color:var(--gold);display:block;margin-top:6px;font-weight:800}
 
   /* ---- Mobile ---- */
   @media (max-width:600px){
@@ -581,17 +576,12 @@ const KNOCKOUT_KICKOFFS = {
 };
 
 let bktPlayerId = null;        // selected player for real bracket
-let bktPin = null;             // cached PIN for current player (from localStorage)
-let bktPinVerified = false;    // whether current player has passed the PIN gate
 let bktPicks = {};             // {matchNum: teamName} — in-progress picks
 let bktTbGoals = null;         // tiebreaker goals guess
 let bktOverrideMatches = [];   // match numbers editable post-deadline due to commissioner overrides
 let bktSubmitted = false;      // whether current player has already submitted
-let bktNeedsPin = false;       // player has picks (e.g. random assignment) but never set a PIN
 
 // All Picks tab
-const ALL_PICKS_PIN = "3475";
-let viewAllUnlocked = false;
 let allBracketsRound = 0;
 
 /* ===== Bracket data ===== */
@@ -1722,7 +1712,7 @@ function buildRealBracketHtml(){
 
   // Commissioner override banner — shown to any player with overridden picks
   const overrideBanner = bktOverrideMatches.length > 0
-    ? `<div class="bkt-override-banner">📋 <b>Some of your picks were updated by the commissioner</b> due to a bracket correction. You can edit those picks (highlighted in amber) and any downstream picks until each game begins — just enter your PIN and save.</div>`
+    ? `<div class="bkt-override-banner">📋 <b>Some of your picks were updated by the commissioner</b> due to a bracket correction. You can edit those picks (highlighted in amber) and any downstream picks until each game begins.</div>`
     : "";
 
   // Current player's picks (or empty bracket to fill)
@@ -1736,10 +1726,7 @@ async function onBktPlayerChange(pid){
   bktPicks = {};
   bktTbGoals = null;
   bktSubmitted = false;
-  bktPin = null;
-  bktPinVerified = false;
   bktOverrideMatches = [];
-  bktNeedsPin = false;
   if(pid){
     const myPicks = state.bracket_picks.filter(p=>p.player_id===pid);
     if(myPicks.length > 0){
@@ -1758,49 +1745,7 @@ async function onBktPlayerChange(pid){
         bktOverrideMatches = [...editable];
       }
     }
-    try{ bktPin = localStorage.getItem("wc_bkt_pin_"+pid) || null; }catch(e){}
-    if(bktSubmitted && !bktPin){
-      // Player has picks but no cached PIN — check if they ever set one (e.g. random-assigned player)
-      const {data: pinExists} = await sb.rpc("bracket_pin_is_set", {p_player_id: pid});
-      if(pinExists === false) bktNeedsPin = true;
-    }
-    // Auto-verify if cached PIN exists
-    if(bktPin && bktSubmitted && !bktNeedsPin){
-      const {data} = await sb.rpc("verify_bracket_pin", {p_player_id: pid, p_pw: bktPin});
-      if(data) bktPinVerified = true;
-    }
   }
-  renderBracket();
-}
-
-function buildBracketPinGateHtml(){
-  const player = state.players.find(p=>p.id===bktPlayerId);
-  const isEmily = player?.name?.toLowerCase().includes('emily');
-  const sillyGooseBtn = isEmily
-    ? `<button class="btn-ghost" style="width:100%;margin-top:12px;font-size:13px" onclick="sillyGooseReset()">🪿 I'm a silly goose — reset my PIN</button>`
-    : "";
-  return `<div class="bkt-pin-block" style="margin-top:8px">
-    <div class="bkt-tb-label">🔑 Enter Your PIN</div>
-    <div class="bkt-tb-desc">Enter your PIN to view your picks. Once all 31 picks are locked in, you'll get the PIN to see everyone's brackets on the <b>All Picks</b> tab.</div>
-    <div class="bkt-pin-row">
-      <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-verify-pin"
-        placeholder="Your PIN" autocomplete="off"
-        onkeydown="if(event.key==='Enter') verifyBracketPin()" />
-      <button class="btn-gold" onclick="verifyBracketPin()">Lock In</button>
-    </div>
-    ${sillyGooseBtn}
-  </div>`;
-}
-
-async function sillyGooseReset(){
-  if(!bktPlayerId){ toast("Select your name first"); return; }
-  const {data, error} = await sb.rpc("reset_bracket_pin", {p_player_id: bktPlayerId});
-  if(error || !data){ toast("Couldn't reset PIN — try again 🪿"); return; }
-  try{ localStorage.removeItem("wc_bkt_pin_"+bktPlayerId); }catch(e){}
-  bktPin = null;
-  bktNeedsPin = true;
-  bktPinVerified = false;
-  toast("PIN cleared! Create a new one below 🪿");
   renderBracket();
 }
 
@@ -1817,26 +1762,12 @@ function buildMyBracketHtml(){
   const totalCount = allMatches.length;
   const hasOverrides = bktOverrideMatches.length > 0;
   const directOverrideCount = state.bracket_picks.filter(p=>p.player_id===bktPlayerId && p.commissioner_at).length;
-  const playerName = state.players.find(p=>p.id===bktPlayerId)?.name?.toLowerCase() || "";
-  const isPinFree = playerName.includes('emily') || playerName.includes('jess');
 
   const lockInBanner = (submitted && pickedCount === totalCount)
     ? `<div class="bkt-lockin-banner">
         <b>All ${totalCount} picks locked in!</b> Head to the <b>All Picks</b> tab to compare everyone's brackets.
       </div>`
     : "";
-
-  // PIN gate: player has existing picks + PIN but hasn't verified this session
-  // Emily and Jess are exempt — they save without a PIN
-  if(!isPinFree && submitted && !bktPinVerified && !bktNeedsPin && !hasOverrides){
-    return buildBracketPinGateHtml();
-  }
-
-  // Override PIN gate: commissioner changed a pick, player needs to verify to review
-  if(!isPinFree && hasOverrides && !bktPinVerified){
-    return `<div class="bkt-status" style="border-color:var(--gold)">📋 <b>${directOverrideCount} of your pick${directOverrideCount!==1?'s were':' was'} updated by the commissioner.</b> Enter your PIN to review and save your choices.</div>`
-      + buildBracketPinGateHtml();
-  }
 
   // If every game has locked and there are no commissioner overrides, show read-only
   const anyPickable = allMatches.some(mn => !matchIsLocked(mn));
@@ -1857,34 +1788,12 @@ function buildMyBracketHtml(){
 
   const picksHtml = buildBracketPicksHtml("real", bktPicks, null);
   const tbHtml = buildTiebreakerHtml();
-  const submitLabel = (submitted && !bktNeedsPin && !isPinFree) ? "Save Changes" : "Save Bracket";
-  const pinId = hasOverrides ? "bkt-pin-override" : "bkt-pin";
-  const saveAction = isPinFree ? "submitNoPinBracket()" : (hasOverrides ? "submitOverridePicks()" : "submitRealBracket()");
-
-  const pinBlock = isPinFree
-    ? ""
-    : (submitted && !bktNeedsPin)
-      ? `<div class="bkt-pin-block">
-          <div class="bkt-tb-label">🔑 Your PIN</div>
-          <div class="bkt-tb-desc">Enter your PIN to save your picks.</div>
-          <div class="bkt-pin-row">
-            <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="${pinId}"
-              placeholder="••••" value="${bktPin||''}" autocomplete="off" />
-          </div>
-        </div>`
-      : `<div class="bkt-pin-block">
-          <div class="bkt-tb-label">🔐 Create a PIN</div>
-          <div class="bkt-tb-desc">Pick a PIN you'll remember — you'll need it to view and update your picks later.</div>
-          <div class="bkt-pin-row">
-            <input type="password" inputmode="numeric" maxlength="8" class="bkt-tb-input field" id="bkt-pin"
-              placeholder="New PIN" autocomplete="off" />
-          </div>
-        </div>`;
+  const submitLabel = submitted ? "Save Changes" : "Save Bracket";
 
   const progressHtml = `<div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:8px">${pickedCount} of ${totalCount} picks made</div>`;
-  const submitBtn = `${progressHtml}<button class="btn-gold bkt-submit" onclick="${saveAction}">${submitLabel}</button>`;
+  const submitBtn = `${progressHtml}<button class="btn-gold bkt-submit" onclick="submitNoPinBracket()">${submitLabel}</button>`;
 
-  return statusHeader + (bktPinVerified ? lockInBanner : "") + picksHtml + tbHtml + pinBlock + submitBtn;
+  return statusHeader + lockInBanner + picksHtml + tbHtml + submitBtn;
 }
 
 function buildBracketPicksHtml(mode, picks, results){
@@ -2077,50 +1986,6 @@ function clearDownstreamPicks(changedMatch){
   });
 }
 
-async function verifyBracketPin(){
-  if(!bktPlayerId){ toast("Select your name first"); return; }
-  const pin = $("#bkt-verify-pin")?.value?.trim();
-  if(!pin){ toast("Enter your PIN"); return; }
-  const {data, error} = await sb.rpc("verify_bracket_pin", {p_player_id: bktPlayerId, p_pw: pin});
-  if(error || !data){ toast("Incorrect PIN — try again"); return; }
-  bktPin = pin;
-  try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
-  bktPinVerified = true;
-  renderBracket();
-}
-
-async function submitRealBracket(){
-  if(!bktPlayerId){ toast("Select your name first"); return; }
-
-  const pin = $("#bkt-pin")?.value?.trim();
-  if(!pin){ toast((bktSubmitted && !bktNeedsPin) ? "Enter your PIN to save" : "Create a PIN first"); return; }
-  if(!bktSubmitted || bktNeedsPin){
-    if(pin.length < 4){ toast("PIN must be at least 4 characters"); return; }
-  }
-
-  const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
-  const picksArray = allMatches.filter(mn=>bktPicks[mn]).map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
-  if(picksArray.length === 0){ toast("Make at least one pick before saving"); return; }
-  const goals = (bktTbGoals !== null && !isNaN(bktTbGoals)) ? bktTbGoals : null;
-
-  const {data, error} = await sb.rpc("save_bracket",{
-    p_player_id: bktPlayerId,
-    p_pw: pin,
-    p_picks: picksArray,
-    p_goals: goals,
-  });
-  if(error || data === false){ console.error(error); toast("Wrong PIN — try again"); return; }
-
-  try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
-  bktPin = pin;
-  bktPinVerified = true;
-  bktNeedsPin = false;
-  toast(`${picksArray.length} of ${allMatches.length} picks saved! 🎉`);
-  bktSubmitted = true;
-  await loadAll();
-  renderBracket();
-}
-
 async function submitNoPinBracket(){
   if(!bktPlayerId){ toast("Select your name first"); return; }
   const allMatches = BRACKET_ROUNDS.flatMap(r=>r.matches);
@@ -2135,8 +2000,6 @@ async function submitNoPinBracket(){
   });
   if(error || data === false){ console.error(error); toast("Couldn't save — try again"); return; }
 
-  bktPinVerified = true;
-  bktNeedsPin = false;
   toast(`${picksArray.length} of ${allMatches.length} picks saved! 🎉`);
   bktSubmitted = true;
   await loadAll();
@@ -2163,26 +2026,6 @@ async function submitBracketResult(){
   });
   if(error){ console.error(error); toast("Error saving result"); return; }
   toast("Result saved ✅");
-  await loadAll();
-  renderBracket();
-}
-
-async function submitOverridePicks(){
-  if(!bktPlayerId){ toast("Select your name first"); return; }
-  const pin = $("#bkt-pin-override")?.value?.trim();
-  if(!pin){ toast("Enter your PIN to save"); return; }
-  const picksArray = bktOverrideMatches
-    .filter(mn=>bktPicks[mn])
-    .map(mn=>({match_num:mn, picked_team:bktPicks[mn]}));
-  if(picksArray.length === 0){ toast("Make at least one pick before saving"); return; }
-  const {data, error} = await sb.rpc("save_override_picks",{
-    p_player_id: bktPlayerId, p_pw: pin, p_picks: picksArray,
-  });
-  if(error || data === false){ console.error(error); toast("Wrong PIN — try again"); return; }
-  try{ localStorage.setItem("wc_bkt_pin_"+bktPlayerId, pin); }catch(e){}
-  bktPin = pin;
-  bktPinVerified = true;
-  toast(`Picks saved! 🎉`);
   await loadAll();
   renderBracket();
 }
@@ -2825,7 +2668,6 @@ function unlock(){ $("#gate").classList.add("hidden"); $("#app").classList.remov
 
 async function init(){
   await loadAll();
-  try{ viewAllUnlocked = localStorage.getItem("wc_view_all")==="yes"; }catch(e){}
   let savedAdmin=null; try{ savedAdmin=sessionStorage.getItem("wc_admin"); }catch(e){}
   if(savedAdmin){
     const {data}=await sb.rpc("verify_admin",{p_pw:savedAdmin});
