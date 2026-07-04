@@ -2071,45 +2071,12 @@ function renderAllBrackets(){
 }
 
 function buildAllBracketsHtml(){
-  const lbHtml   = buildAllBracketsBoardHtml();
   const roundTabs = `<div class="abkt-round-tabs">
     ${BRACKET_ROUNDS.map((r,i)=>`<button class="abkt-round-tab${i===allBracketsRound?' active':''}" id="abkt-round-${i}">${r.label}</button>`).join('')}
   </div>`;
   const gridHtml  = `<div class="card" style="padding:14px 12px">${buildRoundTableHtml(allBracketsRound)}</div>`;
 
-  return lbHtml + roundTabs + gridHtml;
-}
-
-
-function buildAllBracketsBoardHtml(){
-  const scoredPlayers = state.players.map(p=>{
-    const s = computeBracketScore(p.id);
-    const hasSubmitted = state.bracket_picks.some(x=>x.player_id===p.id);
-    return {...s, player:p, hasSubmitted};
-  }).filter(r=>r.hasSubmitted);
-
-  if(!scoredPlayers.length){
-    return `<div class="card"><div class="section-title">Bracket Standings</div><p class="hint" style="margin:0">No brackets submitted yet.</p></div>`;
-  }
-
-  scoredPlayers.sort((a,b)=>b.pts-a.pts||b.correct-a.correct);
-  const rows = scoredPlayers.map((r,i)=>`
-    <tr>
-      <td class="rank ${i===0?'r1':i===1?'r2':''}">${i===0?'👑':i===1?'🥈':i+1}</td>
-      <td class="pname">${esc(r.player.name)}</td>
-      <td style="text-align:center;font-size:13px;color:var(--muted)">${r.correct}/${r.total}</td>
-      <td style="font-weight:800;font-size:16px;text-align:right;color:var(--gold)">${r.pts}</td>
-    </tr>`).join('');
-
-  return `<div class="card" style="margin-bottom:12px">
-    <div class="section-title">Bracket Standings</div>
-    <table class="bkt-lb">
-      <thead><tr>
-        <th>#</th><th>Player</th><th style="text-align:center">Correct</th><th style="text-align:right">Pts</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
+  return roundTabs + gridHtml;
 }
 
 function buildRoundTableHtml(roundIdx){
