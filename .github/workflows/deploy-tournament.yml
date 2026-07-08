@@ -1,0 +1,53 @@
+name: Deploy tournament to vbtournaments
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tournament.html'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy from (leave blank for current)'
+        required: false
+        default: ''
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Push tournament.html to vbtournaments as index.html
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.VBTOURNAMENTS_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const content = fs.readFileSync('tournament.html', 'utf8');
+            const encoded = Buffer.from(content).toString('base64');
+
+            // Get current file SHA (required for updates)
+            let sha;
+            try {
+              const { data } = await github.rest.repos.getContent({
+                owner: 'mmcnamara90-cyber',
+                repo: 'vbtournaments',
+                path: 'index.html',
+              });
+              sha = data.sha;
+            } catch (e) {
+              // File doesn't exist yet — first deploy
+            }
+
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: 'mmcnamara90-cyber',
+              repo: 'vbtournaments',
+              path: 'index.html',
+              message: `Deploy tournament scoreboard from world-cup-pool@${context.sha.slice(0,7)}`,
+              content: encoded,
+              sha,
+            });
+
+            core.notice('Successfully deployed tournament.html → vbtournaments/index.html');
