@@ -122,6 +122,25 @@ input::placeholder{color:var(--text-dim)}
 .sc-btn.p:hover{background:var(--lavender);border-color:var(--lavender);color:var(--navy)}
 .sc-btn.m:hover{background:var(--rose);border-color:var(--rose);color:#fff}
 
+/* Big score adjustment buttons */
+.adj-row{display:flex;align-items:center;gap:6px;padding:5px 0}
+.adj-btn{min-width:48px;min-height:48px;border-radius:12px;font-size:26px;font-weight:900;display:flex;align-items:center;justify-content:center;transition:background .12s,transform .1s;flex-shrink:0;background:var(--navy-light);border:1px solid var(--border);color:var(--text)}
+.adj-btn:active{transform:scale(.9)}
+.adj-btn.plus{color:var(--lavender);border-color:var(--lavender)}
+.adj-btn.plus:active,.adj-btn.plus:hover{background:var(--lavender);color:var(--navy)}
+.adj-btn.minus{color:var(--rose);border-color:rgba(212,85,107,.5)}
+.adj-btn.minus:active,.adj-btn.minus:hover{background:var(--rose);color:#fff}
+.score-big{font-size:40px;font-weight:900;min-width:56px;text-align:center;line-height:1;letter-spacing:-1px}
+.score-big.lead{color:var(--success)}
+.score-big.behind{color:var(--rose-light)}
+
+/* Next Up preview */
+.next-up-box{background:var(--navy-light);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:12px}
+.next-up-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--lavender);font-weight:700;margin-bottom:8px}
+.next-up-row{font-size:13px;color:var(--text-dim);padding:3px 0;line-height:1.6}
+.next-up-row strong{color:var(--text)}
+.queue-swap{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+
 .vs-sep{text-align:center;font-size:10px;letter-spacing:1px;color:var(--text-dim);padding:2px 0;font-weight:700}
 
 .end-btn{background:var(--navy-light);border:1px solid var(--border-light);color:var(--text);border-radius:10px;padding:9px;width:100%;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-top:12px;transition:all .2s}
@@ -451,7 +470,7 @@ function launchC1Game(g) {
   if (S.c1.sitting.length < 2) return;
   g.tA = S.c1.sitting.shift();
   g.tB = S.c1.sitting.shift();
-  g.sA = 0; g.sB = 0; g.on = true;
+  g.sA = 10; g.sB = 10; g.on = true;
 }
 
 function launchC23(court) {
@@ -474,7 +493,7 @@ function launchC23(court) {
     g.tA = src.shift();
     g.tB = src.shift();
   }
-  g.sA = 0; g.sB = 0; g.on = true;
+  g.sA = 10; g.sB = 10; g.on = true;
 }
 
 function removeFromQueues(id) {
@@ -539,22 +558,18 @@ function rCourt1() {
 
     return `<div class="gcard live">
       <div class="gcard-label">Game ${idx+1}<span class="live-dot"></span></div>
-      <div class="score-team">
-        <div class="tn">${xe(tA.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c1','${g.id}','A',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c1','${g.id}','A',-1)">−</button>
-        </div>` : ''}
-        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+      <div class="adj-row">
+        <div class="tn" style="flex:1">${xe(tA.name)}</div>
+        <button class="adj-btn minus" onclick="adj('c1','${g.id}','A',-1)">−</button>
+        <div class="score-big ${aHi?'lead':bHi?'behind':''}">${g.sA}</div>
+        <button class="adj-btn plus" onclick="adj('c1','${g.id}','A',1)">+</button>
       </div>
       <div class="vs-sep">— vs —</div>
-      <div class="score-team">
-        <div class="tn">${xe(tB.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c1','${g.id}','B',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c1','${g.id}','B',-1)">−</button>
-        </div>` : ''}
-        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+      <div class="adj-row">
+        <div class="tn" style="flex:1">${xe(tB.name)}</div>
+        <button class="adj-btn minus" onclick="adj('c1','${g.id}','B',-1)">−</button>
+        <div class="score-big ${bHi?'lead':aHi?'behind':''}">${g.sB}</div>
+        <button class="adj-btn plus" onclick="adj('c1','${g.id}','B',1)">+</button>
       </div>
       <button class="end-btn ${reached ? '' : 'early'}" onclick="endC1('${g.id}')">
         ${reached
@@ -564,16 +579,19 @@ function rCourt1() {
     </div>`;
   }).join('');
 
-  const sitHtml = sitting.length > 0 ? `
-    <div class="queue-box">
-      <div class="queue-lbl">Sitting out — next up</div>
-      <div class="chips">
-        ${sitting.map((id,i) => {
-          const t = teams.find(t => t.id === id);
-          return t ? `<div class="chip ${i < 2 ? 'nxt' : ''}">${xe(t.name)}</div>` : '';
-        }).join('')}
-      </div>
-    </div>` : '';
+  const _sitItems = sitting.map((id, i) => {
+    const t = teams.find(x => x.id === id);
+    return `<div class="next-up-row"><span style="min-width:18px;display:inline-block;font-size:11px;color:var(--text-dim)">${i+1}.</span> <strong>${xe(t?.name ?? '?')}</strong>${i === 0 ? ' <span style="color:var(--lavender);font-size:11px;margin-left:4px">← up next</span>' : ''}</div>`;
+  }).join('');
+  const _swapBtns = (S.coachOn && sitting.length > 1)
+    ? `<div class="queue-swap"><span style="font-size:11px;color:var(--text-dim);margin-right:4px">Move to front:</span>${sitting.slice(1).map((id, i) => { const t = teams.find(x => x.id === id); return t ? `<button class="act-btn" style="font-size:11px;padding:4px 9px" onclick="swapC1Queue(0,${i+1})">↑ ${xe(t.name)}</button>` : ''; }).join('')}</div>`
+    : '';
+  const sitHtml = `
+    <div class="next-up-box">
+      <div class="next-up-lbl">Queue · Next Up</div>
+      ${sitting.length === 0 ? '<div class="next-up-row" style="color:var(--text-dim)">All teams are on court</div>' : _sitItems}
+      ${_swapBtns}
+    </div>`;
 
   const histHtml = hist.length ? `
     <div class="hist-head">Recent Results</div>
@@ -654,22 +672,18 @@ function rPlayoff(el) {
         <span>${label}<span class="live-dot"></span></span>
         <span style="background:var(--${badgeCls === 'rose' ? 'rose' : 'lavender'});color:var(--navy);font-size:9px;padding:2px 8px;border-radius:10px;font-weight:800">${badge}</span>
       </div>
-      <div class="score-team">
-        <div class="tn">${xe(tA.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c1','${key}','A',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c1','${key}','A',-1)">−</button>
-        </div>` : ''}
-        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+      <div class="adj-row">
+        <div class="tn" style="flex:1">${xe(tA.name)}</div>
+        <button class="adj-btn minus" onclick="adj('c1','${key}','A',-1)">−</button>
+        <div class="score-big ${aHi?'lead':bHi?'behind':''}">${g.sA}</div>
+        <button class="adj-btn plus" onclick="adj('c1','${key}','A',1)">+</button>
       </div>
       <div class="vs-sep">— vs —</div>
-      <div class="score-team">
-        <div class="tn">${xe(tB.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c1','${key}','B',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c1','${key}','B',-1)">−</button>
-        </div>` : ''}
-        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+      <div class="adj-row">
+        <div class="tn" style="flex:1">${xe(tB.name)}</div>
+        <button class="adj-btn minus" onclick="adj('c1','${key}','B',-1)">−</button>
+        <div class="score-big ${bHi?'lead':aHi?'behind':''}">${g.sB}</div>
+        <button class="adj-btn plus" onclick="adj('c1','${key}','B',1)">+</button>
       </div>
       <button class="end-btn ${reached ? '' : 'early'}" onclick="endPlayoffGame('${key}')">
         ${reached
@@ -731,8 +745,8 @@ function startPlayoffs() {
   const [s1, s2, s3, s4, s5, s6] = S.c1.playoff.seeds;
 
   // Quarters: 3v6 and 4v5
-  S.c1.playoff.games.qfA = {tA:s3, tB:s6, sA:0, sB:0, on:true,  done:false, wId:null, lId:null};
-  S.c1.playoff.games.qfB = {tA:s4, tB:s5, sA:0, sB:0, on:true,  done:false, wId:null, lId:null};
+  S.c1.playoff.games.qfA = {tA:s3, tB:s6, sA:10, sB:10, on:true,  done:false, wId:null, lId:null};
+  S.c1.playoff.games.qfB = {tA:s4, tB:s5, sA:10, sB:10, on:true,  done:false, wId:null, lId:null};
   // Semis: seeds 1 & 2 have byes, wait for QF winners
   S.c1.playoff.games.sfA = {tA:s2, tB:null, sA:0, sB:0, on:false, done:false, wId:null, lId:null};
   S.c1.playoff.games.sfB = {tA:s1, tB:null, sA:0, sB:0, on:false, done:false, wId:null, lId:null};
@@ -752,7 +766,7 @@ function startPlayoffs() {
 function startPoGame(key) {
   const g = S.c1.playoff.games[key];
   if (!g || !g.tA || !g.tB || g.on || g.done) return;
-  g.on = true;
+  g.sA = 10; g.sB = 10; g.on = true;
   save(); render();
 }
 
@@ -795,22 +809,23 @@ function endPlayoffGame(key) {
       g.done = true; g.on = false; g.wId = wId; g.lId = lId;
       g.sA = aWins ? wS : lS; g.sB = aWins ? lS : wS;
 
+      const autoStart = (g) => { g.sA = 10; g.sB = 10; g.on = true; };
       if (key === 'qfA') {
         po.games.sfA.tB = wId;
-        if (po.games.sfA.tA && po.games.sfA.tB) po.games.sfA.on = true;
+        if (po.games.sfA.tA && po.games.sfA.tB) autoStart(po.games.sfA);
         po.games.consolation.tA = lId;
-        if (po.games.consolation.tA && po.games.consolation.tB) po.games.consolation.on = true;
+        if (po.games.consolation.tA && po.games.consolation.tB) autoStart(po.games.consolation);
       } else if (key === 'qfB') {
         po.games.sfB.tB = wId;
-        if (po.games.sfB.tA && po.games.sfB.tB) po.games.sfB.on = true;
+        if (po.games.sfB.tA && po.games.sfB.tB) autoStart(po.games.sfB);
         po.games.consolation.tB = lId;
-        if (po.games.consolation.tA && po.games.consolation.tB) po.games.consolation.on = true;
+        if (po.games.consolation.tA && po.games.consolation.tB) autoStart(po.games.consolation);
       } else if (key === 'sfA') {
         po.games.championship.tA = wId;
-        if (po.games.championship.tA && po.games.championship.tB) po.games.championship.on = true;
+        if (po.games.championship.tA && po.games.championship.tB) autoStart(po.games.championship);
       } else if (key === 'sfB') {
         po.games.championship.tB = wId;
-        if (po.games.championship.tA && po.games.championship.tB) po.games.championship.on = true;
+        if (po.games.championship.tA && po.games.championship.tB) autoStart(po.games.championship);
       }
 
       save(); render();
@@ -846,22 +861,18 @@ function rCourts23() {
 
     return `<div class="gcard ${g.on ? cls : 'done'}" style="margin-bottom:12px">
       <div class="gcard-label">Court ${num} · ${icon} ${label}<span class="live-dot"></span></div>
-      <div class="score-team">
-        <div class="tn">${xe(tA.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c23','c${num}','A',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c23','c${num}','A',-1)">−</button>
-        </div>` : ''}
-        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+      <div class="adj-row">
+        <div class="tn" style="flex:1">${xe(tA.name)}</div>
+        <button class="adj-btn minus" onclick="adj('c23','c${num}','A',-1)">−</button>
+        <div class="score-big ${aHi?'lead':bHi?'behind':''}">${g.sA}</div>
+        <button class="adj-btn plus" onclick="adj('c23','c${num}','A',1)">+</button>
       </div>
       <div class="vs-sep">— vs —</div>
-      <div class="score-team">
-        <div class="tn">${xe(tB.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c23','c${num}','B',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c23','c${num}','B',-1)">−</button>
-        </div>` : ''}
-        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+      <div class="adj-row">
+        <div class="tn" style="flex:1">${xe(tB.name)}</div>
+        <button class="adj-btn minus" onclick="adj('c23','c${num}','B',-1)">−</button>
+        <div class="score-big ${bHi?'lead':aHi?'behind':''}">${g.sB}</div>
+        <button class="adj-btn plus" onclick="adj('c23','c${num}','B',1)">+</button>
       </div>
       <button class="end-btn ${reached ? '' : 'early'}" onclick="endC23('c${num}')">
         ${reached
@@ -895,6 +906,19 @@ function rCourts23() {
       </div>`;
     }).join('')}` : '';
 
+  const _c2NextId = promoted[0] ?? queue[0] ?? null;
+  const _c2Next = _c2NextId ? teams.find(t => t.id === _c2NextId) : null;
+  const _c2Promoted = !!(_c2NextId && promoted.includes(_c2NextId));
+  const _c3Pool = [...demoted, ...queue];
+  const _c3a = _c3Pool[0] ? teams.find(t => t.id === _c3Pool[0]) : null;
+  const _c3b = _c3Pool[1] ? teams.find(t => t.id === _c3Pool[1]) : null;
+  const nextUpHtml = `
+    <div class="next-up-box">
+      <div class="next-up-lbl">Next Up</div>
+      <div class="next-up-row"><strong>Court 2</strong> — next challenger: ${_c2Next ? `<strong>${xe(_c2Next.name)}</strong>${_c2Promoted ? ' <span style="color:var(--success);font-size:11px">promoted ↑</span>' : ''}` : '<span style="color:var(--text-dim)">none waiting</span>'}</div>
+      <div class="next-up-row"><strong>Court 3</strong> — next game: ${_c3a && _c3b ? `<strong>${xe(_c3a.name)}</strong> vs <strong>${xe(_c3b.name)}</strong>` : _c3a ? `<strong>${xe(_c3a.name)}</strong> vs <span style="color:var(--text-dim)">TBD</span>` : '<span style="color:var(--text-dim)">waiting for teams</span>'}</div>
+    </div>`;
+
   el.innerHTML = `
     <div class="court-head">
       <span class="cn">Courts 2 & 3</span>
@@ -903,6 +927,7 @@ function rCourts23() {
     </div>
     ${rGame(c2, 2)}
     ${rGame(c3, 3)}
+    ${nextUpHtml}
     ${waitHtml}
     <div class="move-card">
       <div class="move-lbl">Movement</div>
@@ -964,13 +989,13 @@ function endC1(gid) {
       if (l) { l.losses++; l.pf += lS; l.pa += wS; }
       S.c1.hist.push({wId, lId, wS, lS, ts: Date.now()});
 
-      // Rotate: loser to sitting, next sitting team to this game
-      const next = S.c1.sitting.shift();
+      // Rotate: loser back to sitting, pick best challenger (prioritizes variety)
       S.c1.sitting.push(lId);
+      const next = pickBestChallenger(wId, S.c1.sitting, S.c1.hist);
 
       if (next) {
         g.tA = wId; g.tB = next;
-        g.sA = 0;  g.sB = 0;
+        g.sA = 10; g.sB = 10;
         g.on = true;
       } else {
         g.on = false;
@@ -981,6 +1006,32 @@ function endC1(gid) {
       toast(`${wNm} wins!`);
     }
   });
+}
+
+// ================================================================
+// SMART CHALLENGER SELECTION
+// ================================================================
+function pickBestChallenger(winnerId, sitting, hist) {
+  if (!sitting.length) return null;
+  if (sitting.length === 1) return sitting.splice(0, 1)[0];
+  const lastFaced = {};
+  sitting.forEach(id => { lastFaced[id] = -1; });
+  hist.forEach((h, idx) => {
+    if (h.wId !== winnerId && h.lId !== winnerId) return;
+    const opp = h.wId === winnerId ? h.lId : h.wId;
+    if (opp in lastFaced) lastFaced[opp] = idx;
+  });
+  let bestIdx = 0;
+  sitting.forEach((id, i) => {
+    if (lastFaced[id] < lastFaced[sitting[bestIdx]]) bestIdx = i;
+  });
+  return sitting.splice(bestIdx, 1)[0];
+}
+
+function swapC1Queue(i, j) {
+  const q = S.c1.sitting;
+  [q[i], q[j]] = [q[j], q[i]];
+  save(); render();
 }
 
 // ================================================================
@@ -1037,7 +1088,7 @@ function endC23(court) {
           // Start new court 2 game
           const c2 = S.c23.c2;
           c2.tA = wId; c2.tB = challenger;
-          c2.sA = 0; c2.sB = 0; c2.on = true;
+          c2.sA = 10; c2.sB = 10; c2.on = true;
         } else {
           const c2 = S.c23.c2;
           c2.tA = wId; c2.tB = null;
@@ -1061,12 +1112,12 @@ function endC23(court) {
         const c2 = S.c23.c2;
         if (!c2.on && c2.tA) {
           const ch = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
-          if (ch) { c2.tB = ch; c2.sA = 0; c2.sB = 0; c2.on = true; }
+          if (ch) { c2.tB = ch; c2.sA = 10; c2.sB = 10; c2.on = true; }
         } else if (!c2.tA && !c2.tB) {
           // court 2 completely idle
           const a = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
           const b = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
-          if (a && b) { c2.tA = a; c2.tB = b; c2.sA = 0; c2.sB = 0; c2.on = true; }
+          if (a && b) { c2.tA = a; c2.tB = b; c2.sA = 10; c2.sB = 10; c2.on = true; }
         }
       }
 
@@ -1091,7 +1142,7 @@ function tryFillC3() {
     ta = S.c23.queue.shift(); tb = S.c23.queue.shift();
   }
   if (!tb) { c3.on = false; return; }
-  c3.tA = ta; c3.tB = tb; c3.sA = 0; c3.sB = 0; c3.on = true;
+  c3.tA = ta; c3.tB = tb; c3.sA = 10; c3.sB = 10; c3.on = true;
 }
 
 // ================================================================
