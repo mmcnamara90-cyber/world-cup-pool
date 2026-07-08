@@ -252,9 +252,9 @@ input::placeholder{color:var(--text-dim)}
     </div>
   </div>
 
-  <!-- Courts 2 & 3 -->
+  <!-- Near Court -->
   <div class="s-card">
-    <div class="s-label">Courts 2 & 3 <span class="tag">King of Court</span></div>
+    <div class="s-label">Near Court <span class="tag">Queen of the Court</span></div>
     <div class="fmt-row">
       <button class="fmt-btn sel" id="fmt-4v4" onclick="setFmt('4v4')">4 v 4</button>
       <button class="fmt-btn" id="fmt-5v5" onclick="setFmt('5v5')">5 v 5</button>
@@ -287,14 +287,14 @@ input::placeholder{color:var(--text-dim)}
     <button class="coach-tog" id="coach-btn" onclick="toggleCoach()">Coach</button>
   </div>
   <nav class="tab-bar">
-    <button class="tab-item on" data-tab="court1" onclick="goTab('court1',this)">Main Court</button>
-    <button class="tab-item" data-tab="courts23" onclick="goTab('courts23',this)">Courts 2 & 3</button>
+    <button class="tab-item on" data-tab="tournament" onclick="goTab('tournament',this)">Tournament</button>
+    <button class="tab-item" data-tab="near" onclick="goTab('near',this)">Near Court</button>
     <button class="tab-item" data-tab="standings" onclick="goTab('standings',this)">Standings</button>
     <button class="tab-item" data-tab="coach" onclick="goTab('coach',this)">Coach</button>
   </nav>
   <div class="tab-pane">
-    <div id="tab-court1"></div>
-    <div id="tab-courts23" class="hidden"></div>
+    <div id="tab-tournament"></div>
+    <div id="tab-near" class="hidden"></div>
     <div id="tab-standings" class="hidden"></div>
     <div id="tab-coach" class="hidden"></div>
   </div>
@@ -315,14 +315,14 @@ let S = {
   phase: 'setup',
   coachOn: false,
   coachPin: '1234',
-  activeTab: 'court1',
+  activeTab: 'tournament',
 
   c1: {
     target: 15,
     teams: [],        // {id,name,wins,losses,pf,pa}
     games: [
-      {id:'g1',tA:null,tB:null,sA:0,sB:0,on:false},
-      {id:'g2',tA:null,tB:null,sA:0,sB:0,on:false},
+      {id:'g1',tA:null,tB:null,sA:10,sB:10,on:false},
+      {id:'g2',tA:null,tB:null,sA:10,sB:10,on:false},
     ],
     sitting: [],      // team ids
     hist: [],
@@ -330,25 +330,22 @@ let S = {
       active: false,
       seeds: [],      // team ids in seed order [1st…6th]
       games: {
-        qfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
-        qfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
-        consolation:  {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
-        sfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
-        sfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
-        championship: {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        qfA:          {tA:null,tB:null,sA:10,sB:10,on:false,done:false,wId:null,lId:null},
+        qfB:          {tA:null,tB:null,sA:10,sB:10,on:false,done:false,wId:null,lId:null},
+        consolation:  {tA:null,tB:null,sA:10,sB:10,on:false,done:false,wId:null,lId:null},
+        sfA:          {tA:null,tB:null,sA:10,sB:10,on:false,done:false,wId:null,lId:null},
+        sfB:          {tA:null,tB:null,sA:10,sB:10,on:false,done:false,wId:null,lId:null},
+        championship: {tA:null,tB:null,sA:10,sB:10,on:false,done:false,wId:null,lId:null},
       },
     },
   },
 
-  c23: {
+  near: {
     target: 11,
     fmt: '4v4',
     teams: [],
-    c2: {tA:null,tB:null,sA:0,sB:0,on:false},
-    c3: {tA:null,tB:null,sA:0,sB:0,on:false},
-    promoted: [],     // c3 winners waiting for c2
-    demoted: [],      // c2 losers waiting for c3
-    queue: [],        // general waiting list
+    game: {tA:null,tB:null,sA:10,sB:10,on:false},
+    queue: [],
     hist: [],
   },
 };
@@ -362,7 +359,7 @@ let setupFmt = '4v4';
 // SETUP
 // ================================================================
 function init() {
-  const raw = localStorage.getItem('tourn_v2');
+  const raw = localStorage.getItem('tourn_v3');
   if (raw) {
     try {
       const p = JSON.parse(raw);
@@ -444,22 +441,23 @@ function startTournament() {
     },
   };
 
-  S.c23.teams = c23n.map((n,i) => mk(n, `c23-${i}`));
-  S.c23.target = c23t;
-  S.c23.fmt = setupFmt;
-  S.c23.queue = [...S.c23.teams.map(t => t.id)];
+  S.near.teams = c23n.map((n,i) => mk(n, `near-${i}`));
+  S.near.target = c23t;
+  S.near.fmt = setupFmt;
+  S.near.queue = [...S.near.teams.map(t => t.id)];
+  S.near.game = {tA:null, tB:null, sA:10, sB:10, on:false};
+  S.near.hist = [];
 
   S.coachPin = pin || '1234';
   S.phase = 'game';
 
-  // Auto-fill court 1 games
+  // Auto-fill tournament courts
   for (const g of S.c1.games) {
     if (S.c1.sitting.length >= 2) launchC1Game(g);
   }
 
-  // Auto-fill courts 2 & 3
-  if (S.c23.queue.length >= 2) launchC23('c2');
-  if (S.c23.queue.length >= 2) launchC23('c3');
+  // Auto-fill near court
+  if (S.near.queue.length >= 2) launchNear();
 
   save();
   showApp();
@@ -473,33 +471,12 @@ function launchC1Game(g) {
   g.sA = 10; g.sB = 10; g.on = true;
 }
 
-function launchC23(court) {
-  const g = S.c23[court];
-  // Try demoted first for c3, otherwise queue
-  let src;
-  if (court === 'c3' && S.c23.demoted.length > 0) {
-    src = S.c23.demoted;
-  } else {
-    src = S.c23.queue;
-  }
-  if (src.length < 2) {
-    // Try mixing
-    const all = [...S.c23.demoted, ...S.c23.queue];
-    if (all.length < 2) return;
-    g.tA = all[0]; g.tB = all[1];
-    // Remove from respective arrays
-    removeFromQueues(g.tA); removeFromQueues(g.tB);
-  } else {
-    g.tA = src.shift();
-    g.tB = src.shift();
-  }
+function launchNear() {
+  const g = S.near.game;
+  if (S.near.queue.length < 2) return;
+  g.tA = S.near.queue.shift();
+  g.tB = S.near.queue.shift();
   g.sA = 10; g.sB = 10; g.on = true;
-}
-
-function removeFromQueues(id) {
-  S.c23.demoted = S.c23.demoted.filter(x => x !== id);
-  S.c23.queue = S.c23.queue.filter(x => x !== id);
-  S.c23.promoted = S.c23.promoted.filter(x => x !== id);
 }
 
 function showApp() {
@@ -514,7 +491,7 @@ function goTab(tab, btn) {
   S.activeTab = tab;
   document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('on'));
   if (btn) btn.classList.add('on');
-  ['court1','courts23','standings','coach'].forEach(t => {
+  ['tournament','near','standings','coach'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
   });
   render();
@@ -522,31 +499,33 @@ function goTab(tab, btn) {
 
 function render() {
   switch(S.activeTab) {
-    case 'court1':    rCourt1();    break;
-    case 'courts23':  rCourts23();  break;
-    case 'standings': rStandings(); break;
-    case 'coach':     rCoach();     break;
+    case 'tournament': rTournament(); break;
+    case 'near':       rNearCourt(); break;
+    case 'standings':  rStandings(); break;
+    case 'coach':      rCoach();     break;
   }
   document.getElementById('coach-btn').classList.toggle('on', S.coachOn);
   document.getElementById('coach-btn').textContent = S.coachOn ? 'Exit Coach' : 'Coach';
 }
 
 // ================================================================
-// COURT 1 RENDER
+// TOURNAMENT RENDER (Main Court + Far Court)
 // ================================================================
-function rCourt1() {
-  const el = document.getElementById('tab-court1');
+function rTournament() {
+  const el = document.getElementById('tab-tournament');
   if (S.c1.playoff?.active) { rPlayoff(el); return; }
 
   const {target, games, teams, sitting, hist} = S.c1;
+  const courtNames = ['Main Court', 'Far Court'];
 
   const gcards = games.map((g, idx) => {
     const tA = g.tA ? teams.find(t => t.id === g.tA) : null;
     const tB = g.tB ? teams.find(t => t.id === g.tB) : null;
+    const cName = courtNames[idx];
 
     if (!g.on || !tA || !tB) {
       return `<div class="gcard idle">
-        <div class="gcard-label">Game ${idx+1}</div>
+        <div class="gcard-label">${cName}</div>
         <div class="idle-placeholder">No game assigned</div>
         ${S.coachOn && sitting.length >= 2 ?
           `<button class="end-btn" onclick="coachLaunchC1('${g.id}')">Start Game</button>` : ''}
@@ -557,7 +536,7 @@ function rCourt1() {
     const reached = g.sA >= target || g.sB >= target;
 
     return `<div class="gcard live">
-      <div class="gcard-label">Game ${idx+1}<span class="live-dot"></span></div>
+      <div class="gcard-label">${cName}<span class="live-dot"></span></div>
       <div class="adj-row">
         <div class="tn" style="flex:1">${xe(tA.name)}</div>
         <button class="adj-btn minus" onclick="adj('c1','${g.id}','A',-1)">−</button>
@@ -612,8 +591,8 @@ function rCourt1() {
 
   el.innerHTML = `
     <div class="court-head">
-      <span class="cn">Main Court</span>
-      <span class="cf">3v3 · Round Robin</span>
+      <span class="cn">Tournament</span>
+      <span class="cf">Main &amp; Far Courts · 3v3 · Round Robin</span>
       <span class="ct">First to ${target}</span>
     </div>
     <div class="games-grid">${gcards}</div>
@@ -835,63 +814,59 @@ function endPlayoffGame(key) {
 }
 
 // ================================================================
-// COURTS 2/3 RENDER
+// NEAR COURT RENDER (Queen of the Court)
 // ================================================================
-function rCourts23() {
-  const el = document.getElementById('tab-courts23');
-  const {target, fmt, teams, c2, c3, promoted, demoted, queue, hist} = S.c23;
+function rNearCourt() {
+  const el = document.getElementById('tab-near');
+  const {target, fmt, teams, game, queue, hist} = S.near;
+  const tA = game.tA ? teams.find(t => t.id === game.tA) : null;
+  const tB = game.tB ? teams.find(t => t.id === game.tB) : null;
 
-  const rGame = (g, num) => {
-    const tA = g.tA ? teams.find(t => t.id === g.tA) : null;
-    const tB = g.tB ? teams.find(t => t.id === g.tB) : null;
-    const cls = num === 2 ? 'court2live' : 'court3live';
-    const icon = num === 2 ? '🏆' : '⚡';
-    const label = num === 2 ? 'Championship' : 'Challenger';
-
-    if (!g.on || !tA || !tB) {
-      return `<div class="gcard idle" style="margin-bottom:12px">
-        <div class="gcard-label">Court ${num} · ${icon} ${label}</div>
-        <div class="idle-placeholder">Waiting for teams</div>
-        ${S.coachOn ? `<button class="end-btn" onclick="coachLaunchC23('c${num}')">Start Game</button>` : ''}
-      </div>`;
-    }
-
-    const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
-    const reached = g.sA >= target || g.sB >= target;
-
-    return `<div class="gcard ${g.on ? cls : 'done'}" style="margin-bottom:12px">
-      <div class="gcard-label">Court ${num} · ${icon} ${label}<span class="live-dot"></span></div>
+  let gameHtml;
+  if (!game.on || !tA || !tB) {
+    gameHtml = `<div class="gcard idle" style="margin-bottom:12px">
+      <div class="gcard-label">Near Court · Queen of the Court</div>
+      <div class="idle-placeholder">Waiting for teams</div>
+      ${S.coachOn ? `<button class="end-btn" onclick="coachLaunchNear()">Start Game</button>` : ''}
+    </div>`;
+  } else {
+    const aHi = game.sA > game.sB, bHi = game.sB > game.sA;
+    const reached = game.sA >= target || game.sB >= target;
+    gameHtml = `<div class="gcard court2live" style="margin-bottom:12px">
+      <div class="gcard-label">Near Court · Queen of the Court<span class="live-dot"></span></div>
       <div class="adj-row">
         <div class="tn" style="flex:1">${xe(tA.name)}</div>
-        <button class="adj-btn minus" onclick="adj('c23','c${num}','A',-1)">−</button>
-        <div class="score-big ${aHi?'lead':bHi?'behind':''}">${g.sA}</div>
-        <button class="adj-btn plus" onclick="adj('c23','c${num}','A',1)">+</button>
+        <button class="adj-btn minus" onclick="adj('near','game','A',-1)">−</button>
+        <div class="score-big ${aHi?'lead':bHi?'behind':''}">${game.sA}</div>
+        <button class="adj-btn plus" onclick="adj('near','game','A',1)">+</button>
       </div>
       <div class="vs-sep">— vs —</div>
       <div class="adj-row">
         <div class="tn" style="flex:1">${xe(tB.name)}</div>
-        <button class="adj-btn minus" onclick="adj('c23','c${num}','B',-1)">−</button>
-        <div class="score-big ${bHi?'lead':aHi?'behind':''}">${g.sB}</div>
-        <button class="adj-btn plus" onclick="adj('c23','c${num}','B',1)">+</button>
+        <button class="adj-btn minus" onclick="adj('near','game','B',-1)">−</button>
+        <div class="score-big ${bHi?'lead':aHi?'behind':''}">${game.sB}</div>
+        <button class="adj-btn plus" onclick="adj('near','game','B',1)">+</button>
       </div>
-      <button class="end-btn ${reached ? '' : 'early'}" onclick="endC23('c${num}')">
+      <button class="end-btn ${reached ? '' : 'early'}" onclick="endNear()">
         ${reached
-          ? `End Game · ${g.sA >= target ? xe(tA.name) : xe(tB.name)} wins!`
+          ? `End Game · ${game.sA >= target ? xe(tA.name) : xe(tB.name)} wins!`
           : 'End Game Early'}
       </button>
     </div>`;
-  };
+  }
 
-  const allWaiting = [...promoted, ...demoted, ...queue];
-  const waitHtml = allWaiting.length ? `
-    <div class="queue-box">
-      <div class="queue-lbl">Queue</div>
-      <div class="chips">
-        ${promoted.map(id => { const t = teams.find(x => x.id === id); return t ? `<div class="chip nxt" title="Promoted from Court 3">${xe(t.name)} ↑</div>` : ''; }).join('')}
-        ${demoted.map(id => { const t = teams.find(x => x.id === id); return t ? `<div class="chip q3" title="Dropped from Court 2">${xe(t.name)} ↓</div>` : ''; }).join('')}
-        ${queue.map(id => { const t = teams.find(x => x.id === id); return t ? `<div class="chip">${xe(t.name)}</div>` : ''; }).join('')}
-      </div>
-    </div>` : '';
+  const nextId = queue[0];
+  const nextTeam = nextId ? teams.find(t => t.id === nextId) : null;
+  const nextUpHtml = `
+    <div class="next-up-box">
+      <div class="next-up-lbl">Queue · Next Challenger</div>
+      ${queue.length === 0
+        ? '<div class="next-up-row" style="color:var(--text-dim)">No teams waiting</div>'
+        : queue.map((id, i) => {
+            const t = teams.find(x => x.id === id);
+            return `<div class="next-up-row"><span style="min-width:18px;display:inline-block;font-size:11px;color:var(--text-dim)">${i+1}.</span> <strong>${xe(t?.name ?? '?')}</strong>${i === 0 ? ' <span style="color:var(--lavender);font-size:11px;margin-left:4px">← next up</span>' : ''}</div>`;
+          }).join('')}
+    </div>`;
 
   const histHtml = hist.length ? `
     <div class="hist-head">Recent Results</div>
@@ -899,42 +874,25 @@ function rCourts23() {
       const w = teams.find(t => t.id === h.wId);
       const l = teams.find(t => t.id === h.lId);
       return `<div class="hist-row">
-        <span style="font-size:11px;color:var(--text-dim);margin-right:4px">C${h.court}</span>
         <div class="hist-w">${xe(w?.name ?? '?')}</div>
         <div class="hist-sc">${h.wS} – ${h.lS}</div>
         <div class="hist-l">${xe(l?.name ?? '?')}</div>
       </div>`;
     }).join('')}` : '';
 
-  const _c2NextId = promoted[0] ?? queue[0] ?? null;
-  const _c2Next = _c2NextId ? teams.find(t => t.id === _c2NextId) : null;
-  const _c2Promoted = !!(_c2NextId && promoted.includes(_c2NextId));
-  const _c3Pool = [...demoted, ...queue];
-  const _c3a = _c3Pool[0] ? teams.find(t => t.id === _c3Pool[0]) : null;
-  const _c3b = _c3Pool[1] ? teams.find(t => t.id === _c3Pool[1]) : null;
-  const nextUpHtml = `
-    <div class="next-up-box">
-      <div class="next-up-lbl">Next Up</div>
-      <div class="next-up-row"><strong>Court 2</strong> — next challenger: ${_c2Next ? `<strong>${xe(_c2Next.name)}</strong>${_c2Promoted ? ' <span style="color:var(--success);font-size:11px">promoted ↑</span>' : ''}` : '<span style="color:var(--text-dim)">none waiting</span>'}</div>
-      <div class="next-up-row"><strong>Court 3</strong> — next game: ${_c3a && _c3b ? `<strong>${xe(_c3a.name)}</strong> vs <strong>${xe(_c3b.name)}</strong>` : _c3a ? `<strong>${xe(_c3a.name)}</strong> vs <span style="color:var(--text-dim)">TBD</span>` : '<span style="color:var(--text-dim)">waiting for teams</span>'}</div>
-    </div>`;
-
   el.innerHTML = `
     <div class="court-head">
-      <span class="cn">Courts 2 & 3</span>
-      <span class="cf">${fmt} · King of Court</span>
+      <span class="cn">Near Court</span>
+      <span class="cf">${fmt} · Queen of the Court</span>
       <span class="ct">First to ${target}</span>
     </div>
-    ${rGame(c2, 2)}
-    ${rGame(c3, 3)}
+    ${gameHtml}
     ${nextUpHtml}
-    ${waitHtml}
     <div class="move-card">
-      <div class="move-lbl">Movement</div>
-      <div class="move-row"><span class="arr-eq">↔</span> Win on Court 2 → Stay & defend</div>
-      <div class="move-row"><span class="arr-dn">↓</span> Lose on Court 2 → Drop to Court 3</div>
-      <div class="move-row"><span class="arr-up">↑</span> Win on Court 3 → Promoted to Court 2</div>
-      <div class="move-row"><span class="arr-dn">↓</span> Lose on Court 3 → Back of queue</div>
+      <div class="move-lbl">How it works</div>
+      <div class="move-row"><span class="arr-eq">↔</span> Win → Stay &amp; defend</div>
+      <div class="move-row"><span class="arr-dn">↓</span> Lose → Back of the queue</div>
+      <div class="move-row"><span class="arr-up">↑</span> Next in queue → Challenges</div>
     </div>
     ${histHtml}
   `;
@@ -948,7 +906,7 @@ function adj(section, ref, side, d) {
   if (section === 'c1') {
     g = S.c1.games.find(x => x.id === ref) ?? S.c1.playoff?.games[ref];
   } else {
-    g = S.c23[ref];
+    g = S.near.game;
   }
   if (!g || !g.on) return;
   if (side === 'A') g.sA = Math.max(0, g.sA + d);
@@ -1035,13 +993,12 @@ function swapC1Queue(i, j) {
 }
 
 // ================================================================
-// END GAME — COURTS 2/3
+// END GAME — NEAR COURT (Queen of the Court)
 // ================================================================
-function endC23(court) {
-  const g = S.c23[court];
+function endNear() {
+  const g = S.near.game;
   if (!g || !g.on) return;
-  const num = court === 'c2' ? 2 : 3;
-  const teams = S.c23.teams;
+  const teams = S.near.teams;
   const tA = teams.find(t => t.id === g.tA);
   const tB = teams.find(t => t.id === g.tB);
 
@@ -1053,96 +1010,38 @@ function endC23(court) {
   const wNm = (aWins ? tA : tB)?.name ?? '?';
   const lNm = (aWins ? tB : tA)?.name ?? '?';
 
-  let moveMsg;
-  if (num === 2) {
-    moveMsg = `<strong style="color:var(--success)">${xe(wNm)}</strong> defends Court 2.<br>
-               <strong style="color:var(--rose)">${xe(lNm)}</strong> drops to Court 3.`;
-  } else {
-    moveMsg = `<strong style="color:var(--success)">${xe(wNm)}</strong> is promoted to Court 2!<br>
-               <strong style="color:var(--rose)">${xe(lNm)}</strong> goes to the back of the queue.`;
-  }
+  const nextId = S.near.queue[0];
+  const nextNm = nextId ? teams.find(t => t.id === nextId)?.name : null;
 
   modal({
-    title: `Court ${num} Result`,
-    body: `${xe(wNm)} wins ${wS}–${lS}.<br><br>${moveMsg}`,
+    title: 'Queen of the Court',
+    body: `<strong>${xe(wNm)}</strong> wins ${wS}–${lS} over ${xe(lNm)}.<br><br>
+           <strong style="color:var(--success)">${xe(wNm)}</strong> stays on court.<br>
+           <strong style="color:var(--rose)">${xe(lNm)}</strong> goes to the back of the queue.
+           ${nextNm ? `<br>Next challenger: <strong>${xe(nextNm)}</strong>` : ''}`,
     ok: 'Confirm',
     onOk: () => {
       const w = teams.find(t => t.id === wId);
       const l = teams.find(t => t.id === lId);
       if (w) { w.wins++; w.pf += wS; w.pa += lS; }
       if (l) { l.losses++; l.pf += lS; l.pa += wS; }
-      S.c23.hist.push({court: num, wId, lId, wS, lS, ts: Date.now()});
+      S.near.hist.push({wId, lId, wS, lS, ts: Date.now()});
 
-      if (num === 2) {
-        // winner stays, loser demoted
-        S.c23.demoted.push(lId);
-
-        // Find challenger for court 2
-        let challenger = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? S.c23.demoted.shift() ?? null;
-        if (challenger) {
-          // If challenger was already in demoted (from above push), handle edge case
-          if (challenger === lId) {
-            // Shouldn't happen since we just pushed lId and then shifted, but just in case
-            challenger = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
-          }
-          // Start new court 2 game
-          const c2 = S.c23.c2;
-          c2.tA = wId; c2.tB = challenger;
-          c2.sA = 10; c2.sB = 10; c2.on = true;
-        } else {
-          const c2 = S.c23.c2;
-          c2.tA = wId; c2.tB = null;
-          c2.sA = 0; c2.sB = 0; c2.on = false;
-        }
-
-        // Refresh court 3 if idle
-        if (!S.c23.c3.on || !S.c23.c3.tA) {
-          tryFillC3();
-        }
-
+      // Winner stays, loser to back of queue, next challenger in
+      S.near.queue.push(lId);
+      const next = S.near.queue.shift();
+      if (next) {
+        g.tA = wId; g.tB = next;
+        g.sA = 10; g.sB = 10; g.on = true;
       } else {
-        // Court 3: winner promoted, loser to queue
-        S.c23.queue.push(lId);
-        S.c23.promoted.push(wId);
-
-        // Start new court 3 game
-        tryFillC3();
-
-        // If court 2 is waiting for a challenger, pull promoted winner
-        const c2 = S.c23.c2;
-        if (!c2.on && c2.tA) {
-          const ch = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
-          if (ch) { c2.tB = ch; c2.sA = 10; c2.sB = 10; c2.on = true; }
-        } else if (!c2.tA && !c2.tB) {
-          // court 2 completely idle
-          const a = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
-          const b = S.c23.promoted.shift() ?? S.c23.queue.shift() ?? null;
-          if (a && b) { c2.tA = a; c2.tB = b; c2.sA = 10; c2.sB = 10; c2.on = true; }
-        }
+        g.tA = wId; g.tB = null;
+        g.sA = 10; g.sB = 10; g.on = false;
       }
 
       save(); render();
-      toast(`${wNm} wins on Court ${num}!`);
+      toast(`${wNm} stays on Near Court!`);
     }
   });
-}
-
-function tryFillC3() {
-  const c3 = S.c23.c3;
-  // Get two teams: prefer demoted, then queue
-  const available = [...S.c23.demoted, ...S.c23.queue];
-  if (available.length < 2) { c3.on = false; return; }
-
-  let ta, tb;
-  if (S.c23.demoted.length >= 2) {
-    ta = S.c23.demoted.shift(); tb = S.c23.demoted.shift();
-  } else if (S.c23.demoted.length === 1) {
-    ta = S.c23.demoted.shift(); tb = S.c23.queue.shift();
-  } else {
-    ta = S.c23.queue.shift(); tb = S.c23.queue.shift();
-  }
-  if (!tb) { c3.on = false; return; }
-  c3.tA = ta; c3.tB = tb; c3.sA = 10; c3.sB = 10; c3.on = true;
 }
 
 // ================================================================
@@ -1170,10 +1069,10 @@ function rStandings() {
     </div>`;
   };
 
-  const g1 = S.c1.hist.length, g23 = S.c23.hist.length;
+  const g1 = S.c1.hist.length, g23 = S.near.hist.length;
   el.innerHTML = `
-    ${tbl(S.c1.teams, 'Main Court · 3v3')}
-    ${tbl(S.c23.teams, 'Courts 2 & 3 · King of Court')}
+    ${tbl(S.c1.teams, 'Tournament · Main &amp; Far Courts · 3v3')}
+    ${tbl(S.near.teams, 'Near Court · Queen of the Court')}
     <p style="text-align:center;color:var(--text-dim);font-size:12px;margin-top:4px">${g1+g23} games completed</p>
   `;
 }
@@ -1221,9 +1120,9 @@ function rCoach() {
           onchange="S.c1.target=parseInt(this.value)||15;save();render()">
       </div>
       <div class="cp-row">
-        <label>Courts 2/3 win score</label>
-        <input type="number" value="${S.c23.target}" min="1" max="99"
-          onchange="S.c23.target=parseInt(this.value)||11;save();render()">
+        <label>Near Court win score</label>
+        <input type="number" value="${S.near.target}" min="1" max="99"
+          onchange="S.near.target=parseInt(this.value)||11;save();render()">
       </div>
       <div class="cp-row">
         <label>Change coach PIN</label>
@@ -1242,11 +1141,11 @@ function rCoach() {
     </div>` : S.c1.playoff?.active ? `
     <div class="coach-panel sec">
       <div class="cp-head"><span class="cp-badge lav">Playoffs Active</span></div>
-      <div class="cp-row"><label style="font-size:13px">Bracket is live on the Main Court tab.</label></div>
+      <div class="cp-row"><label style="font-size:13px">Bracket is live on the Tournament tab.</label></div>
     </div>` : ''}
 
     <div class="coach-panel sec">
-      <div class="cp-head"><span class="cp-badge lav">Main Court Teams</span></div>
+      <div class="cp-head"><span class="cp-badge lav">Tournament Teams</span></div>
       ${S.c1.teams.map(t => `
         <div class="cp-row">
           <label><strong>${xe(t.name)}</strong> &nbsp;${t.wins}W / ${t.losses}L</label>
@@ -1255,24 +1154,18 @@ function rCoach() {
     </div>
 
     <div class="coach-panel sec">
-      <div class="cp-head"><span class="cp-badge lav">Courts 2/3 Teams</span></div>
-      ${S.c23.teams.map(t => `
+      <div class="cp-head"><span class="cp-badge lav">Near Court Teams</span></div>
+      ${S.near.teams.map(t => `
         <div class="cp-row">
           <label><strong>${xe(t.name)}</strong> &nbsp;${t.wins}W / ${t.losses}L</label>
-          <button class="act-btn" onclick="renameTeam('c23','${t.id}')">Rename</button>
+          <button class="act-btn" onclick="renameTeam('near','${t.id}')">Rename</button>
         </div>`).join('')}
     </div>
 
     <div class="coach-panel sec">
-      <div class="cp-head"><span class="cp-badge" style="background:var(--navy-light);color:var(--text-dim);border:1px solid var(--border)">Court 2/3 Queue</span></div>
+      <div class="cp-head"><span class="cp-badge" style="background:var(--navy-light);color:var(--text-dim);border:1px solid var(--border)">Near Court Queue</span></div>
       <div class="cp-row">
-        <label style="font-size:13px">Promoted (↑ c3 winners): ${S.c23.promoted.map(id => xe(S.c23.teams.find(t=>t.id===id)?.name??'?')).join(', ') || 'none'}</label>
-      </div>
-      <div class="cp-row">
-        <label style="font-size:13px">Demoted (↓ c2 losers): ${S.c23.demoted.map(id => xe(S.c23.teams.find(t=>t.id===id)?.name??'?')).join(', ') || 'none'}</label>
-      </div>
-      <div class="cp-row">
-        <label style="font-size:13px">General queue: ${S.c23.queue.map(id => xe(S.c23.teams.find(t=>t.id===id)?.name??'?')).join(', ') || 'none'}</label>
+        <label style="font-size:13px">Waiting: ${S.near.queue.map(id => xe(S.near.teams.find(t=>t.id===id)?.name??'?')).join(', ') || 'none'}</label>
       </div>
     </div>
 
@@ -1291,7 +1184,7 @@ function rCoach() {
 }
 
 function renameTeam(sec, id) {
-  const teams = sec === 'c1' ? S.c1.teams : S.c23.teams;
+  const teams = sec === 'c1' ? S.c1.teams : S.near.teams;
   const t = teams.find(x => x.id === id);
   if (!t) return;
   modal({
@@ -1315,8 +1208,8 @@ function coachLaunchC1(gid) {
   save(); render();
 }
 
-function coachLaunchC23(court) {
-  launchC23(court);
+function coachLaunchNear() {
+  launchNear();
   save(); render();
 }
 
@@ -1327,8 +1220,8 @@ function resetStats() {
     ok: 'Reset',
     okCls: 'rose',
     onOk: () => {
-      [...S.c1.teams, ...S.c23.teams].forEach(t => { t.wins=0;t.losses=0;t.pf=0;t.pa=0; });
-      S.c1.hist = []; S.c23.hist = [];
+      [...S.c1.teams, ...S.near.teams].forEach(t => { t.wins=0;t.losses=0;t.pf=0;t.pa=0; });
+      S.c1.hist = []; S.near.hist = [];
       save(); render(); toast('Stats reset');
     }
   });
@@ -1340,7 +1233,7 @@ function fullReset() {
     body: 'Deletes all data and returns to setup. Cannot be undone.',
     ok: 'Reset Everything',
     okCls: 'rose',
-    onOk: () => { localStorage.removeItem('tourn_v2'); location.reload(); }
+    onOk: () => { localStorage.removeItem('tourn_v3'); location.reload(); }
   });
 }
 
@@ -1376,7 +1269,7 @@ function confirmMo() {
 // ================================================================
 // SAVE / UTILS
 // ================================================================
-function save() { localStorage.setItem('tourn_v2', JSON.stringify(S)); }
+function save() { localStorage.setItem('tourn_v3', JSON.stringify(S)); }
 
 function xe(s) {
   return String(s ?? '').replace(/[&<>"']/g, c =>
